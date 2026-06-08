@@ -6,7 +6,7 @@ Uso:
     python3 ../sources/vassal/estrai_zone_abb.py
 
 Scrive `godot/games/all_bridges_burning/data/regions.json` con i poligoni
-normalizzati nello spazio [0..1]x[0..1] rispetto alla mappa ABB (6000x3000).
+normalizzati nello spazio [0..1]x[0..1] rispetto alla mappa ABB croppata a 3829x3000 (zona Map Vassal).
 """
 
 import re
@@ -14,8 +14,12 @@ import json
 import os
 import sys
 
-# Coordinata di riferimento della mappa Vassal (ABB Map-FINAL-150-BRcut-Canvas-4.png)
-MAP_W, MAP_H = 6000.0, 3000.0
+# Coordinata di riferimento della mappa Vassal (ABB Map-FINAL-150-BRcut-Canvas-4.png).
+# La PNG sorgente è 6000x3000, ma la zona "Map" del Vassal (area utile) finisce
+# a x=3829; il resto è "Card Decks Area" + "Play Area" decorativi. Normalizziamo
+# usando questo bordo destro, così le coordinate corrispondono alla map.jpg
+# generata croppando il sorgente a [0..3829].
+MAP_W, MAP_H = 3829.0, 3000.0
 
 # Mappatura nome Vassal -> id snake_case del modulo Godot.
 PROVINCES = {
@@ -165,7 +169,7 @@ def main():
 
     out_regions = {
         "_note": (
-            "Estratto da All_Bridges_Burning_1.2.vmod (mappa 6000x3000). "
+            "Estratto da All_Bridges_Burning_1.2.vmod (zona Map 3829x3000). "
             "polygon=poligono normalizzato [0..1]; "
             "circle=[cx,cy,r] per le città; "
             "cbox=posizione marcatore Controllo; "
