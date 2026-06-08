@@ -15,6 +15,7 @@ func _initialize() -> void:
 	_test_abb_piece_types()
 	_test_abb_adjacency()
 	_test_abb_setup()
+	_test_abb_operations()
 	_test_game_def()
 	_test_setup_forces()
 	_test_setup_tracks()
@@ -151,6 +152,40 @@ func _test_abb_setup() -> void:
 	_eq("Vassalage Russian", int(state.tracks.get("vassalage_russian", -1)), 3)
 	# Tutte le fazioni Eligibili al setup
 	_eq("Reds Eligible", state.eligibility["reds"], CoinEnums.Eligibility.ELIGIBLE)
+
+
+func _test_abb_operations() -> void:
+	print("\n[ABB Operazioni]")
+	var r := _new_abb()
+	var mod: ABBModule = r[0]
+	var state: GameState = r[2]
+	var ops := ABBOperations.new(state, mod)
+
+	# Rally Reds in Karelia (spazio vuoto, 5 risorse iniziali)
+	var res_before: int = state.get_resources("reds")
+	var rally_res = ops.rally("reds", "karelia", "cell")
+	_check("Rally Reds OK", rally_res.get("ok", false))
+	_eq("Karelia ha 1 cellula Reds dopo Rally",
+		state.space_state("karelia").count("reds", "cell"), 1)
+	_eq("Risorse Reds -1", state.get_resources("reds"), res_before - 1)
+
+	# March Reds da Uusimaa a Helsinki (adiacente)
+	var march_res = ops.march("reds", "uusimaa", "helsinki", "cell", 1)
+	_check("March Reds OK", march_res.get("ok", false))
+	# Helsinki aveva 1 reds_cell underground già al setup; +1 dovrebbe diventare active
+	# (perché Helsinki ha 1 Senate + 1 Moderates: nemici presenti).
+	_check("Le Cellule marciate diventano Active in spazio nemico",
+		state.space_state("helsinki").count("reds", "cell", "active") >= 1)
+
+	# Attack Reds in Helsinki (con almeno 1 cella attiva ora)
+	var atk = ops.attack("reds", "helsinki", 3)  # seed deterministico
+	_check("Attack restituisce risultato", atk.has("ok"))
+
+	# Terror Reds in Uusimaa: aumenta marker terror
+	var terror_before: int = state.space_state("uusimaa").marker("terror")
+	var ter = ops.terror("reds", "uusimaa")
+	_check("Terror OK", ter.get("ok", false))
+	_eq("Terror marker +1", state.space_state("uusimaa").marker("terror"), terror_before + 1)
 
 
 # ---------------------------------------------------------------------------
