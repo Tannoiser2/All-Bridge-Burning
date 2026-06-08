@@ -181,7 +181,7 @@ func play_event(side: String, params: Dictionary = {}) -> Dictionary:
 	var fid := seq.pending_faction()
 	var p := params.duplicate()
 	p["faction"] = fid
-	var res := run_event(n, side, fid, p)
+	var res = run_event(n, side, fid, p)
 	if not res.get("ok", true):
 		return {"ok": false, "error": String(res.get("error", "Evento non eseguibile"))}
 	seq.act(A.EVENT)
@@ -269,10 +269,10 @@ func _bot_take_pending() -> void:
 		decision = "op_sa"
 	# EVENTO
 	if decision == "event":
-		var ec := bot.event_choice(fid, state.current_card)
+		var ec = bot.event_choice(fid, state.current_card)
 		if ec.get("play", false):
 			var side: String = ec["side"]
-			var eres := events.apply(state.current_card, side, fid)
+			var eres = events.apply(state.current_card, side, fid)
 			var etrace := ["C8.5.2 -> EVENTO (Critical/efficace), lato %s" % side]
 			etrace.append_array(eres.get("log", []))
 			emit_signal("bot_decision", "%s -> EVENTO (%s)" % [fname, side], fid, etrace)
@@ -293,7 +293,7 @@ func _bot_take_pending() -> void:
 	# OPERAZIONE: op_sa / op_only / lim_op (rispettando la legalità dello slot)
 	var want_sa := decision == "op_sa"
 	var limited := decision == "lim_op" or (not can_full and not can_op and can_lim)
-	var br := bot.take_turn(fid, want_sa and not limited, limited)
+	var br = bot.take_turn(fid, want_sa and not limited, limited)
 	var trace: Array = br.get("trace", [])
 	if br.get("action", "pass") == "pass":
 		emit_signal("bot_decision", "%s -> PASSA (nessuna Operazione legale)" % fname, fid, trace)
@@ -342,7 +342,7 @@ func _np_eligibility_decision(fid: String) -> String:
 		if crit_eff:
 			return "event"
 		# 3) La prossima idonea potrebbe giocare un Critical efficace -> Op (per negarglielo)
-		var nxt := seq.next_eligible()
+		var nxt = seq.next_eligible()
 		if nxt != "" and _ev_crit_eff(nxt, card):
 			return "op_only"
 		# 4) Sarò 1ª idonea su un Critical in arrivo -> Passa
@@ -632,7 +632,7 @@ func can_special(sa_id: String, params: Dictionary) -> bool:
 
 func run_special(sa_id: String, params: Dictionary) -> Dictionary:
 	_capture_undo()
-	var res := _dispatch_special(specials, sa_id, params)
+	var res = _dispatch_special(specials, sa_id, params)
 	if res.get("ok", false):
 		_turn_did_special = true
 	else:
@@ -643,7 +643,7 @@ func run_special(sa_id: String, params: Dictionary) -> Dictionary:
 
 func run_event(number: int, side: String, faction: String, params: Dictionary = {}) -> Dictionary:
 	_capture_undo()
-	var res := events.apply(number, side, faction, params)
+	var res = events.apply(number, side, faction, params)
 	if res.get("ok", true):
 		_turn_did_event = true
 	else:
@@ -655,7 +655,7 @@ func run_event(number: int, side: String, faction: String, params: Dictionary = 
 
 
 func run_bot_turn(faction: String) -> Dictionary:
-	var res := bot.take_turn(faction)
+	var res = bot.take_turn(faction)
 	for line in res.get("log", []):
 		emit_signal("action_logged", " " + String(line), faction)
 	emit_signal("state_changed")
@@ -672,7 +672,7 @@ func resolve_propaganda() -> Dictionary:
 	var is_final := propaganda_played >= 4
 	emit_signal("action_logged", " Round Propaganda %d/4" % propaganda_played, "")
 	# Fase Vittoria (l'umano vince solo all'ultima Propaganda)
-	var vp := propaganda.victory_phase(is_final)
+	var vp = propaganda.victory_phase(is_final)
 	if vp.get("winner", "") != "":
 		game_over = true
 		winner = vp.winner
@@ -730,7 +730,7 @@ func _emit_final_report(forced_winner: String) -> void:
 
 ## Pulsante "Risolvi Propaganda": risolve e pesca la carta successiva.
 func run_propaganda(_params: Dictionary = {}) -> Dictionary:
-	var res := resolve_propaganda()
+	var res = resolve_propaganda()
 	if not game_over:
 		draw_next()
 	return res
@@ -760,9 +760,10 @@ func faction_name(fid: String) -> String:
 
 func faction_color(fid: String) -> Color:
 	# Colore dichiarato dal modulo del gioco attivo (factions.json/color hex).
-	var f := game_def.faction(fid) if game_def != null else null
-	if f != null and f.color != "":
-		return Color(f.color)
+	if game_def != null:
+		var f: FactionDef = game_def.faction(fid)
+		if f != null and f.color != "":
+			return Color(f.color)
 	# Fallback per Cuba Libre (compatibilità storica).
 	match fid:
 		"government": return Color("3a6ea5")
