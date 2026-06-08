@@ -9,7 +9,9 @@ var _failed := 0
 
 
 func _initialize() -> void:
-	print("== COIN Engine - Test Cuba Libre ==")
+	print("== COIN Engine - Test multi-gioco ==")
+	_test_abb_game_def()
+	_test_abb_factions()
 	_test_game_def()
 	_test_setup_forces()
 	_test_setup_tracks()
@@ -49,6 +51,36 @@ func _initialize() -> void:
 
 	print("\n-- Risultato: %d passati, %d falliti --" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
+
+
+# ---------------------------------------------------------------------------
+# Test modulo All Bridges Burning (scheletro — solo GameDef in questo PR)
+# ---------------------------------------------------------------------------
+
+func _test_abb_game_def() -> void:
+	print("\n[ABB GameDef]")
+	var mod := ABBModule.new()
+	var gd := mod.build_game_def()
+	_eq("titolo", gd.title, "All Bridges Burning")
+	_eq("numero spazi", gd.spaces.size(), 13)
+	_eq("numero fazioni", gd.factions.size(), 4)
+	_check("Helsinki esiste", gd.space("helsinki") != null)
+	_check("Tampere esiste", gd.space("tampere") != null)
+	_check("Häme esiste", gd.space("hame") != null)
+	_check("Pohjanmaa esiste", gd.space("pohjanmaa") != null)
+
+
+func _test_abb_factions() -> void:
+	print("\n[ABB Fazioni]")
+	var mod := ABBModule.new()
+	var gd := mod.build_game_def()
+	var ids: Array = []
+	for f in gd.factions:
+		ids.append(f.id)
+	_check("Reds presente", "reds" in ids)
+	_check("Senate presente", "senate" in ids)
+	_check("Moderates presente", "moderates" in ids)
+	_check("Germans presente", "germans" in ids)
 
 
 # ---------------------------------------------------------------------------

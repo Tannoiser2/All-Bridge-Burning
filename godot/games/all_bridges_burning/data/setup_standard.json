@@ -1,4 +1,86 @@
 {
-  "_comment": "TODO: schieramento iniziale standard ABB (Finlandia, marzo 1917).",
-  "spaces": {}
+  "_note": "Schieramento iniziale standard (rulebook §Setup, p.32). Le scelte casuali (Viipuri/Turku per Senate, Viipuri/Turku/Tampere per Moderates) sono risolte all'apply_setup con tiro D6 deterministico in test. La popolazione degli spazi e le adiacenze sono TODO per un PR successivo.",
+  "resources": {
+    "reds": 5,
+    "senate": 5,
+    "moderates": 5,
+    "germans": 0
+  },
+  "tracks": {
+    "polarization": 3,
+    "vassalage_german": 3,
+    "vassalage_russian": 3,
+    "senate_town_pop": 1,
+    "oppose_admins": 3,
+    "cells_on_map": 13,
+    "issues_networks": 1
+  },
+  "spaces": {
+    "helsinki": {
+      "forces": {
+        "reds_cell": 1,
+        "senate_cell": 1,
+        "moderates_cell": 1,
+        "russian_troop": 1
+      },
+      "support": "neutral",
+      "control": "none"
+    },
+    "uusimaa": {
+      "forces": {"reds_cell": 2},
+      "support": "passive_opposition",
+      "control": "reds"
+    },
+    "tampere": {
+      "forces": {"reds_cell": 2},
+      "support": "passive_opposition",
+      "control": "reds"
+    },
+    "hame": {
+      "forces": {"reds_cell": 2},
+      "support": "passive_opposition",
+      "control": "reds"
+    },
+    "turku": {
+      "forces": {"reds_cell": 1},
+      "support": "neutral",
+      "control": "reds"
+    },
+    "viipuri": {
+      "forces": {"reds_cell": 1, "russian_troop": 1},
+      "support": "neutral",
+      "control": "reds"
+    },
+    "vaasa": {
+      "forces": {"senate_cell": 1},
+      "support": "active_support",
+      "control": "senate"
+    },
+    "pohjanmaa": {
+      "forces": {"senate_cell": 1, "russian_troop": 1},
+      "support": "passive_support",
+      "control": "senate"
+    }
+  },
+  "random_placements": [
+    {
+      "_note": "Viipuri or Turku: 1 Senate Cell — D6 1-3 Turku, 4-6 Viipuri",
+      "force": "senate_cell",
+      "count": 1,
+      "options": ["turku", "viipuri"],
+      "rule": "d6_1_3=turku,4_6=viipuri"
+    },
+    {
+      "_note": "Viipuri, Turku or Tampere: 1 Moderates Cell — D6 1-2 Turku, 3-4 Tampere, 5-6 Viipuri",
+      "force": "moderates_cell",
+      "count": 1,
+      "options": ["turku", "tampere", "viipuri"],
+      "rule": "d6_1_2=turku,3_4=tampere,5_6=viipuri"
+    }
+  ],
+  "off_map": {
+    "_note": "Pezzi fuori dalla mappa al setup.",
+    "german_troops": 6,
+    "russian_troops_set_aside": 3
+  }
 }
