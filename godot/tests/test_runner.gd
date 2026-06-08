@@ -17,6 +17,8 @@ func _initialize() -> void:
 	_test_abb_setup()
 	_test_abb_operations()
 	_test_abb_specials()
+	_test_abb_crisis()
+	_test_abb_bot()
 	_test_game_def()
 	_test_setup_forces()
 	_test_setup_tracks()
@@ -215,6 +217,33 @@ func _test_abb_specials() -> void:
 	# Dialogue Moderates in Helsinki (al setup: 1 Moderates cell, Neutral support)
 	var dlg = sa.dialogue("helsinki")
 	_check("Dialogue OK", dlg.get("ok", false))
+
+
+func _test_abb_crisis() -> void:
+	print("\n[ABB Crisis]")
+	var r := _new_abb()
+	var mod: ABBModule = r[0]
+	var state: GameState = r[2]
+	var crisis := ABBCrisis.new(state, mod)
+	var reds_before: int = state.get_resources("reds")
+	var report = crisis.resolve()
+	_check("Crisis ritorna report", report.has("politics") and report.has("earnings"))
+	_check("Reds Earnings ≥ 0", state.get_resources("reds") >= reds_before)
+	_eq("Issues +1", int(state.tracks.get("issues_networks", 0)), 2)
+
+
+func _test_abb_bot() -> void:
+	print("\n[ABB Bot scaffold]")
+	var r := _new_abb()
+	var mod: ABBModule = r[0]
+	var state: GameState = r[2]
+	var bot := ABBBot.new(state, mod)
+	# Reds ha operazioni: take_turn deve restituire un'azione (non "pass")
+	var res = bot.take_turn("reds")
+	_check("Bot Reds esegue qualcosa", res.get("action", "pass") != "pass")
+	# Russians non ha operazioni → pass
+	var res2 = bot.take_turn("russians")
+	_eq("Bot Russians passa", res2.get("action", ""), "pass")
 
 
 # ---------------------------------------------------------------------------
