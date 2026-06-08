@@ -81,11 +81,12 @@ static func support(level: int) -> Texture2D:
 	return null
 
 
-## Immagine della carta: number 1..48, oppure 0 = Propaganda.
+## Immagine della carta: number 1..N, oppure 0 = Propaganda.
+## Prova prima JPG (ABB), poi PNG (Cuba Libre) come fallback.
 static func card(number: int) -> Texture2D:
-	if number <= 0:
-		return tex("cards/prop.png")
-	return tex("cards/%02d.png" % number)
+	var name_base: String = "prop" if number <= 0 else "%02d" % number
+	var jpg: Texture2D = tex("cards/%s.jpg" % name_base)
+	return jpg if jpg != null else tex("cards/%s.png" % name_base)
 
 
 static func cash() -> Texture2D: return tex("cash.png")
