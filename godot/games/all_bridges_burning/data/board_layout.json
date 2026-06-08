@@ -1,0 +1,5 @@
+{
+  "_comment": "TODO: layout grafico della board (box risorse, tracciati, posizioni segnalini). Modello: games/cuba_libre/data/board_layout.json.",
+  "box": {},
+  "tracks": {}
+}
