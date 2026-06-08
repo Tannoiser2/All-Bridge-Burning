@@ -1,5 +1,5 @@
 {
-  "_note": "Fazioni di All Bridges Burning (rulebook §1.3). Le tre fazioni giocabili sono Reds, Senate (Whites), Moderates. La Germania è una 'Power' esterna attiva in Phase II — la modelliamo come quarta fazione per integrarla nel motore COIN. La Russia è un Power non-giocatore che opera in supporto al Senate (rappresentata con marker e pedine cube ma senza turni propri).",
+  "_note": "Fazioni di All Bridges Burning (rulebook §1.3). Le tre giocabili sono Reds, Senate, Moderates. Germany e Russia sono Powers esterne: le modelliamo come fazioni nel motore per possedere pezzi e tracciati. La Germania agisce in Phase II via flowchart (§3.4); la Russia non agisce mai autonomamente.",
   "factions": [
     {
       "id": "reds",
@@ -8,7 +8,8 @@
       "color": "#c0392b",
       "type": "insurgent",
       "operations": ["rally", "march", "attack", "terror"],
-      "special_activities": ["agitate", "ambush", "subvert", "tax"]
+      "special_activities": ["agitate", "ambush", "subvert", "tax"],
+      "forces": {"cell": 20, "admin": 3}
     },
     {
       "id": "senate",
@@ -17,7 +18,8 @@
       "color": "#ecf0f1",
       "type": "counterinsurgent",
       "operations": ["rally", "march", "attack", "terror"],
-      "special_activities": ["crackdown", "coordinate", "negotiate", "tax"]
+      "special_activities": ["crackdown", "coordinate", "negotiate", "tax"],
+      "forces": {"cell": 20}
     },
     {
       "id": "moderates",
@@ -26,7 +28,8 @@
       "color": "#2980b9",
       "type": "insurgent",
       "operations": ["rally", "march", "message", "activism"],
-      "special_activities": ["dialogue", "negotiate", "foreign_relations"]
+      "special_activities": ["dialogue", "negotiate", "foreign_relations"],
+      "forces": {"cell": 6, "network": 2}
     },
     {
       "id": "germans",
@@ -34,9 +37,21 @@
       "short_name": "Germans",
       "color": "#7f8c8d",
       "type": "counterinsurgent",
-      "_note": "Power esterno attivo in Phase II (§3.4) — turni gestiti dalla German Action Phase con flowchart dedicato.",
+      "_note": "Power esterno attivo in Phase II (§3.4) — turni gestiti dalla German Action Phase.",
       "operations": ["march", "attack"],
-      "special_activities": []
+      "special_activities": [],
+      "forces": {"troops": 6}
+    },
+    {
+      "id": "russians",
+      "name": "Russians",
+      "short_name": "Russians",
+      "color": "#8b4513",
+      "type": "counterinsurgent",
+      "_note": "Power non-giocatore (§1.3). Non agisce mai autonomamente; le sue Truppe possono essere mosse dai Reds (Attack/March) finché restano sulla mappa.",
+      "operations": [],
+      "special_activities": [],
+      "forces": {"troops": 6}
     }
   ]
 }

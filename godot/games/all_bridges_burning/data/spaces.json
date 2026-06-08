@@ -1,96 +1,153 @@
 {
-  "_note": "8 province + 5 città estratte dal Vassal. Popolazione e adiacenze sono da popolare dal regolamento (ABBLivingRules.pdf).",
+  "_note": "8 province + 5 città estratte dal Vassal. Adiacenze calcolate dai poligoni (regola §1.2.3); città ↔ provincia di contenimento sempre adiacenti. Popolazione letta dalla mappa stampata (playbook p.8 e regolamento §1.2).",
   "spaces": [
     {
       "id": "hame",
       "name": "Häme",
       "type": "province",
-      "pop": 0,
-      "adjacent": []
+      "pop": 1,
+      "adjacent": [
+        "kuopion_laani",
+        "mikkelin_laani",
+        "pohjanmaa",
+        "tampere",
+        "uusimaa",
+        "varsinais_suomi"
+      ]
     },
     {
       "id": "karelia",
       "name": "Karelia",
       "type": "province",
-      "pop": 0,
-      "adjacent": []
+      "pop": 1,
+      "adjacent": [
+        "kuopion_laani",
+        "mikkelin_laani",
+        "uusimaa",
+        "viipuri"
+      ]
     },
     {
       "id": "kuopion_laani",
       "name": "Kuopion lääni",
       "type": "province",
-      "pop": 0,
-      "adjacent": []
+      "pop": 2,
+      "adjacent": [
+        "hame",
+        "karelia",
+        "mikkelin_laani",
+        "oulun_laani",
+        "pohjanmaa"
+      ]
     },
     {
       "id": "mikkelin_laani",
       "name": "Mikkelin lääni",
       "type": "province",
-      "pop": 0,
-      "adjacent": []
+      "pop": 1,
+      "adjacent": [
+        "hame",
+        "karelia",
+        "kuopion_laani",
+        "pohjanmaa",
+        "uusimaa"
+      ]
     },
     {
       "id": "oulun_laani",
       "name": "Oulun lääni",
       "type": "province",
       "pop": 0,
-      "adjacent": []
+      "adjacent": [
+        "kuopion_laani",
+        "pohjanmaa"
+      ]
     },
     {
       "id": "pohjanmaa",
       "name": "Pohjanmaa",
       "type": "province",
-      "pop": 0,
-      "adjacent": []
+      "pop": 1,
+      "adjacent": [
+        "hame",
+        "kuopion_laani",
+        "mikkelin_laani",
+        "oulun_laani",
+        "vaasa",
+        "varsinais_suomi"
+      ]
     },
     {
       "id": "uusimaa",
       "name": "Uusimaa",
       "type": "province",
-      "pop": 0,
-      "adjacent": []
+      "pop": 2,
+      "adjacent": [
+        "hame",
+        "helsinki",
+        "karelia",
+        "mikkelin_laani",
+        "varsinais_suomi"
+      ]
     },
     {
       "id": "varsinais_suomi",
       "name": "Varsinais-Suomi",
       "type": "province",
-      "pop": 0,
-      "adjacent": []
+      "pop": 1,
+      "adjacent": [
+        "hame",
+        "pohjanmaa",
+        "tampere",
+        "turku",
+        "uusimaa"
+      ]
     },
     {
       "id": "helsinki",
       "name": "Helsinki",
       "type": "city",
-      "pop": 0,
-      "adjacent": []
+      "pop": 2,
+      "adjacent": [
+        "uusimaa"
+      ]
     },
     {
       "id": "tampere",
       "name": "Tampere",
       "type": "city",
-      "pop": 0,
-      "adjacent": []
+      "pop": 1,
+      "adjacent": [
+        "hame",
+        "varsinais_suomi"
+      ]
     },
     {
       "id": "turku",
       "name": "Turku",
       "type": "city",
-      "pop": 0,
-      "adjacent": []
+      "pop": 1,
+      "adjacent": [
+        "varsinais_suomi"
+      ]
     },
     {
       "id": "vaasa",
       "name": "Vaasa",
       "type": "city",
-      "pop": 0,
-      "adjacent": []
+      "pop": 1,
+      "adjacent": [
+        "pohjanmaa"
+      ]
     },
     {
       "id": "viipuri",
       "name": "Viipuri",
       "type": "city",
-      "pop": 0,
-      "adjacent": []
+      "pop": 2,
+      "adjacent": [
+        "karelia"
+      ]
     }
   ]
 }

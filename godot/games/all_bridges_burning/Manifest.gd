@@ -29,12 +29,12 @@ func create_bot(state, module):
 	return ABBBot.new(state, module)
 
 func default_roles(_game_def: GameDef) -> Dictionary:
-	# TODO: confermare dal regolamento la fazione "umana" tipica del solitario ABB.
-	# ABB ha 4 fazioni: Reds, Whites, Moderates, Protesters (Sosialistit di sinistra/agitatori).
-	# Provvisorio: l'umano gioca i Whites contro 3 NP.
+	# Solitario classico: l'umano gioca il Senate contro Reds e Moderates NP.
+	# Germans e Russians sono Powers gestite dal motore (mai "player").
 	return {
-		"whites": "player",
+		"senate": "player",
 		"reds": "bot",
 		"moderates": "bot",
-		"protesters": "bot",
+		"germans": "bot",
+		"russians": "bot",
 	}
