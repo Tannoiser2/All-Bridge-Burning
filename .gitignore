@@ -19,6 +19,7 @@ venv/
 
 # Estrazioni temporanee del modulo VASSAL
 /tmp_vmod/
+Materiale ABB/All_Bridges_Burning_*.vmod/
 
 # Build Web locale (generata dalla GitHub Action)
 /web/

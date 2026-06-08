@@ -138,6 +138,10 @@ var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Specia
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# La fazione "corrente" di default è la prima del gioco attivo (era hardcoded
+	# a "government" per Cuba Libre; per altri moduli leggiamo dal GameDef).
+	if GameController.game_def != null and not GameController.game_def.factions.is_empty():
+		_cur_faction = GameController.game_def.factions[0].id
 	_build_ui()
 	GameController.state_changed.connect(_refresh)
 	GameController.action_logged.connect(_on_log)
@@ -366,7 +370,8 @@ func _build_action_bar() -> VBoxContainer:
 	roles_grid.columns = 2
 	roles_grid.add_theme_constant_override("h_separation", 3)
 	roles_grid.add_theme_constant_override("v_separation", 2)
-	for fid in ["government", "m26", "directorio", "syndicate"]:
+	for f in GameController.game_def.factions:
+		var fid: String = f.id
 		var rb := _mk_btn("", _toggle_role.bind(fid))
 		rb.add_theme_font_size_override("font_size", 11)
 		_role_btns[fid] = rb
@@ -593,7 +598,8 @@ func _load_avail_boxes() -> Dictionary:
 	if typeof(data) != TYPE_DICTIONARY:
 		return out
 	var box: Dictionary = data.get("box", {})
-	for fid in ["government", "m26", "directorio", "syndicate"]:
+	for f in GameController.game_def.factions:
+		var fid: String = f.id
 		var r = box.get("available_%s" % fid, null)
 		if r != null:
 			out[fid] = Vector2((r[0] + r[2]) * 0.5, (r[1] + r[3]) * 0.5)
@@ -611,8 +617,10 @@ func _animate_moves() -> void:
 	var nc: Dictionary = {}
 	for sid in _space_views.keys():
 		var st: SpaceState = s.space_state(sid)
-		for f in ["government", "m26", "directorio", "syndicate"]:
-			for t in ["troops", "police", "base", "guerrilla", "casino"]:
+		for fdef in GameController.game_def.factions:
+			var f: String = fdef.id
+			for ptdef in GameController.game_def.piece_types:
+				var t: String = ptdef.id
 				var n := st.count(f, t)
 				if n > 0:
 					nc["%s|%s|%s" % [sid, f, t]] = n
@@ -622,10 +630,12 @@ func _animate_moves() -> void:
 		return
 	# Raccoglie sorgenti e destinazioni per (fazione, tipo).
 	var ghosts: Array = []   # {f,t,from,to}
-	for f in ["government", "m26", "directorio", "syndicate"]:
+	for fdef in GameController.game_def.factions:
+		var f: String = fdef.id
 		var bc_norm: Vector2 = _avail_box.get(f, Vector2(0.5, 0.5))
 		var box_c := bc_norm * base
-		for t in ["troops", "police", "base", "guerrilla", "casino"]:
+		for ptdef in GameController.game_def.piece_types:
+			var t: String = ptdef.id
 			var sources: Array = []   # [sid, qty]
 			var dests: Array = []
 			for sid in _space_views.keys():
@@ -714,9 +724,9 @@ func _flash_changes() -> void:
 func _space_fp(s: GameState, sid: String) -> String:
 	var st: SpaceState = s.space_state(sid)
 	var out := "%s,%d,%d,%d" % [st.control, st.support, st.marker("terror"), st.marker("sabotage")]
-	for f in ["government", "m26", "directorio", "syndicate"]:
-		for t in ["troops", "police", "base", "guerrilla", "casino"]:
-			out += "," + str(st.count(f, t))
+	for fdef in GameController.game_def.factions:
+		for ptdef in GameController.game_def.piece_types:
+			out += "," + str(st.count(fdef.id, ptdef.id))
 	return out
 
 

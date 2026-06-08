@@ -759,6 +759,11 @@ func faction_name(fid: String) -> String:
 
 
 func faction_color(fid: String) -> Color:
+	# Colore dichiarato dal modulo del gioco attivo (factions.json/color hex).
+	var f := game_def.faction(fid) if game_def != null else null
+	if f != null and f.color != "":
+		return Color(f.color)
+	# Fallback per Cuba Libre (compatibilità storica).
 	match fid:
 		"government": return Color("3a6ea5")
 		"m26": return Color("c0392b")

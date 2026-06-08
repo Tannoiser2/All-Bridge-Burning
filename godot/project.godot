@@ -5,9 +5,9 @@ config_version=5
 
 [application]
 
-config/name="COIN Engine — All Bridges Burning"
+config/name="All Bridges Burning — Digital"
 config/description="Motore generico per la serie COIN di GMT. Modulo attivo: All Bridges Burning."
-config/game_id="cuba_libre"
+config/game_id="all_bridges_burning"
 run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus")
 
