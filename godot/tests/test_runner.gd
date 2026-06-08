@@ -12,6 +12,9 @@ func _initialize() -> void:
 	print("== COIN Engine - Test multi-gioco ==")
 	_test_abb_game_def()
 	_test_abb_factions()
+	_test_abb_piece_types()
+	_test_abb_adjacency()
+	_test_abb_setup()
 	_test_game_def()
 	_test_setup_forces()
 	_test_setup_tracks()
@@ -57,17 +60,25 @@ func _initialize() -> void:
 # Test modulo All Bridges Burning (scheletro — solo GameDef in questo PR)
 # ---------------------------------------------------------------------------
 
+func _new_abb() -> Array:
+	var mod := ABBModule.new()
+	var gd := mod.build_game_def()
+	var state := GameState.new(gd)
+	mod.apply_setup(state, "standard")
+	return [mod, gd, state]
+
+
 func _test_abb_game_def() -> void:
 	print("\n[ABB GameDef]")
 	var mod := ABBModule.new()
 	var gd := mod.build_game_def()
 	_eq("titolo", gd.title, "All Bridges Burning")
 	_eq("numero spazi", gd.spaces.size(), 13)
-	_eq("numero fazioni", gd.factions.size(), 4)
-	_check("Helsinki esiste", gd.space("helsinki") != null)
-	_check("Tampere esiste", gd.space("tampere") != null)
-	_check("Häme esiste", gd.space("hame") != null)
-	_check("Pohjanmaa esiste", gd.space("pohjanmaa") != null)
+	_eq("numero fazioni", gd.factions.size(), 5)
+	_eq("Helsinki Pop", gd.space("helsinki").pop, 2)
+	_eq("Tampere Pop", gd.space("tampere").pop, 1)
+	_eq("Oulun lääni Pop", gd.space("oulun_laani").pop, 0)
+	_eq("Uusimaa Pop", gd.space("uusimaa").pop, 2)
 
 
 func _test_abb_factions() -> void:
@@ -81,6 +92,62 @@ func _test_abb_factions() -> void:
 	_check("Senate presente", "senate" in ids)
 	_check("Moderates presente", "moderates" in ids)
 	_check("Germans presente", "germans" in ids)
+	_check("Russians presente", "russians" in ids)
+
+
+func _test_abb_piece_types() -> void:
+	print("\n[ABB Tipi pezzo]")
+	var mod := ABBModule.new()
+	var gd := mod.build_game_def()
+	var pts: Array = []
+	for pt in gd.piece_types:
+		pts.append(pt.id)
+	_eq("numero tipi pezzo", gd.piece_types.size(), 4)
+	_check("troops registrato", "troops" in pts)
+	_check("cell registrato", "cell" in pts)
+	_check("admin registrato", "admin" in pts)
+	_check("network registrato", "network" in pts)
+
+
+func _test_abb_adjacency() -> void:
+	print("\n[ABB Adiacenze]")
+	var mod := ABBModule.new()
+	var gd := mod.build_game_def()
+	# Adiacenze chiave da §1.2.3 (poligoni)
+	_check("Helsinki ↔ Uusimaa", "uusimaa" in gd.space("helsinki").adjacent)
+	_check("Tampere ↔ Häme", "hame" in gd.space("tampere").adjacent)
+	_check("Vaasa ↔ Pohjanmaa", "pohjanmaa" in gd.space("vaasa").adjacent)
+	_check("Viipuri ↔ Karelia", "karelia" in gd.space("viipuri").adjacent)
+	_check("Oulun lääni ↔ Pohjanmaa", "pohjanmaa" in gd.space("oulun_laani").adjacent)
+	# Le città non sono adiacenti fra loro
+	_check("Helsinki NON ↔ Turku", not ("turku" in gd.space("helsinki").adjacent))
+
+
+func _test_abb_setup() -> void:
+	print("\n[ABB Setup standard]")
+	var r := _new_abb()
+	var state: GameState = r[2]
+	# Risorse iniziali (rulebook p.32: tutte le fazioni 5, fuorché Powers)
+	_eq("Risorse Reds", state.get_resources("reds"), 5)
+	_eq("Risorse Senate", state.get_resources("senate"), 5)
+	_eq("Risorse Moderates", state.get_resources("moderates"), 5)
+	# Forze a Helsinki: 1 cell per ciascuna delle 3 fazioni + 1 Russian Troop
+	_eq("Helsinki Reds Cells", state.space_state("helsinki").count("reds", "cell"), 1)
+	_eq("Helsinki Senate Cells", state.space_state("helsinki").count("senate", "cell"), 1)
+	_eq("Helsinki Moderates Cells", state.space_state("helsinki").count("moderates", "cell"), 1)
+	_eq("Helsinki Russian Troops", state.space_state("helsinki").count("russians", "troops"), 1)
+	# Uusimaa: 2 Reds Cells e controllo Reds
+	_eq("Uusimaa Reds Cells", state.space_state("uusimaa").count("reds", "cell"), 2)
+	_eq("Uusimaa controllata da Reds", state.space_state("uusimaa").control, "reds")
+	# Vaasa: 1 Senate Cell, Active Support, controllo Senate
+	_eq("Vaasa Senate Cells", state.space_state("vaasa").count("senate", "cell"), 1)
+	_eq("Vaasa Active Support", state.space_state("vaasa").support, CoinEnums.Support.ACTIVE_SUPPORT)
+	_eq("Vaasa controllata da Senate", state.space_state("vaasa").control, "senate")
+	# Tracciati iniziali
+	_eq("Polarization iniziale", int(state.tracks.get("polarization", -1)), 3)
+	_eq("Vassalage Russian", int(state.tracks.get("vassalage_russian", -1)), 3)
+	# Tutte le fazioni Eligibili al setup
+	_eq("Reds Eligible", state.eligibility["reds"], CoinEnums.Eligibility.ELIGIBLE)
 
 
 # ---------------------------------------------------------------------------
