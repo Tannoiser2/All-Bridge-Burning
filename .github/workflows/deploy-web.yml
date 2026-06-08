@@ -5,9 +5,9 @@ name: Deploy Web (Godot)
 
 on:
   push:
-    branches:
-      - main
-      - claude/digital-game-version-sCnb6
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
