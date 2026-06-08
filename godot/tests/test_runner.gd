@@ -16,6 +16,7 @@ func _initialize() -> void:
 	_test_abb_adjacency()
 	_test_abb_setup()
 	_test_abb_operations()
+	_test_abb_specials()
 	_test_game_def()
 	_test_setup_forces()
 	_test_setup_tracks()
@@ -186,6 +187,34 @@ func _test_abb_operations() -> void:
 	var ter = ops.terror("reds", "uusimaa")
 	_check("Terror OK", ter.get("ok", false))
 	_eq("Terror marker +1", state.space_state("uusimaa").marker("terror"), terror_before + 1)
+
+
+func _test_abb_specials() -> void:
+	print("\n[ABB Att.Speciali]")
+	var r := _new_abb()
+	var mod: ABBModule = r[0]
+	var state: GameState = r[2]
+	var sa := ABBSpecialActivities.new(state, mod)
+
+	# Tax Reds in Uusimaa (Pop=2)
+	var res_before: int = state.get_resources("reds")
+	var tax_res = sa.tax("reds", "uusimaa")
+	_check("Tax Reds OK", tax_res.get("ok", false))
+	_eq("Reds +Pop(2) Risorse", state.get_resources("reds"), res_before + 2)
+
+	# Foreign relations: +1 vassalage tedesca
+	var vg_before: int = int(state.tracks.get("vassalage_german", 0))
+	var fr = sa.foreign_relations("germans", 1)
+	_check("Foreign Relations OK", fr.get("ok", false))
+	_eq("Vassalage tedesca +1", int(state.tracks.get("vassalage_german", 0)), vg_before + 1)
+
+	# Crackdown Senate in Vaasa
+	var cd = sa.crackdown("vaasa")
+	_check("Crackdown OK", cd.get("ok", false))
+
+	# Dialogue Moderates in Helsinki (al setup: 1 Moderates cell, Neutral support)
+	var dlg = sa.dialogue("helsinki")
+	_check("Dialogue OK", dlg.get("ok", false))
 
 
 # ---------------------------------------------------------------------------
