@@ -1,0 +1,4 @@
+{
+  "_comment": "TODO: spazi della mappa Finlandia 1917-18 (province, città, regioni). Estrarre dal modulo Vassal in 'Materiale ABB/All_Bridges_Burning_1.2.vmod.zip' con uno script analogo a sources/estrai_zone_vassal.py.",
+  "spaces": []
+}
