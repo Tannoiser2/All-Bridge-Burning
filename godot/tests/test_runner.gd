@@ -19,6 +19,7 @@ func _initialize() -> void:
 	_test_abb_specials()
 	_test_abb_crisis()
 	_test_abb_bot()
+	_test_abb_victory()
 	_test_game_def()
 	_test_setup_forces()
 	_test_setup_tracks()
@@ -244,6 +245,25 @@ func _test_abb_bot() -> void:
 	# Russians non ha operazioni → pass
 	var res2 = bot.take_turn("russians")
 	_eq("Bot Russians passa", res2.get("action", ""), "pass")
+
+
+func _test_abb_victory() -> void:
+	print("\n[ABB Vittoria]")
+	var r := _new_abb()
+	var mod: ABBModule = r[0]
+	var state: GameState = r[2]
+	var vs = mod.victory_status(state)
+	# Stato iniziale: nessuna fazione ha vinto
+	_check("Reds non ha vinto al setup", not vs["reds"]["won"])
+	_check("Senate non ha vinto al setup", not vs["senate"]["won"])
+	_check("Moderates non ha vinto al setup", not vs["moderates"]["won"])
+	# Soglie corrette
+	_eq("Soglia Reds", int(vs["reds"]["threshold"]), 11)
+	_eq("Soglia Senate", int(vs["senate"]["threshold"]), 3)
+	_eq("Soglia Moderates", int(vs["moderates"]["threshold"]), 14)
+	# Ordine di spareggio
+	var to = mod.tiebreak_order()
+	_eq("Tiebreak ordine: Reds primo", String(to[0]), "reds")
 
 
 # ---------------------------------------------------------------------------
