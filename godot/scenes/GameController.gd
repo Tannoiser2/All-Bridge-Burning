@@ -82,21 +82,31 @@ func set_role(fid: String, role: String) -> void:
 	roles[fid] = role
 	emit_signal("state_changed")
 
-## Costruisce il mazzo: 48 Eventi divisi in 4 pile, 1 Propaganda mescolata in ciascuna.
-## La Propaganda è rappresentata dal valore 0.
+## Costruisce il mazzo: Eventi divisi in 4 pile, 1 Propaganda mescolata in ciascuna.
+##
+## La Propaganda è rappresentata dal valore 0 nel deck (forma legacy Cuba Libre).
+## Per moduli che incorporano già le Propaganda come numeri (es. ABB con #22, 23,
+## 46, 47 marcate `is_propaganda=true`), filtriamo quelle dal pool eventi.
 func build_deck(short: bool = false) -> void:
+	# Pool eventi reali = tutte le carte del game_def NON marcate Propaganda.
 	var events_list: Array = []
-	for i in range(1, 49):
-		events_list.append(i)
+	for c in game_def.cards:
+		if not c.is_propaganda:
+			events_list.append(c.number)
+	# Se il modulo non dichiara carte (placeholder), torna alla logica Cuba 1..48.
+	if events_list.is_empty():
+		for i in range(1, 49):
+			events_list.append(i)
 	events_list.shuffle()
 	if short:
-		events_list = events_list.slice(0, 40)  # opzione gioco breve: 8 carte da parte
+		var keep := int(events_list.size() * 0.85)
+		events_list = events_list.slice(0, keep)
 	var piles: Array = [[], [], [], []]
 	for idx in range(events_list.size()):
 		piles[idx % 4].append(events_list[idx])
 	state.draw_deck.clear()
 	for p in piles:
-		p.append(0)  # carta Propaganda
+		p.append(0)  # carta Propaganda (valore sentinella)
 		p.shuffle()
 		for c in p:
 			state.draw_deck.append(int(c))
