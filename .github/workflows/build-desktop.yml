@@ -56,11 +56,11 @@ jobs:
       - name: Impacchetta i file
         run: |
           cd dist
-          chmod +x linux/CubaLibre.x86_64 || true
-          zip -j CubaLibre-Windows.zip windows/CubaLibre.exe
-          zip -j CubaLibre-Linux.zip linux/CubaLibre.x86_64
-          cp macos/CubaLibre.zip CubaLibre-macOS.zip
-          ls -lh CubaLibre-*.zip
+          chmod +x linux/AllBridgesBurning.x86_64 || true
+          zip -j AllBridgesBurning-Windows.zip windows/AllBridgesBurning.exe
+          zip -j AllBridgesBurning-Linux.zip linux/AllBridgesBurning.x86_64
+          cp macos/AllBridgesBurning.zip AllBridgesBurning-macOS.zip
+          ls -lh AllBridgesBurning-*.zip
 
       - name: Pubblica la Release "desktop-latest"
         uses: softprops/action-gh-release@v2
@@ -70,11 +70,11 @@ jobs:
           body: |
             Eseguibili generati automaticamente dall'ultimo aggiornamento del gioco.
 
-            - **Windows**: scarica `CubaLibre-Windows.zip`, estrai, doppio click su `CubaLibre.exe`.
-            - **Linux**: scarica `CubaLibre-Linux.zip`, estrai, rendi eseguibile e avvia `CubaLibre.x86_64`.
-            - **macOS**: scarica `CubaLibre-macOS.zip`, estrai. L'app non è firmata: al primo avvio fai
+            - **Windows**: scarica `AllBridgesBurning-Windows.zip`, estrai, doppio click su `AllBridgesBurning.exe`.
+            - **Linux**: scarica `AllBridgesBurning-Linux.zip`, estrai, rendi eseguibile e avvia `AllBridgesBurning.x86_64`.
+            - **macOS**: scarica `AllBridgesBurning-macOS.zip`, estrai. L'app non è firmata: al primo avvio fai
               **clic destro → Apri** (oppure Impostazioni → Privacy e sicurezza → Apri comunque).
           files: |
-            dist/CubaLibre-Windows.zip
-            dist/CubaLibre-Linux.zip
-            dist/CubaLibre-macOS.zip
+            dist/AllBridgesBurning-Windows.zip
+            dist/AllBridgesBurning-Linux.zip
+            dist/AllBridgesBurning-macOS.zip
