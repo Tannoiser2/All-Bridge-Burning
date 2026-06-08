@@ -1,4 +1,96 @@
 {
-  "_comment": "TODO: spazi della mappa Finlandia 1917-18 (province, città, regioni). Estrarre dal modulo Vassal in 'Materiale ABB/All_Bridges_Burning_1.2.vmod.zip' con uno script analogo a sources/estrai_zone_vassal.py.",
-  "spaces": []
+  "_note": "8 province + 5 città estratte dal Vassal. Popolazione e adiacenze sono da popolare dal regolamento (ABBLivingRules.pdf).",
+  "spaces": [
+    {
+      "id": "hame",
+      "name": "Häme",
+      "type": "province",
+      "pop": 0,
+      "adjacent": []
+    },
+    {
+      "id": "karelia",
+      "name": "Karelia",
+      "type": "province",
+      "pop": 0,
+      "adjacent": []
+    },
+    {
+      "id": "kuopion_laani",
+      "name": "Kuopion lääni",
+      "type": "province",
+      "pop": 0,
+      "adjacent": []
+    },
+    {
+      "id": "mikkelin_laani",
+      "name": "Mikkelin lääni",
+      "type": "province",
+      "pop": 0,
+      "adjacent": []
+    },
+    {
+      "id": "oulun_laani",
+      "name": "Oulun lääni",
+      "type": "province",
+      "pop": 0,
+      "adjacent": []
+    },
+    {
+      "id": "pohjanmaa",
+      "name": "Pohjanmaa",
+      "type": "province",
+      "pop": 0,
+      "adjacent": []
+    },
+    {
+      "id": "uusimaa",
+      "name": "Uusimaa",
+      "type": "province",
+      "pop": 0,
+      "adjacent": []
+    },
+    {
+      "id": "varsinais_suomi",
+      "name": "Varsinais-Suomi",
+      "type": "province",
+      "pop": 0,
+      "adjacent": []
+    },
+    {
+      "id": "helsinki",
+      "name": "Helsinki",
+      "type": "city",
+      "pop": 0,
+      "adjacent": []
+    },
+    {
+      "id": "tampere",
+      "name": "Tampere",
+      "type": "city",
+      "pop": 0,
+      "adjacent": []
+    },
+    {
+      "id": "turku",
+      "name": "Turku",
+      "type": "city",
+      "pop": 0,
+      "adjacent": []
+    },
+    {
+      "id": "vaasa",
+      "name": "Vaasa",
+      "type": "city",
+      "pop": 0,
+      "adjacent": []
+    },
+    {
+      "id": "viipuri",
+      "name": "Viipuri",
+      "type": "city",
+      "pop": 0,
+      "adjacent": []
+    }
+  ]
 }
