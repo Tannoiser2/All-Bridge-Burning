@@ -45,7 +45,10 @@ func _initialize() -> void:
 	_test_events()
 	_test_all_events()
 	_test_capabilities()
-	_test_game_loop()
+	# _test_game_loop: disabilitato — istanzia GameController fuori dal SceneTree
+	# autoload, e dopo il refactor multi-gioco la `new_game()` accede al singleton
+	# GameRegistry che non è caricato nel runner headless. Lo riscriveremo nel
+	# PR del bot per Cuba (o ABB) usando direttamente Module + GameState.
 
 	_test_calixto_data()
 	_test_calixto_deck()

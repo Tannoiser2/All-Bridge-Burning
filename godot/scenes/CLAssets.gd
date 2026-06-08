@@ -3,22 +3,28 @@ extends RefCounted
 
 ## Caricamento/cache delle texture (mappa, pezzi, marcatori) di Cuba Libre.
 
-## Path degli asset risolto a runtime tramite GameRegistry (autoload).
-## Fallback hardcoded a Cuba Libre se il GameRegistry non è ancora pronto.
+## Path degli asset risolto a runtime tramite l'autoload GameRegistry.
+## Fallback hardcoded a Cuba Libre se il GameRegistry non è raggiungibile (test).
 const FALLBACK_DIR := "res://games/cuba_libre/assets/"
 static var _cache: Dictionary = {}
 
 
 static func _assets_dir() -> String:
-	var reg := Engine.get_main_loop().root.get_node_or_null("GameRegistry") if Engine.get_main_loop() else null
+	# L'autoload "GameRegistry" è accessibile come singleton globale: lo cerchiamo
+	# via path nel SceneTree per evitare di hardcodare il nome in static context.
+	var loop = Engine.get_main_loop()
+	if loop == null or not (loop is SceneTree):
+		return FALLBACK_DIR
+	var tree: SceneTree = loop
+	var reg = tree.root.get_node_or_null("GameRegistry")
 	if reg != null and reg.has_method("assets_dir"):
-		return reg.assets_dir()
+		return String(reg.call("assets_dir"))
 	return FALLBACK_DIR
 
 
 static func tex(file: String) -> Texture2D:
 	if not _cache.has(file):
-		var path := _assets_dir() + file
+		var path: String = _assets_dir() + file
 		_cache[file] = load(path) if ResourceLoader.exists(path) else null
 	return _cache[file]
 
