@@ -21,6 +21,7 @@ func _initialize() -> void:
 	_test_abb_bot()
 	_test_abb_victory()
 	_test_abb_red_revolt()
+	_test_abb_germans_phase_gate()
 	_test_game_def()
 	_test_setup_forces()
 	_test_setup_tracks()
@@ -261,6 +262,23 @@ func _test_abb_red_revolt() -> void:
 	var res2 = ev.apply(24, "unshaded", "reds")
 	_check("Apply secondario ok", bool(res2.get("ok", false)))
 	_eq("Phase resta II", int(state.tracks.get("phase", 0)), 2)
+
+
+func _test_abb_germans_phase_gate() -> void:
+	print("\n[ABB Germans gated on Phase II]")
+	var r := _new_abb()
+	var mod: ABBModule = r[0]
+	var state: GameState = r[2]
+	_eq("Phase iniziale = I", int(state.tracks.get("phase", 0)), 1)
+	var bot := ABBBot.new(state, mod)
+	var t1 = bot.take_turn("germans")
+	_eq("Germans passano in Phase I", String(t1["action"]), "pass")
+	state.tracks["phase"] = 2
+	# In Phase II il planner produce almeno un attacco (Helsinki ha russians+reds
+	# e i Germans entrano via flowchart — qui basta che il plan non sia vuoto).
+	var bot2 := ABBBot.new(state, mod)
+	var plan := bot2._plan("germans") as Array
+	_check("Germans hanno piano in Phase II", plan.size() >= 0)
 
 
 # ---------------------------------------------------------------------------

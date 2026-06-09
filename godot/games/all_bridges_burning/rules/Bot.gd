@@ -90,6 +90,9 @@ func _plan_moderates() -> Array:
 
 
 func _plan_germans() -> Array:
+	# §3.4: i Germans agiscono SOLO in Phase II (dopo Red Revolt!).
+	if int(state.tracks.get("phase", 1)) < 2:
+		return []
 	var plan: Array = []
 	for sid in state.spaces.keys():
 		var st: SpaceState = state.space_state(sid)
