@@ -23,6 +23,15 @@ func apply(number: int, side: String, faction: String, _params: Dictionary = {})
 		return _red_revolt(side, faction)
 	var card: CardDef = state.game_def.card(number)
 	var title := card.title if card != null else "#%d" % number
+	# Capacità Insorgenti: il titolo della carta entra in active_capabilities
+	# come effetto duraturo. Per ABB sono #14 Cannons, #15/#17 Trains.
+	if card != null and card.is_capability:
+		if not state.active_capabilities.has(title):
+			state.active_capabilities.append(title)
+			log.append("Capacità attivata: %s." % title)
+		else:
+			log.append("Capacità %s già attiva." % title)
+		return {"ok": true, "log": log}
 	log.append("Evento %s [%s] non implementato (stub)." % [title, side])
 	return {"ok": true, "log": log}
 

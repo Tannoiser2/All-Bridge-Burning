@@ -389,6 +389,14 @@ func _abb_draw_sop(s: GameState) -> void:
 
 ## Capacità attive ABB: chip nel box "capabilities" (estratto dalla Zone Vassal).
 ## Default color = Reds: la maggior parte delle Capacità ABB sono Insorgenti.
+## Mappa Capability ABB → fazione che la controlla (per il colore del chip).
+## Cannons/Trains = Senate (rulebook §1.7).
+const ABB_CAP_FACTION := {
+	"Cannons": "senate",
+	"Trains":  "senate",
+}
+
+
 func _abb_draw_capabilities(s: GameState) -> void:
 	var r := _box_rect("capabilities")
 	if r.size == Vector2.ZERO or s.active_capabilities.is_empty():
@@ -401,8 +409,9 @@ func _abb_draw_capabilities(s: GameState) -> void:
 	var ch := minf(20.0, slot - 3.0)
 	var y := top
 	for title in s.active_capabilities:
+		var fac: String = ABB_CAP_FACTION.get(String(title), "reds")
 		var chip := Rect2(r.position.x + r.size.x * 0.04, y, r.size.x * 0.92, ch)
-		draw_rect(chip, GameController.faction_color("reds"), true)
+		draw_rect(chip, GameController.faction_color(fac), true)
 		draw_string(font, Vector2(chip.position.x + 8, y + ch * 0.76), String(title),
 			HORIZONTAL_ALIGNMENT_LEFT, chip.size.x - 14, clampi(int(ch * 0.74), 9, 16), Color.WHITE)
 		y += slot

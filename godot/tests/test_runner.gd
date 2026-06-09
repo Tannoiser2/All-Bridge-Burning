@@ -24,6 +24,7 @@ func _initialize() -> void:
 	_test_abb_germans_phase_gate()
 	_test_abb_crisis_powers_phase_ii()
 	_test_abb_germans_flowchart()
+	_test_abb_capabilities()
 	_test_game_def()
 	_test_setup_forces()
 	_test_setup_tracks()
@@ -300,6 +301,25 @@ func _test_abb_crisis_powers_phase_ii() -> void:
 	_check("Phase II: powers report presente", r2.has("powers"))
 	_eq("Russians sulla mappa = 0", state.count_on_map("russians", "troops"), 0)
 	_check("Log contiene Russians", String(r2["powers"]["log"]).contains("Russians"))
+
+
+func _test_abb_capabilities() -> void:
+	print("\n[ABB Capabilities]")
+	var r := _new_abb()
+	var mod: ABBModule = r[0]
+	var state: GameState = r[2]
+	# Carta #14 Cannons è una Capability.
+	var cannons: CardDef = state.game_def.card(14)
+	_check("#14 Cannons capability", cannons != null and cannons.is_capability)
+	# Apply: entra in active_capabilities.
+	var ev := ABBEvents.new(state, mod)
+	_eq("Capabilities vuote al setup", state.active_capabilities.size(), 0)
+	var res = ev.apply(14, "unshaded", "senate")
+	_check("Apply Cannons ok", bool(res.get("ok", false)))
+	_check("active_capabilities contiene Cannons", state.active_capabilities.has("Cannons"))
+	# Idempotente: una seconda applicazione non duplica.
+	ev.apply(14, "unshaded", "senate")
+	_eq("Niente duplicati", state.active_capabilities.size(), 1)
 
 
 func _test_abb_germans_phase_gate() -> void:
