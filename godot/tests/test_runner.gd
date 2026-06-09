@@ -284,6 +284,12 @@ func _test_abb_germans_flowchart() -> void:
 	_eq("Bot Germans azione: land", String(t1.get("action", "")), "land")
 	_check("Germans atterrati sulla mappa",
 		state.count_on_map("germans", "troops") >= 1)
+	# German Eligibility roll: deterministico con seed.
+	var bot2 := ABBBot.new(state, mod)
+	var roll := bot2.roll_german_eligibility(42)
+	_check("Roll German Eligibility nel range 1-6", roll >= 1 and roll <= 6)
+	_check("flag germans_act_first coerente",
+		int(state.tracks.get("germans_act_first", -1)) in [0, 1])
 
 
 func _test_abb_crisis_powers_phase_ii() -> void:
