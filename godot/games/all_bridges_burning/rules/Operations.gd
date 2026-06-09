@@ -12,7 +12,8 @@ func _init(_state: GameState, _module: RulesModule) -> void:
 	module = _module
 
 
-## Rally (§3.2.1): piazza 1 Cell/Admin/Network in uno spazio. Costo: 1 Risorsa.
+## Rally (§3.2.1): piazza 1 Cell/Admin/Network in uno spazio.
+## Costo: 1 Risorsa (Moderati: 3 Risorse se Polarization ≥ 6 — §3.3.1).
 func rally(fid: String, sid: String, mode: String = "cell") -> Dictionary:
 	if not state.spaces.has(sid):
 		return _err("spazio sconosciuto: %s" % sid)
@@ -21,13 +22,17 @@ func rally(fid: String, sid: String, mode: String = "cell") -> Dictionary:
 		return _err("fazione sconosciuta: %s" % fid)
 	if not _can_place(fid, mode):
 		return _err("forze esaurite (%s/%s)" % [fid, mode])
-	if state.get_resources(fid) < 1:
-		return _err("risorse insufficienti")
-	state.resources[fid] -= 1
+	# Costo Rally: 1 default; per Moderati 3 quando Polarization ≥ 6 (§3.3.1).
+	var cost := 1
+	if fid == "moderates" and int(state.tracks.get("polarization", 0)) >= 6:
+		cost = 3
+	if state.get_resources(fid) < cost:
+		return _err("risorse insufficienti (servono %d)" % cost)
+	state.resources[fid] -= cost
 	var pt_state: String = "underground" if mode == "cell" else ""
 	state.spaces[sid].add_piece(fid, mode, 1, pt_state)
 	state.recompute_control(sid)
-	return _ok()
+	return _ok({"cost": cost})
 
 
 ## March (§3.2.5): sposta pezzi verso spazio adiacente. Phase II only per
@@ -82,10 +87,13 @@ func attack(fid: String, sid: String, rng_seed: int = -1) -> Dictionary:
 			# Personality transfer (§4.3.1): se rimuovi l'ultima Cellula
 			# Moderati e c'è Personality, Moderati -3 Risorse alla Fazione attaccante.
 			var transferred := _maybe_transfer_personality(sid, enemy_fid, fid)
-			# Attack-to-Prison: ogni Cellula Senato/Reds rimossa → News marker
-			# (sostituto semplificato della meccanica Prisoners of War).
+			# Attack-to-Prison §3.2.4: Cellule Senato/Reds rimosse vanno in
+			# Prisoners of War; piazza un News marker sullo spazio.
 			if pair[0] == "cell" and enemy_fid in ["senate", "reds"]:
 				st.set_marker("news", st.marker("news") + 1)
+				var prisoners: Dictionary = state.tracks.get("prisoners", {"senate": 0, "reds": 0})
+				prisoners[enemy_fid] = int(prisoners.get(enemy_fid, 0)) + 1
+				state.tracks["prisoners"] = prisoners
 			return _ok({"roll": roll, "strength": strength, "hit": true, "removed": 1,
 				"target": enemy_fid, "piece": pair[0],
 				"personality_transferred": transferred})

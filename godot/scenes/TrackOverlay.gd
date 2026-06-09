@@ -91,6 +91,7 @@ func _draw() -> void:
 		_abb_draw_sop(s)
 		_abb_draw_capabilities(s)
 		_abb_draw_political_display(s)
+		_abb_draw_prisoners(s)
 	else:
 		_draw_eligibility(s)
 		_draw_capabilities(s)
@@ -487,3 +488,35 @@ func _abb_draw_political_display(s: GameState) -> void:
 		var labels: Array = ["Working", "Reform", "Social"]
 		draw_string(font, Vector2(bx + 4, by + badge_h - 4), labels[i],
 			HORIZONTAL_ALIGNMENT_LEFT, badge_w - 6, 10, Color.WHITE)
+
+
+## Prisoners of War §6.5: chip Senato + chip Rossi col conteggio.
+func _abb_draw_prisoners(s: GameState) -> void:
+	var r := _box_rect("prisoners_of_war")
+	if r.size == Vector2.ZERO:
+		return
+	var pris: Dictionary = s.tracks.get("prisoners", {"senate": 0, "reds": 0})
+	var sn := int(pris.get("senate", 0))
+	var rd := int(pris.get("reds", 0))
+	if sn == 0 and rd == 0:
+		return
+	var font := ThemeDB.fallback_font
+	var chip_w: float = (r.size.x - 16.0) * 0.5
+	var chip_h: float = r.size.y * 0.30
+	var y := r.position.y + r.size.y - chip_h - 4.0
+	# Senato chip
+	if sn > 0:
+		var rect := Rect2(r.position.x + 4.0, y, chip_w, chip_h)
+		var col := GameController.faction_color("senate"); col.a = 0.85
+		draw_rect(rect, col, true)
+		draw_rect(rect, Color.BLACK, false, 1.0)
+		draw_string(font, Vector2(rect.position.x + 4, y + chip_h - 4),
+			"Senate × %d" % sn, HORIZONTAL_ALIGNMENT_LEFT, chip_w - 8, 11, Color.WHITE)
+	# Rossi chip
+	if rd > 0:
+		var rect2 := Rect2(r.position.x + 8.0 + chip_w, y, chip_w, chip_h)
+		var col2 := GameController.faction_color("reds"); col2.a = 0.85
+		draw_rect(rect2, col2, true)
+		draw_rect(rect2, Color.BLACK, false, 1.0)
+		draw_string(font, Vector2(rect2.position.x + 4, y + chip_h - 4),
+			"Reds × %d" % rd, HORIZONTAL_ALIGNMENT_LEFT, chip_w - 8, 11, Color.WHITE)
