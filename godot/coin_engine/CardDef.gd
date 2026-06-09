@@ -17,7 +17,8 @@ var is_pivotal: bool = false        ## Carta Pivotal (in ABB: Red Revolt! trigge
 
 var unshaded: String = ""           ## testo non-ombreggiato dell'Evento
 var shaded: String = ""             ## testo ombreggiato dell'Evento
-var translation: String = ""        ## traduzione/sintesi in italiano dell'Evento
+var translation: String = ""        ## traduzione italiana sintetica (Chiaro:/Ombr.:)
+var history: String = ""            ## descrizione storica dal Playbook
 
 
 func _init(p_number: int = 0, p_title: String = "") -> void:
@@ -36,4 +37,5 @@ static func from_dict(d: Dictionary) -> CardDef:
 	c.unshaded = String(d.get("unshaded", ""))
 	c.shaded = String(d.get("shaded", ""))
 	c.translation = String(d.get("it", d.get("translation", "")))
+	c.history = String(d.get("history", ""))
 	return c

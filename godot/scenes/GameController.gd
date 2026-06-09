@@ -547,15 +547,17 @@ func current_card_text() -> String:
 	var tag := ""
 	if c.is_capability: tag = " · Capacità"
 	elif c.is_momentum: tag = " · Momentum"
+	# Per ABB usiamo la traduzione italiana come testo primario (stile Cuba Libre);
+	# il testo OCR originale resta disponibile ma fuori dal pannello principale.
 	var tr := ""
 	if c.translation != "":
-		tr = "[font_size=11][i]%s[/i][/font_size]\n" % c.translation
-	# Testo unshaded/shaded dell'Evento (popolato da OCR per ABB).
+		tr = "[font_size=11]%s[/font_size]\n" % c.translation
 	var fx := ""
-	if c.unshaded != "":
-		fx += "[font_size=11][b]Unshaded:[/b] %s[/font_size]\n" % c.unshaded
-	if c.shaded != "":
-		fx += "[font_size=11][b]Shaded:[/b] %s[/font_size]\n" % c.shaded
+	if GameRegistry.game_id != "all_bridges_burning":
+		if c.unshaded != "":
+			fx += "[font_size=11][b]Unshaded:[/b] %s[/font_size]\n" % c.unshaded
+		if c.shaded != "":
+			fx += "[font_size=11][b]Shaded:[/b] %s[/font_size]\n" % c.shaded
 	# L'ordine delle Fazioni è già stampato sulla carta: non lo ripetiamo qui.
 	var phase_tag := ""
 	if GameRegistry.game_id == "all_bridges_burning":
