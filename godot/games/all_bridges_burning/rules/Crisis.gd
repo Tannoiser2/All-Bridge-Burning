@@ -36,9 +36,9 @@ func resolve() -> Dictionary:
 
 
 ## §6.5.4 Old News: rimuove Terror, Sabotage, News markers dalla mappa
-## (Personality e Prepared rimangono).
+## (Personality e Prepared rimangono). Pulisce anche i Sabotage su bordo.
 func _reset_phase() -> Dictionary:
-	var removed: Dictionary = {"terror": 0, "sabotage": 0, "news": 0}
+	var removed: Dictionary = {"terror": 0, "sabotage": 0, "news": 0, "borders": 0}
 	for sid in state.spaces.keys():
 		var st: SpaceState = state.space_state(sid)
 		for mk in ["terror", "sabotage", "news"]:
@@ -46,6 +46,10 @@ func _reset_phase() -> Dictionary:
 			if n > 0:
 				removed[mk] = int(removed[mk]) + n
 				st.set_marker(mk, 0)
+	# Pulisci anche i bordi sabotati.
+	var borders: Array = state.tracks.get("sabotaged_borders", [])
+	removed["borders"] = borders.size()
+	state.tracks["sabotaged_borders"] = []
 	return removed
 
 
