@@ -37,11 +37,14 @@ func rally(fid: String, sid: String, mode: String = "cell") -> Dictionary:
 
 ## March (§3.2.5): sposta pezzi verso spazio adiacente. Phase II only per
 ## Reds/Senate; sempre disponibile per Germans/Russians (via flowchart §3.4).
+## Sabotage su bordo (§3.2.5): blocca March attraverso quel bordo.
 func march(fid: String, from_sid: String, to_sid: String, piece_type: String = "cell", count: int = 1) -> Dictionary:
 	if fid in ["reds", "senate", "moderates"] and int(state.tracks.get("phase", 1)) < 2:
 		return _err("March disponibile solo in Phase II (§3.2.5)")
 	if not state.spaces.has(from_sid) or not state.spaces.has(to_sid):
 		return _err("spazio non valido")
+	if _border_sabotaged(from_sid, to_sid):
+		return _err("bordo %s↔%s sabotato (§3.2.5)" % [from_sid, to_sid])
 	var sd: SpaceDef = state.game_def.space(from_sid)
 	if not (to_sid in sd.adjacent):
 		return _err("spazi non adiacenti")
@@ -151,6 +154,35 @@ func activism(fid: String, sid: String) -> Dictionary:
 func _polarize(delta: int) -> void:
 	var cur: int = int(state.tracks.get("polarization", 0))
 	state.tracks["polarization"] = clampi(cur + delta, 0, 10)
+
+
+## Sabotage borders: chiave canonica "a↔b" (ordinata alfabeticamente).
+static func _border_key(a: String, b: String) -> String:
+	return "%s↔%s" % [a, b] if a < b else "%s↔%s" % [b, a]
+
+
+func _border_sabotaged(a: String, b: String) -> bool:
+	var key := _border_key(a, b)
+	var arr: Array = state.tracks.get("sabotaged_borders", [])
+	return key in arr
+
+
+## Piazza Sabotage su un bordo (§4.2.3 Prepare Phase II only).
+## Richiede una Cellula amica in uno dei due spazi adiacenti.
+func sabotage_border(fid: String, sid_a: String, sid_b: String) -> Dictionary:
+	if int(state.tracks.get("phase", 1)) < 2:
+		return _err("Sabotage solo in Phase II (§4.2.3)")
+	if not (sid_b in state.game_def.space(sid_a).adjacent):
+		return _err("spazi non adiacenti")
+	if state.space_state(sid_a).count(fid, "cell") <= 0 \
+		and state.space_state(sid_b).count(fid, "cell") <= 0:
+		return _err("nessuna Cellula amica adiacente")
+	var key := _border_key(sid_a, sid_b)
+	var arr: Array = state.tracks.get("sabotaged_borders", [])
+	if not (key in arr):
+		arr.append(key)
+		state.tracks["sabotaged_borders"] = arr
+	return _ok({"border": key})
 
 
 ## Politics (§3.3.4, Moderati only): piazza 1 cubo nel Political Display
