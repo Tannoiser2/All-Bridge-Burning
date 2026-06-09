@@ -265,7 +265,145 @@ func _apply_basic_effect(number: int, side: String, faction: String, log: Array[
 				log.append("Terror rimosso a %s, Polarization -1." % sid)
 				return true
 		return true
+	# #6: A power shift — place 1 Available enemy Cell in a Town + shift space
+	if number == 6:
+		# Cerca prima Town valida per piazzare Cellula nemica
+		for sid in state.spaces.keys():
+			var sd6: SpaceDef = state.game_def.space(sid)
+			if sd6.type != CoinEnums.SpaceType.CITY:
+				continue
+			# Enemy faction = la più "forte" non-faction
+			var enemy_id := "reds" if faction == "senate" else "senate"
+			if state.place_from_available(enemy_id, "cell", String(sid), 1, "underground") > 0:
+				log.append("Cellula %s piazzata a %s (manuale: shift spazio)." % [enemy_id, sid])
+				return true
+		return true
+	# #8 unshaded: Terror gratis + Moderates +3 / shaded: violence erupts
+	if number == 8:
+		state.resources["moderates"] = mini(30, int(state.get_resources("moderates")) + 3)
+		log.append("Moderati Risorse +3 (Terror manuale).")
+		return true
+	# #13 unshaded: 2 Cellule amiche in spazio senza Supporto Attivo nemico
+	if number == 13 and side == "unshaded":
+		var placed13 := 0
+		for sid in state.spaces.keys():
+			if placed13 >= 2:
+				break
+			var st13: SpaceState = state.space_state(sid)
+			if abs(st13.support) >= 2:
+				continue
+			if state.place_from_available(faction, "cell", String(sid), 1, "underground") > 0:
+				placed13 += 1
+		log.append("Piazzate %d Cellule %s." % [placed13, faction])
+		return true
+	# #13 shaded: Conduct Politics Phase + cubo PD per Moderati
+	if number == 13 and side == "shaded":
+		var pd13 := ABBPoliticalDisplay.new(state)
+		pd13.place_cubes("senate", 1)
+		pd13.resolve_politics(-1)
+		log.append("Politics Phase eseguita + 1 cubo Senato piazzato.")
+		return true
+	# #20 shaded: Flip any one Active Cell
+	if number == 20 and side == "shaded":
+		for sid in state.spaces.keys():
+			var st20: SpaceState = state.space_state(sid)
+			for f in state.game_def.factions:
+				if st20.count(f.id, "cell", "active") > 0:
+					st20.remove_piece(f.id, "cell", 1, "active")
+					st20.add_piece(f.id, "cell", 1, "underground")
+					log.append("Cellula %s capovolta a %s." % [f.id, sid])
+					return true
+		return true
+	# #26 shaded: Moderati/Reds Rally free
+	if number == 26 and side == "shaded":
+		var target_fac := "moderates" if state.get_resources("moderates") > state.get_resources("reds") else "reds"
+		for sid in state.spaces.keys():
+			if state.place_from_available(target_fac, "cell", String(sid), 1, "underground") > 0:
+				log.append("Rally gratis: %s Cellula a %s." % [target_fac, sid])
+				return true
+		return true
+	# #29 unshaded: Senate Rally + March (logged - manuale)
+	if number == 29 and side == "unshaded":
+		log.append("Senate Rally + March gratis (manuale dall'UI).")
+		return true
+	# #31 unshaded: German forces arrive — Senate Coordinate
+	if number == 31 and side == "unshaded":
+		if int(state.tracks.get("phase", 1)) >= 2:
+			state.tracks["coordinate_marker"] = 1
+			log.append("Coordinate marker attivato (Senato decide Germans).")
+		else:
+			log.append("Coordinate solo in Phase II.")
+		return true
+	# #33 unshaded: Senate Coordinate / Senate free Rally Helsinki
+	if number == 33 and side == "unshaded":
+		if state.place_from_available("senate", "cell", "helsinki", 1, "underground") > 0:
+			log.append("Senato Rally gratis a Helsinki.")
+		return true
+	# #34 unshaded: Remove Personality (where present)
+	if number == 34 and side == "unshaded":
+		for sid in state.spaces.keys():
+			var st34: SpaceState = state.space_state(sid)
+			if st34.marker("personality") > 0:
+				st34.set_marker("personality", 0)
+				state.resources["moderates"] = maxi(0, int(state.get_resources("moderates")) - 3)
+				log.append("Personality rimossa a %s, Moderati -3." % sid)
+				return true
+		return true
+	# #35 unshaded: Senate Rally in spazi con Support
+	if number == 35 and side == "unshaded":
+		var placed35 := 0
+		for sid in state.spaces.keys():
+			if placed35 >= 2:
+				break
+			var st35: SpaceState = state.space_state(sid)
+			if st35.support > 0:
+				if state.place_from_available("senate", "cell", String(sid), 1, "underground") > 0:
+					placed35 += 1
+		log.append("Senate Rally gratis in %d spazi con Support." % placed35)
+		return true
+	# #35 shaded: Moderati Rally
+	if number == 35 and side == "shaded":
+		var placed35s := 0
+		for sid in state.spaces.keys():
+			if placed35s >= 2:
+				break
+			if state.place_from_available("moderates", "cell", String(sid), 1, "underground") > 0:
+				placed35s += 1
+		log.append("Moderati Rally gratis in %d spazi." % placed35s)
+		return true
+	# #37: Sposta uno spazio con pezzo Senato verso Active Sup/Opp (manuale)
+	if number == 37:
+		for sid in state.spaces.keys():
+			var st37: SpaceState = state.space_state(sid)
+			if st37.count("senate", "cell") > 0:
+				_shift_support(st37, 1)
+				log.append("%s spostato verso Active Support." % sid)
+				return true
+		return true
+	# #38 unshaded: Remove 2 Moderati Cells
+	if number == 38 and side == "unshaded":
+		var removed38 := 0
+		for sid in state.spaces.keys():
+			if removed38 >= 2:
+				break
+			var st38: SpaceState = state.space_state(sid)
+			while st38.count("moderates", "cell") > 0 and removed38 < 2:
+				var st_kind := "underground" if st38.count("moderates","cell","underground")>0 else "active"
+				st38.remove_piece("moderates", "cell", 1, st_kind)
+				removed38 += 1
+		log.append("Rimosse %d Cellule Moderati." % removed38)
+		return true
+	# #40, #41, #42: Battle free Attack — logged manuale
+	if number in [40, 41, 42]:
+		var locs := {"40": "Tampere/Häme", "41": "Lahti", "42": "Viipuri"}
+		log.append("Senate/Reds Attack gratis a %s (manuale dall'UI)." % locs[str(number)])
+		return true
 	return false
+
+
+## Helper: shift Sup/Opp di uno spazio.
+func _shift_support(st: SpaceState, delta: int) -> void:
+	st.support = clampi(st.support + delta, -2, 2)
 
 
 func _adjust_vassal(power: String, delta: int, log: Array[String]) -> void:
