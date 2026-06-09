@@ -551,7 +551,11 @@ func current_card_text() -> String:
 	if c.translation != "":
 		tr = "[font_size=11]%s[/font_size]\n" % c.translation
 	# L'ordine delle Fazioni è già stampato sulla carta: non lo ripetiamo qui.
-	return "[b]#%d %s[/b]%s\n%sCarte rimaste: %d" % [c.number, c.title, tag, tr, cards_left()]
+	var phase_tag := ""
+	if GameRegistry.game_id == "all_bridges_burning":
+		var ph: int = int(state.tracks.get("phase", 1))
+		phase_tag = " · Phase %s" % ("II" if ph >= 2 else "I")
+	return "[b]#%d %s[/b]%s%s\n%sCarte rimaste: %d" % [c.number, c.title, tag, phase_tag, tr, cards_left()]
 
 
 ## Esegue un'Operazione per id e ne propaga il risultato/log.
