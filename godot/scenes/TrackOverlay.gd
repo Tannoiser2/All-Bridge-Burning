@@ -43,18 +43,10 @@ func _draw() -> void:
 	var s: GameState = GameController.state
 	if s == null or _track.is_empty():
 		return
-	var mod: CubaLibreModule = GameController.module
-	var chips := [
-		["res_government", s.get_resources("government"), CLAssets.res_token("government")],
-		["res_m26", s.get_resources("m26"), CLAssets.res_token("m26")],
-		["res_directorio", s.get_resources("directorio"), CLAssets.res_token("directorio")],
-		["res_syndicate", s.get_resources("syndicate"), CLAssets.res_token("syndicate")],
-		["aid", int(s.tracks.get("aid", 0)), CLAssets.aid_marker()],
-		["vic_support", s.total_support(), CLAssets.vic_support()],
-		["vic_opp", mod.opposition_plus_bases(s), CLAssets.vic_opp_bases()],
-		["vic_dr", mod.dr_pop_plus_bases(s), CLAssets.vic_dr()],
-		["vic_casinos", mod.open_casinos(s), CLAssets.vic_casinos()],
-	]
+	# I "chips" da disegnare sono game-specifici: per Cuba Libre arrivano dal
+	# CubaLibreModule (aid, US Alliance, vittorie), per ABB dai tracciati ABB
+	# (polarization, vassalage, town pop, …). Selezioniamo in base al game_id.
+	var chips: Array = _cuba_chips(s) if GameRegistry.game_id == "cuba_libre" else _abb_chips(s)
 	var counts := {}
 	for ch in chips:
 		var key: String = ch[0]
@@ -73,13 +65,51 @@ func _draw() -> void:
 		_blit(ch[2], c)
 
 	# Alleanza USA nella casella attiva
-	var ai := int(s.tracks.get("us_alliance", 0))
-	var abox: String = ["us_alliance_firm", "us_alliance_reluctant", "us_alliance_embargoed"][ai]
-	_blit(CLAssets.alliance_marker(), _box_rect(abox).get_center())
+	if GameRegistry.game_id == "cuba_libre":
+		var ai := int(s.tracks.get("us_alliance", 0))
+		var abox: String = ["us_alliance_firm", "us_alliance_reluctant", "us_alliance_embargoed"][ai]
+		_blit(CLAssets.alliance_marker(), _box_rect(abox).get_center())
 
 	_draw_available(s)
 	_draw_eligibility(s)
 	_draw_capabilities(s)
+
+
+## Chip per Cuba Libre (logica esistente, ora isolata da game_id check).
+func _cuba_chips(s: GameState) -> Array:
+	var mod = GameController.module
+	return [
+		["res_government", s.get_resources("government"), CLAssets.res_token("government")],
+		["res_m26", s.get_resources("m26"), CLAssets.res_token("m26")],
+		["res_directorio", s.get_resources("directorio"), CLAssets.res_token("directorio")],
+		["res_syndicate", s.get_resources("syndicate"), CLAssets.res_token("syndicate")],
+		["aid", int(s.tracks.get("aid", 0)), CLAssets.aid_marker()],
+		["vic_support", s.total_support(), CLAssets.vic_support()],
+		["vic_opp", mod.opposition_plus_bases(s) if mod else 0, CLAssets.vic_opp_bases()],
+		["vic_dr", mod.dr_pop_plus_bases(s) if mod else 0, CLAssets.vic_dr()],
+		["vic_casinos", mod.open_casinos(s) if mod else 0, CLAssets.vic_casinos()],
+	]
+
+
+## Chip per All Bridges Burning (rulebook §1.5-§1.12, §7.0).
+## I marker stanno tutti sull'edge track (0..30) in alto, eccetto Polarization
+## che ha il suo proprio tracciato (0..10).
+func _abb_chips(s: GameState) -> Array:
+	var out: Array = []
+	for fid in ["reds", "senate", "moderates", "germans"]:
+		var tex: Texture2D = CLAssets.res_token(fid)
+		out.append(["res_%s" % fid, s.get_resources(fid), tex])
+	# Marker VP / tracciati ABB: useremo asset placeholder (token Reds) per ora
+	# se non ci sono asset specifici. Lo step successivo creerà icone dedicate.
+	var any_tok: Texture2D = CLAssets.res_token("reds")
+	out.append(["abb_senate_town_pop", int(s.tracks.get("senate_town_pop", 0)), any_tok])
+	out.append(["abb_oppose_admins", int(s.tracks.get("oppose_admins", 0)), any_tok])
+	out.append(["abb_cells_on_map", int(s.tracks.get("cells_on_map", 0)), any_tok])
+	out.append(["abb_issues_networks", int(s.tracks.get("issues_networks", 0)), any_tok])
+	out.append(["abb_vassal_german", int(s.tracks.get("vassalage_german", 0)), any_tok])
+	out.append(["abb_vassal_russian", int(s.tracks.get("vassalage_russian", 0)), any_tok])
+	out.append(["abb_polarization", int(s.tracks.get("polarization", 0)), any_tok])
+	return out
 
 
 ## Posizione (schermo) interpolata tra le celle per un valore frazionario lungo il tracciato.
