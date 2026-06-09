@@ -466,7 +466,10 @@ func _sop_slot_for(s: GameState, seq, fid: String, slots: Dictionary) -> Vector2
 		var k := String(seq.action_box[fid])
 		if k == "pass":
 			var pass_idx := _passers_index(seq, fid)
-			var pass_slot := ["pass_a", "pass_b", "pass_c"][min(pass_idx, 2)]
+			# Tipo esplicito: indicizzare un array literal ritorna Variant e il
+			# parser stretto (web export) rifiuta l'inferenza con := → script
+			# non caricato → TrackOverlay null.
+			var pass_slot: String = ["pass_a", "pass_b", "pass_c"][mini(pass_idx, 2)]
 			return _slot_pos(slots, pass_slot)
 		# Agito: scegli slot in base all'azione + ordine
 		var actor_idx := _actor_index(seq, fid)
