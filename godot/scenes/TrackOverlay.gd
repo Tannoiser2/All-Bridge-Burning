@@ -329,6 +329,41 @@ func _abb_draw_available(s: GameState, tok: float) -> void:
 				var sub_rect := Rect2(r.position.x, y, r.size.x, sub_h)
 				_fill_pieces(sub_rect, n_e, tex, tok)
 			y += sub_h
+		# Moderati: aggiungi marker News (max 2) + Personality nei loro slot riservati,
+		# se NON sono già sulla mappa.
+		if fid == "moderates":
+			_abb_draw_moderates_extra(s, r, tok)
+
+
+## Disegna News (×2) + Personality nei placeholder del box Available Forces Moderati.
+func _abb_draw_moderates_extra(s: GameState, box: Rect2, tok: float) -> void:
+	# Conta quanti marker News/Personality sono sulla mappa.
+	var news_on_map := 0
+	var pers_on_map := false
+	for sid in s.spaces.keys():
+		var st: SpaceState = s.space_state(sid)
+		news_on_map += st.marker("news")
+		if st.marker("personality") > 0:
+			pers_on_map = true
+	# Disponibili: 2 News - su mappa, 1 Personality - su mappa.
+	var news_avail: int = maxi(0, 2 - news_on_map)
+	var pers_avail: int = 0 if pers_on_map else 1
+	# Slot in alto del box (sotto la dicitura stampata "News News Personality").
+	var slot_y := box.position.y + box.size.y * 0.18
+	var slot_size: float = tok * 1.15
+	var slot_w: float = (box.size.x - 24.0) / 3.0
+	var nt := CLAssets.news()
+	var pt := CLAssets.personality()
+	# 2 slot News a sinistra
+	for i in range(news_avail):
+		var x := box.position.x + 12.0 + i * slot_w + slot_w * 0.5 - slot_size * 0.5
+		if nt != null:
+			draw_texture_rect(nt, Rect2(Vector2(x, slot_y), Vector2(slot_size, slot_size)), false)
+	# 1 slot Personality a destra
+	if pers_avail > 0:
+		var x_p := box.position.x + 12.0 + 2 * slot_w + slot_w * 0.5 - slot_size * 0.5
+		if pt != null:
+			draw_texture_rect(pt, Rect2(Vector2(x_p, slot_y), Vector2(slot_size, slot_size)), false)
 
 
 ## Disegna fino a `n` copie di `tex` posizionate sui primi `n` slot Vassal.

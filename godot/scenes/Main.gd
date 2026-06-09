@@ -400,9 +400,10 @@ func _build_action_bar() -> VBoxContainer:
 		turn_box.add_child(_btn_coordinate)
 	row1.add_child(_labeled_group("Turno", turn_box))
 
-	# Gruppo Ruoli (Giocatore/Bot) in griglia 2x2, subito dopo il Turno.
+	# Gruppo Ruoli (Giocatore/Bot). ABB: Reds/Senate/Moderates su una sola riga;
+	# Cuba: 2 colonne classiche (4 fazioni → 2x2).
 	var roles_grid := GridContainer.new()
-	roles_grid.columns = 2
+	roles_grid.columns = 3 if GameRegistry.game_id == "all_bridges_burning" else 2
 	roles_grid.add_theme_constant_override("h_separation", 3)
 	roles_grid.add_theme_constant_override("v_separation", 2)
 	for f in GameController.game_def.factions:
