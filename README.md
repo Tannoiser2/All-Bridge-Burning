@@ -22,7 +22,19 @@ Repressione / Coordinamento / Negoziato / Dialogo / Relazioni Estere /
 Tassazione) sono cliccabili: aprono un flusso di selezione spazio e chiamano la
 libreria di regole `ABBOperations` / `ABBSpecialActivities`. Il Bot priority
 planner sceglie l'azione per le fazioni non-giocatore. Quando il mazzo pesca
-una carta Propaganda, parte il Crisis Round (Politics + Earnings).
+una carta Propaganda, parte il Crisis Round (Politics + Earnings, in Phase II
+anche l'aggiustamento delle Truppe di Germany/Russia in base alla Vassalage,
+§6.5.3). La carta Pivotal **Red Revolt!** (#24) attiva la Phase II: i Germans
+cominciano ad agire (per ora con un bot semplice, non ancora il flowchart
+completo), e l'UI lo segnala con il tag *Phase II* sulla carta e con un badge
+nel riquadro Sequence of Play. In SoP, i quattro cilindri (Reds/Senate/
+Moderates/Germans) si spostano fra Pass / Eligible / Acted / Ineligible in
+base allo stato attuale di idoneità + azione svolta sulla carta corrente.
+
+Le province sono tinte col colore della fazione controllante usando le mask
+PNG estratte direttamente dal modulo Vassal (pixel-perfect rispetto ai bordi
+stampati). I pezzi disponibili nelle Available Forces compaiono nei riquadri
+esatti del Vassal, e le Cell occupano i loro slot dedicati.
 
 **286 test passati, 0 falliti** in headless (Cuba Libre + ABB combinati).
 
@@ -39,7 +51,8 @@ una carta Propaganda, parte il Crisis Round (Politics + Earnings).
 | Operazioni | ✅ Rally / March / Attack / Terror — logica core |
 | Attività Speciali | ✅ Agitate, Ambush, Subvert, Crackdown, Coordinate, Dialogue, Foreign Relations, Tax, Negotiate |
 | UI: click → ABBOperations / ABBSpecialActivities | ✅ dispatcher con highlight degli spazi candidati |
-| Crisis Round (§6.0) | ✅ Politics + Earnings (Phase II adjustment TODO) |
+| Crisis Round (§6.0) | ✅ Politics + Earnings + §6.5.3 Powers adjustment in Phase II |
+| Province highlighting | ✅ Mask Vassal pixel-perfect per il tint del Controllo |
 | Bot non-giocatore | ✅ priority planner per fazione (PAC2 completo TODO) |
 | Vittoria (§7.2 / §7.3) | ✅ margine per fazione + tiebreak order |
 | TrackOverlay sulla mappa | ✅ Resources, Polarization (tracciato dedicato), Vassalage, Town Pop, Cells on Map, Issues+Networks, Oppose+Admins |
