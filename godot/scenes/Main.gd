@@ -163,7 +163,7 @@ var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Specia
 
 ## Numero di build incrementato a ogni fix UI. Mostrato in basso a destra così
 ## puoi dirmi ESATTAMENTE quale versione stai vedendo (cache-busting diagnostico).
-const BUILD_VERSION := "build 98"
+const BUILD_VERSION := "build 99 — fix TrackOverlay"
 
 
 ## Etichetta diagnostica in ALTO A SINISTRA (niente la copre). Mostra il numero
