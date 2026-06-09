@@ -10,6 +10,7 @@ const MK := 26.0       # dimensione segnalino su tracciato
 const STACK := 20.0    # scostamento per segnalini sulla stessa cella
 
 var _track: Dictionary = {}    # "0".."49" -> [x,y] normalizzati
+var _polarization_track: Dictionary = {}  # ABB: slot 0..10 del tracciato Polarization
 var _box: Dictionary = {}      # nome -> [x0,y0,x1,y1] normalizzati
 var _circles: Dictionary = {}  # fazione -> [[x,y],...] centri dei cerchietti basi/casinò (Vassal)
 var _loose: Dictionary = {}    # fazione -> tipo -> [x0,y0,x1,y1] area dei pezzi sciolti
@@ -23,6 +24,7 @@ func _ready() -> void:
 		var d = JSON.parse_string(f.get_as_text())
 		if d is Dictionary:
 			_track = d.get("track", {})
+			_polarization_track = d.get("polarization_track", {})
 			_box = d.get("box", {})
 			_circles = d.get("avail_circles", {})
 			_loose = d.get("avail_loose", {})
@@ -31,6 +33,13 @@ func _ready() -> void:
 func _cell(value: int) -> Vector2:
 	var v := clampi(value, 0, 49)
 	var p: Array = _track.get(str(v), [0.5, 0.5])
+	return Vector2(p[0] * size.x, p[1] * size.y)
+
+
+## Posizione sullo speciale Polarization Track (0..10) per ABB.
+func _polarization_cell(value: int) -> Vector2:
+	var v := clampi(value, 0, 10)
+	var p: Array = _polarization_track.get(str(v), [0.5, 0.5])
 	return Vector2(p[0] * size.x, p[1] * size.y)
 
 
@@ -55,12 +64,16 @@ func _draw() -> void:
 			_disp[key] = float(v)
 		var idx := int(counts.get(v, 0))
 		counts[v] = idx + 1
-		# Posizione animata (scivola lungo le celle); impila se stesso valore.
-		var c := _interp_cell(float(_disp[key]))
-		if v <= 30:
-			c.y += idx * STACK
+		# Polarization su tracciato dedicato (0..10) per ABB.
+		var c: Vector2
+		if key == "abb_polarization" and not _polarization_track.is_empty():
+			c = _polarization_cell(int(_disp[key]))
 		else:
-			c.x -= idx * STACK
+			c = _interp_cell(float(_disp[key]))
+			if v <= 30:
+				c.y += idx * STACK
+			else:
+				c.x -= idx * STACK
 		_blit(ch[2], c)
 
 	# Alleanza USA nella casella attiva (solo Cuba Libre).
