@@ -163,20 +163,43 @@ var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Specia
 
 ## Numero di build incrementato a ogni fix UI. Mostrato in basso a destra così
 ## puoi dirmi ESATTAMENTE quale versione stai vedendo (cache-busting diagnostico).
-const BUILD_VERSION := "build 95 — fix texture null cache"
+const BUILD_VERSION := "build 96"
 
 
+## Etichetta diagnostica in ALTO A SINISTRA (niente la copre). Mostra il numero
+## di build + un auto-test delle texture: per ogni asset chiave indica se
+## CLAssets riesce a caricarlo a runtime (OK) o no (NULL). Così la causa del
+## "pedine sparite" è leggibile direttamente sullo schermo.
 func _add_version_label() -> void:
 	_version_label = Label.new()
 	_version_label.text = BUILD_VERSION
-	_version_label.add_theme_font_size_override("font_size", 12)
-	_version_label.add_theme_color_override("font_color", Color(1, 1, 0, 0.9))
+	_version_label.add_theme_font_size_override("font_size", 16)
+	_version_label.add_theme_color_override("font_color", Color(1, 1, 0, 1))
 	_version_label.add_theme_color_override("font_outline_color", Color.BLACK)
-	_version_label.add_theme_constant_override("outline_size", 4)
-	_version_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	_version_label.position = Vector2(-220, -22)
+	_version_label.add_theme_constant_override("outline_size", 5)
+	_version_label.position = Vector2(8, 4)
 	_version_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_version_label.z_index = 4096
 	add_child(_version_label)
+
+
+func _update_version_label() -> void:
+	if _version_label != null:
+		_version_label.text = "%s  [%s]" % [BUILD_VERSION, _texture_selftest()]
+
+
+func _texture_selftest() -> String:
+	# Prova a caricare gli asset chiave; riporta OK/NULL per ciascuno.
+	var checks := {
+		"map": CLAssets.map(),
+		"token_reds": CLAssets.res_token("reds"),
+		"cell": CLAssets.piece("reds", "cell", "underground"),
+		"vp": CLAssets.abb_senate_town_pop(),
+	}
+	var parts: Array = []
+	for k in checks:
+		parts.append("%s:%s" % [k, "OK" if checks[k] != null else "NULL"])
+	return " | ".join(parts)
 
 
 func _ready() -> void:
@@ -192,7 +215,9 @@ func _ready() -> void:
 	GameController.bot_decision.connect(_on_bot_decision)
 	get_viewport().size_changed.connect(_layout_board)
 	_rebuild_action_buttons(_cur_faction)
-	_version_label.text = BUILD_VERSION   # rifresca dopo build UI
+	# Aggiorna l'etichetta con build + auto-test texture (deferred così
+	# l'autoload GameRegistry e gli asset sono sicuramente pronti).
+	call_deferred("_update_version_label")
 	# Driver automatico delle Fazioni Bot (gioca da sole al loro turno).
 	var bot_timer := Timer.new()
 	bot_timer.wait_time = 1.0
