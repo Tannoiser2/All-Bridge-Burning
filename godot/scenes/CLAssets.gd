@@ -23,10 +23,17 @@ static func _assets_dir() -> String:
 
 
 static func tex(file: String) -> Texture2D:
-	if not _cache.has(file):
-		var path: String = _assets_dir() + file
-		_cache[file] = load(path) if ResourceLoader.exists(path) else null
-	return _cache[file]
+	# NON cachiamo mai i null: se _assets_dir() ricade sul fallback prima che
+	# l'autoload GameRegistry sia pronto, la texture verrebbe persa per sempre
+	# (il _cache è statico). Cacha solo i caricamenti riusciti, così i frame
+	# successivi riprovano finché la cartella corretta è disponibile.
+	if _cache.has(file) and _cache[file] != null:
+		return _cache[file]
+	var path: String = _assets_dir() + file
+	var t: Texture2D = load(path) if ResourceLoader.exists(path) else null
+	if t != null:
+		_cache[file] = t
+	return t
 
 
 static func map() -> Texture2D:
