@@ -24,7 +24,8 @@
         "russian_troop": 1
       },
       "support": "neutral",
-      "control": "none"
+      "control": "none",
+      "markers": {"personality": 1}
     },
     "uusimaa": {
       "forces": {"reds_cell": 2},

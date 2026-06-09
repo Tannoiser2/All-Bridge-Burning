@@ -162,6 +162,8 @@ func _test_abb_setup() -> void:
 	_eq("Vassalage Russian", int(state.tracks.get("vassalage_russian", -1)), 3)
 	# Tutte le fazioni Eligibili al setup
 	_eq("Reds Eligible", state.eligibility["reds"], CoinEnums.Eligibility.ELIGIBLE)
+	# Personality marker (Moderates) parte ad Helsinki.
+	_eq("Personality a Helsinki", state.space_state("helsinki").marker("personality"), 1)
 
 
 func _test_abb_operations() -> void:

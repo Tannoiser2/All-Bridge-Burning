@@ -86,6 +86,8 @@ static func card(number: int) -> Texture2D:
 
 
 static func cash() -> Texture2D: return tex("cash.png")
+static func personality() -> Texture2D: return tex("personality.png")
+static func news() -> Texture2D: return tex("news.png")
 static func terror() -> Texture2D: return tex("terror.png")
 static func sabotage() -> Texture2D: return tex("sabotage.png")
 

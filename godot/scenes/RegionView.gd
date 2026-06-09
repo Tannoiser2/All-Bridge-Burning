@@ -293,6 +293,29 @@ func _draw() -> void:
 		draw_colored_polygon(poly, fc2)
 	var line := poly + PackedVector2Array([poly[0]])
 	draw_polyline(line, outline, width + _flash * 4.0)
+	_draw_abb_markers()
+
+
+## Disegna i marker ABB (Personality, News) se presenti sullo spazio.
+func _draw_abb_markers() -> void:
+	if GameRegistry.game_id != "all_bridges_burning":
+		return
+	var s: GameState = GameController.state
+	if s == null or not s.spaces.has(space_id):
+		return
+	var st: SpaceState = s.space_state(space_id)
+	var ax := _anchor_norm.x * size.x
+	var ay := _anchor_norm.y * size.y
+	var sz := size.x * 0.022
+	var offset := sz * 1.15
+	if st.marker("personality") > 0:
+		var pt := CLAssets.personality()
+		if pt != null:
+			draw_texture_rect(pt, Rect2(Vector2(ax - sz * 0.5, ay - sz * 1.8), Vector2(sz, sz)), false)
+	if st.marker("news") > 0:
+		var nt := CLAssets.news()
+		if nt != null:
+			draw_texture_rect(nt, Rect2(Vector2(ax - sz * 0.5 + offset, ay - sz * 1.8), Vector2(sz, sz)), false)
 
 
 func _gui_input(event: InputEvent) -> void:
