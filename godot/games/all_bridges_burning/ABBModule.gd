@@ -195,8 +195,54 @@ func _roll_pick(rng: RandomNumberGenerator, rule: String, n_options: int) -> int
 # Vittoria (TODO: PR Propaganda / Round periodico)
 # ---------------------------------------------------------------------------
 
-func victory_status(_state: GameState) -> Dictionary:
-	return {}
+## Stato di vittoria (rulebook §7.2/§7.3).
+func victory_status(state: GameState) -> Dictionary:
+	var pol: int = int(state.tracks.get("polarization", 0))
+	var vass_g: int = int(state.tracks.get("vassalage_german", 0))
+	var vass_r: int = int(state.tracks.get("vassalage_russian", 0))
+
+	var reds_value: int = state.total_opposition() + state.count_on_map("reds", "admin")
+	if vass_r + pol > 5:
+		reds_value = 0
+	var senate_value: int = _senate_town_pop(state)
+	if vass_g + pol > 5:
+		senate_value = 0
+	var mod_res: int = state.get_resources("moderates")
+	var mod_inw: int = int(state.tracks.get("issues_networks", 0)) + 1
+	var mod_alt: int = mod_inw - pol + 14
+	var mod_value: int = min(mod_res, mod_alt)
+
+	return {
+		"reds":      _vstat(reds_value, 11),
+		"senate":    _vstat(senate_value, 3),
+		"moderates": _vstat(mod_value, 14),
+		"germans":   _vstat(vass_g, 6),
+		"russians":  _vstat(vass_r, 6),
+	}
+
+
+func _vstat(value: int, threshold: int) -> Dictionary:
+	return {
+		"value": value,
+		"threshold": threshold,
+		"margin": value - threshold,
+		"won": value > threshold,
+	}
+
+
+func _senate_town_pop(state: GameState) -> int:
+	var total: int = 0
+	for sid in state.spaces.keys():
+		var sd: SpaceDef = state.game_def.space(sid)
+		if sd == null or sd.type != CoinEnums.SpaceType.CITY:
+			continue
+		if state.space_state(sid).control == "senate":
+			total += sd.pop
+	return total
+
+
+func tiebreak_order() -> PackedStringArray:
+	return PackedStringArray(["reds", "moderates", "senate", "germans", "russians"])
 
 
 # ---------------------------------------------------------------------------
