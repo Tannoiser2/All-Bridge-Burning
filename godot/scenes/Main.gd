@@ -963,6 +963,13 @@ func _on_log_meta(meta: Variant) -> void:
 
 ## Avvia l'Operazione scelta (tasto): evidenzia gli spazi e imposta il flusso.
 func _start_op(op_id: String) -> void:
+	# All Bridges Burning: dispatcher dedicato per le Operazioni ABB.
+	# La pipeline Cuba (_valid_spaces, mode space_list/moves) è cuba-shaped;
+	# per ABB usiamo un flusso semplificato che evidenzia tutti gli spazi
+	# e chiama ABBOperations al primo click.
+	if _is_abb() and op_id in _ABB_OPS:
+		_abb_start_op(op_id)
+		return
 	var kind: String = OP_KIND.get(op_id, "space_list")
 	var valid := _valid_spaces(_cur_faction, op_id)
 	# Operazioni "a spazi": se nessuno spazio è efficace, non avviarla.
@@ -985,6 +992,16 @@ func _start_op(op_id: String) -> void:
 
 
 func _on_space_clicked(sid: String) -> void:
+	# Pipeline ABB: 1° click sceglie lo spazio target dell'Operazione e la esegue.
+	if _is_abb() and _mode == "abb_space_pick":
+		_abb_execute_op_on_space(sid)
+		return
+	if _is_abb() and _mode == "abb_march_from":
+		_abb_march_set_from(sid)
+		return
+	if _is_abb() and _mode == "abb_march_to":
+		_abb_execute_march_to(sid)
+		return
 	# Bersaglio Attività Speciale
 	if _mode == "sa_point":
 		if not _sa_valid.has(sid):
@@ -1785,3 +1802,126 @@ func _enemy_present(faction: String, st: SpaceState) -> bool:
 		if e != faction and st.count(e) > 0:
 			return true
 	return false
+
+
+# ---------------------------------------------------------------------------
+# All Bridges Burning: dispatcher Operazioni
+# ---------------------------------------------------------------------------
+
+## Operazioni che usano la pipeline ABB semplificata (Cuba-shaped per le altre).
+## Non si può usare `const` con array letterali nel parser web di Godot 4.3.
+var _ABB_OPS: Array = ["rally", "march", "attack", "terror", "message", "activism"]
+
+
+func _is_abb() -> bool:
+	return GameRegistry.game_id == "all_bridges_burning"
+
+
+## Inizia un'Operazione ABB: evidenzia gli spazi candidati e attende il click.
+func _abb_start_op(op_id: String) -> void:
+	_cur_action = op_id
+	_selected.clear()
+	if op_id == "march":
+		_mode = "abb_march_from"
+		_clear_highlights()
+		for sid in _abb_march_origins(_cur_faction):
+			_space_views[sid].set_highlight(true)
+		_instr.text = "%s — clicca uno spazio TUO da cui far partire i pezzi." % OP_NAMES.get("march", "March")
+	else:
+		_mode = "abb_space_pick"
+		_clear_highlights()
+		for sid in _abb_op_targets(_cur_faction, op_id):
+			_space_views[sid].set_highlight(true)
+		_instr.text = "%s — clicca lo spazio bersaglio (evidenziato)." % OP_NAMES.get(op_id, op_id)
+	_refresh_turn_banner()
+
+
+func _abb_op_targets(fid: String, op_id: String) -> Array:
+	# Per Rally / Attack / Terror / Activism: spazi candidati dal punto di vista
+	# minimo (Rally ovunque, Attack/Terror dove abbiamo pezzi, ecc.). Il vero
+	# check di legalità avviene dentro ABBOperations.
+	var out: Array = []
+	for sid in GameController.state.spaces.keys():
+		match op_id:
+			"rally":
+				out.append(sid)
+			"attack":
+				var st: SpaceState = GameController.state.space_state(sid)
+				if st.count(fid, "cell") + st.count(fid, "troops") > 0:
+					out.append(sid)
+			"terror", "activism":
+				if GameController.state.space_state(sid).count(fid, "cell") > 0:
+					out.append(sid)
+			_:
+				out.append(sid)
+	return out
+
+
+func _abb_march_origins(fid: String) -> Array:
+	var out: Array = []
+	for sid in GameController.state.spaces.keys():
+		if GameController.state.space_state(sid).count(fid, "cell") > 0:
+			out.append(sid)
+	return out
+
+
+var _abb_march_from := ""
+
+func _abb_march_set_from(sid: String) -> void:
+	_abb_march_from = sid
+	_mode = "abb_march_to"
+	_clear_highlights()
+	var sd: SpaceDef = GameController.game_def.space(sid)
+	_space_views[sid].set_highlight(true)
+	for adj_sid in sd.adjacent:
+		_space_views[String(adj_sid)].set_highlight(true)
+	_instr.text = "%s — clicca lo spazio ADIACENTE di destinazione." % OP_NAMES.get("march", "March")
+
+
+func _abb_execute_op_on_space(sid: String) -> void:
+	var op_id: String = _cur_action
+	var fid: String = _cur_faction
+	var res: Dictionary = {}
+	match op_id:
+		"rally":
+			res = GameController.ops.rally(fid, sid, "cell")
+		"attack":
+			res = GameController.ops.attack(fid, sid)
+		"terror", "activism":
+			res = GameController.ops.terror(fid, sid)
+		_:
+			res = {"ok": false, "error": "op ABB non supportata: " + op_id}
+	_abb_log_op(op_id, sid, res)
+	_abb_end_op()
+
+
+func _abb_execute_march_to(to_sid: String) -> void:
+	var fid: String = _cur_faction
+	var sd: SpaceDef = GameController.game_def.space(_abb_march_from)
+	if not (to_sid in sd.adjacent):
+		_instr.text = "Destinazione non adiacente — scegline una evidenziata."
+		return
+	var res: Dictionary = GameController.ops.march(fid, _abb_march_from, to_sid, "cell", 1)
+	_abb_log_op("march", "%s→%s" % [_abb_march_from, to_sid], res)
+	_abb_march_from = ""
+	_abb_end_op()
+
+
+func _abb_log_op(op_id: String, target: String, res: Dictionary) -> void:
+	var ok: bool = bool(res.get("ok", false))
+	var prefix: String = "✓" if ok else "✗"
+	var msg: String = "%s %s @ %s" % [prefix, OP_NAMES.get(op_id, op_id), target]
+	if not ok:
+		msg += " — " + String(res.get("error", ""))
+	elif res.has("roll"):
+		msg += " (1d6=%d/%d)" % [int(res["roll"]), int(res.get("strength", 0))]
+	GameController.emit_signal("action_logged", msg, _cur_faction)
+	_instr.text = msg
+	GameController.emit_signal("state_changed")
+
+
+func _abb_end_op() -> void:
+	_mode = "idle"
+	_cur_action = ""
+	_clear_highlights()
+	_refresh_turn_banner()
