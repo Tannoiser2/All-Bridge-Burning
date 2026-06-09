@@ -43,20 +43,21 @@ una carta Propaganda, parte il Crisis Round (Politics + Earnings).
 | Bot non-giocatore | ✅ priority planner per fazione (PAC2 completo TODO) |
 | Vittoria (§7.2 / §7.3) | ✅ margine per fazione + tiebreak order |
 | TrackOverlay sulla mappa | ✅ Resources, Polarization (tracciato dedicato), Vassalage, Town Pop, Cells on Map, Issues+Networks, Oppose+Admins |
-| Box Available Forces | ✅ pezzi disponibili (force_pool − on_map) sulle riserve di ogni fazione |
+| Box Available Forces | ✅ box dal Vassal, Cell sui 46 slot dedicati (senate/reds/moderates) |
+| Marker Control / Support | ✅ posizioni `cbox`/`sbox` estratte dalla Zone Vassal Control |
+| Sequence of Play | ✅ cilindri Eligibility (Pass/Eligible/Acted/Ineligible) per Reds/Senate/Moderates/Germans |
+| Red Revolt! (Pivotal #24) | ✅ flip `tracks.phase` → II; Germans bot gated; badge UI |
 
 ## Cosa rimane da fare
 
-- Carta Pivotal "Red Revolt!" (#24): trigger della Phase II + flowchart Germans.
+- Flowchart completo Germans in Phase II (§3.4) — il bot ora attacca i Reds ma
+  non segue il diagramma di decisione del playbook.
 - Testi unshaded/shaded delle 47 carte (vanno trascritti dal regolamento o
   dall'`ABB_CardEdits-download.pdf`).
 - PAC2 completo per il Bot: 17 carte solitaire + flowchart per le decisioni
   nidificate (Cmd vs Cmd+SA vs Limited Cmd, scelta Special Activity, ecc.).
-- Visualizzazione Sequence of Play (cilindri Eligibility nei box azione).
-- Marker Control / Support sui poligoni: le texture (`control_reds.png`,
-  `control_senate.png`) ci sono, ma le posizioni `cbox` non vengono
-  estratte dal Vassal — vanno aggiunte a mano o calcolate dal poligono.
 - Capabilities panel + News / Personality markers (specifici dei Moderates).
+- Crisis Round Phase II adjustment (Vassalage shift per i Powers).
 
 ## Struttura
 

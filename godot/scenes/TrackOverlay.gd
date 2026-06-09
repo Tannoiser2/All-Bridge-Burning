@@ -89,10 +89,9 @@ func _draw() -> void:
 	_draw_available(s)
 	if GameRegistry.game_id == "all_bridges_burning":
 		_abb_draw_sop(s)
+		_abb_draw_capabilities(s)
 	else:
 		_draw_eligibility(s)
-	# Capabilities è Cuba-specifico (nomi carte Cuba).
-	if GameRegistry.game_id == "cuba_libre":
 		_draw_capabilities(s)
 
 
@@ -386,6 +385,27 @@ func _abb_draw_sop(s: GameState) -> void:
 		var lbl: String = String(fid).substr(0, 1).to_upper()
 		draw_string(font, Vector2(cx - 4, cy + 4), lbl,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color.WHITE)
+
+
+## Capacità attive ABB: chip nel box "capabilities" (estratto dalla Zone Vassal).
+## Default color = Reds: la maggior parte delle Capacità ABB sono Insorgenti.
+func _abb_draw_capabilities(s: GameState) -> void:
+	var r := _box_rect("capabilities")
+	if r.size == Vector2.ZERO or s.active_capabilities.is_empty():
+		return
+	var font := ThemeDB.fallback_font
+	var n := s.active_capabilities.size()
+	var top := r.position.y + r.size.y * 0.30
+	var avail_h := r.size.y * 0.65
+	var slot := avail_h / float(n)
+	var ch := minf(20.0, slot - 3.0)
+	var y := top
+	for title in s.active_capabilities:
+		var chip := Rect2(r.position.x + r.size.x * 0.04, y, r.size.x * 0.92, ch)
+		draw_rect(chip, GameController.faction_color("reds"), true)
+		draw_string(font, Vector2(chip.position.x + 8, y + ch * 0.76), String(title),
+			HORIZONTAL_ALIGNMENT_LEFT, chip.size.x - 14, clampi(int(ch * 0.74), 9, 16), Color.WHITE)
+		y += slot
 
 
 ## Mappa lo stato Sequence/Eligibility della fazione a una colonna del SoP.
