@@ -129,6 +129,142 @@ func _apply_basic_effect(number: int, side: String, faction: String, log: Array[
 				state.tracks["issues_networks"] = maxi(0, int(state.tracks.get("issues_networks", 0)) - 1)
 				log.append("Rimosso Resolved Issue: %s." % ABBPoliticalDisplay.ISSUES[i]["name"])
 				return true
+	# #4 shaded: Place Available Moderates Cell anywhere (first eligible)
+	if number == 4 and side == "shaded":
+		for sid in state.spaces.keys():
+			if state.place_from_available("moderates", "cell", String(sid), 1, "underground") > 0:
+				log.append("Cellula Moderati piazzata a %s." % sid)
+				return true
+		log.append("Nessuna Cellula Moderati disponibile.")
+		return true
+	# #9 shaded: Polarization -1 + Resources +3 + cube PD
+	if number == 9 and side == "shaded":
+		state.tracks["polarization"] = clampi(int(state.tracks.get("polarization", 0)) - 1, 0, 10)
+		state.resources[faction] = mini(30, int(state.get_resources(faction)) + 3)
+		var pd9 := ABBPoliticalDisplay.new(state)
+		var cube_color := "senate" if faction == "senate" else "reds"
+		pd9.place_cubes(cube_color, 1)
+		log.append("Polarization -1, %s Risorse +3, +1 cubo PD." % faction)
+		return true
+	# #18 unshaded: Place up to 2 Cells in 0-pop Province (greedy: prima Provincia 0-pop)
+	if number == 18 and side == "unshaded":
+		var placed_total := 0
+		for sid in state.spaces.keys():
+			var sd: SpaceDef = state.game_def.space(sid)
+			if sd.pop != 0 or sd.type != CoinEnums.SpaceType.PROVINCE:
+				continue
+			while placed_total < 2:
+				if state.place_from_available(faction, "cell", String(sid), 1, "underground") <= 0:
+					break
+				placed_total += 1
+			if placed_total >= 2:
+				break
+		log.append("Piazzate %d Cellule %s in Provincia 0-Pop." % [placed_total, faction])
+		return true
+	# #18 shaded: Conduct Politics Phase
+	if number == 18 and side == "shaded":
+		var pd18 := ABBPoliticalDisplay.new(state)
+		var rp := pd18.resolve_politics(-1)
+		log.append_array(rp.get("log", []))
+		return true
+	# #21 unshaded: Flip 2 Cells anywhere (toggle stato)
+	if number == 21 and side == "unshaded":
+		var flipped := 0
+		for sid in state.spaces.keys():
+			if flipped >= 2:
+				break
+			var st: SpaceState = state.space_state(sid)
+			for f in state.game_def.factions:
+				if flipped >= 2:
+					break
+				if st.count(f.id, "cell", "underground") > 0:
+					st.remove_piece(f.id, "cell", 1, "underground")
+					st.add_piece(f.id, "cell", 1, "active")
+					flipped += 1
+				elif st.count(f.id, "cell", "active") > 0:
+					st.remove_piece(f.id, "cell", 1, "active")
+					st.add_piece(f.id, "cell", 1, "underground")
+					flipped += 1
+		log.append("Capovolte %d Cellule." % flipped)
+		return true
+	# #21 shaded: Reds Administration in Reds-controlled Province with friendly Cell
+	if number == 21 and side == "shaded":
+		for sid in state.spaces.keys():
+			var st: SpaceState = state.space_state(sid)
+			if st.control == "reds" and st.count("reds", "cell") > 0:
+				if state.place_from_available("reds", "admin", String(sid), 1, "") > 0:
+					log.append("Reds Administration piazzata a %s." % sid)
+					return true
+		return true
+	# #27 unshaded: Senate free Attack +2
+	if number == 27 and side == "unshaded":
+		log.append("Senate Attack gratis con +2 Strength (manuale dall'UI).")
+		return true
+	# #28 shaded: Prisoners step + Resources adjust
+	if number == 28 and side == "shaded":
+		var prisoners: Dictionary = state.tracks.get("prisoners", {"senate": 0, "reds": 0})
+		var total := int(prisoners.get("senate", 0)) + int(prisoners.get("reds", 0))
+		if total >= 2:
+			var bump := int(total / 2)
+			state.tracks["polarization"] = clampi(int(state.tracks.get("polarization", 0)) + bump, 0, 10)
+			log.append("Prisoners step: Polarization +%d." % bump)
+		# Resources transfer: +1d6 a fazione esecutrice o -1d6 a un avversario
+		var rng28 := RandomNumberGenerator.new(); rng28.randomize()
+		var roll := rng28.randi_range(1, 6)
+		state.resources[faction] = mini(30, int(state.get_resources(faction)) + roll)
+		log.append("%s Risorse +%d." % [faction, roll])
+		return true
+	# #32 unshaded: Remove 1 Moderates Cell (first eligible) + Personality check
+	if number == 32 and side == "unshaded":
+		for sid in state.spaces.keys():
+			var st32: SpaceState = state.space_state(sid)
+			if st32.count("moderates", "cell") > 0:
+				st32.remove_piece("moderates", "cell", 1, "underground" if st32.count("moderates","cell","underground")>0 else "active")
+				if st32.count("moderates", "cell") == 0 and st32.marker("personality") > 0:
+					st32.set_marker("personality", 0)
+					state.resources["moderates"] = maxi(0, int(state.get_resources("moderates")) - 3)
+					state.resources[faction] = mini(30, int(state.get_resources(faction)) + 3)
+					log.append("Personality rimossa, 3 Risorse transferite a %s." % faction)
+				log.append("Cellula Moderati rimossa a %s." % sid)
+				return true
+		return true
+	# #36 shaded: Polarization +1 per ogni 2 Cellule in Prison
+	if number == 36 and side == "shaded":
+		var pris36: Dictionary = state.tracks.get("prisoners", {"senate": 0, "reds": 0})
+		var tot36 := int(pris36.get("senate", 0)) + int(pris36.get("reds", 0))
+		var pol_b := int(tot36 / 2)
+		state.tracks["polarization"] = clampi(int(state.tracks.get("polarization", 0)) + pol_b, 0, 10)
+		log.append("Polarization +%d (prigionieri totali %d)." % [pol_b, tot36])
+		return true
+	# #39 unshaded: Conduct Politics Phase
+	if number == 39 and side == "unshaded":
+		var pd39 := ABBPoliticalDisplay.new(state)
+		var rp39 := pd39.resolve_politics(-1)
+		log.append_array(rp39.get("log", []))
+		return true
+	# #43 unshaded: Place Terror in up to 2 spaces with friendly Cells, ignore max
+	if number == 43 and side == "unshaded":
+		var placed_terror := 0
+		for sid in state.spaces.keys():
+			if placed_terror >= 2:
+				break
+			var st43: SpaceState = state.space_state(sid)
+			if st43.count(faction, "cell") > 0:
+				st43.set_marker("terror", st43.marker("terror") + 1)
+				state.tracks["polarization"] = clampi(int(state.tracks.get("polarization", 0)) + 1, 0, 10)
+				placed_terror += 1
+		log.append("Terror piazzato in %d spazi, Polarization +%d." % [placed_terror, placed_terror])
+		return true
+	# #43 shaded: remove 1 Terror from a space, Polarization -1
+	if number == 43 and side == "shaded":
+		for sid in state.spaces.keys():
+			var st43s: SpaceState = state.space_state(sid)
+			if st43s.marker("terror") > 0:
+				st43s.set_marker("terror", st43s.marker("terror") - 1)
+				state.tracks["polarization"] = clampi(int(state.tracks.get("polarization", 0)) - 1, 0, 10)
+				log.append("Terror rimosso a %s, Polarization -1." % sid)
+				return true
+		return true
 	return false
 
 
