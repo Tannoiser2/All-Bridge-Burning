@@ -134,6 +134,11 @@ AVAIL_ZONES = {
     "German Forces":              "germans",
 }
 
+# Altre Zone Vassal mappate a box ad uso UI (Capabilities panel, ecc.).
+EXTRA_BOX_ZONES = {
+    "Capabilities": "capabilities",
+}
+
 
 def avail_box(zones: dict, vname: str) -> list | None:
     """Bounding box normalizzato della Zone delle Available Forces."""
@@ -303,6 +308,10 @@ def main():
             box = avail_box(zones, vname)
             if box is not None:
                 bl["box"]["available_" + fid] = box
+        for vname, key in EXTRA_BOX_ZONES.items():
+            box = avail_box(zones, vname)
+            if box is not None:
+                bl["box"][key] = box
         slots = cell_slots(build_file)
         if slots:
             bl["cell_slots"] = slots
