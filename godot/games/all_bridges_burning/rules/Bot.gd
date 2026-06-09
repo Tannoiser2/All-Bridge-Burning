@@ -63,9 +63,12 @@ func _plan(faction_id: String) -> Array:
 
 func _plan_reds() -> Array:
 	var plan: Array = []
-	for sid in _spaces_with_cells("reds", 2):
-		if _has_enemy(sid, "reds"):
-			plan.append({"op": "attack", "target": sid})
+	var ph2 := int(state.tracks.get("phase", 1)) >= 2
+	# Attack solo in Phase II (§3.2.4)
+	if ph2:
+		for sid in _spaces_with_cells("reds", 2):
+			if _has_enemy(sid, "reds"):
+				plan.append({"op": "attack", "target": sid})
 	for sid in _spaces_with_cells("reds", 1):
 		var st: SpaceState = state.space_state(sid)
 		if st.support > CoinEnums.Support.NEUTRAL:
@@ -77,9 +80,12 @@ func _plan_reds() -> Array:
 
 func _plan_senate() -> Array:
 	var plan: Array = []
-	for sid in _spaces_with_cells("senate", 2):
-		if _has_enemy(sid, "senate"):
-			plan.append({"op": "attack", "target": sid})
+	var ph2 := int(state.tracks.get("phase", 1)) >= 2
+	# Attack solo in Phase II (§3.2.4)
+	if ph2:
+		for sid in _spaces_with_cells("senate", 2):
+			if _has_enemy(sid, "senate"):
+				plan.append({"op": "attack", "target": sid})
 	for sid in _city_ids():
 		var st: SpaceState = state.space_state(sid)
 		if st.control == "senate":

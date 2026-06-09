@@ -31,6 +31,7 @@ func _initialize() -> void:
 	_test_abb_reset_phase()
 	_test_abb_terror_phase_ii_news()
 	_test_abb_personality_transfer()
+	_test_abb_attack_march_phase_gate()
 	_test_game_def()
 	_test_setup_forces()
 	_test_setup_tracks()
@@ -479,6 +480,31 @@ func _test_abb_personality_transfer() -> void:
 		transferred = true
 	_check("Personality transfer effettuato (o vagamente segnalato)",
 		transferred or bool(a.get("personality_transferred", false)) or true)
+
+
+func _test_abb_attack_march_phase_gate() -> void:
+	print("\n[ABB Attack/March Phase II gate (§3.2.4/§3.2.5)]")
+	var r := _new_abb()
+	var state: GameState = r[2]
+	var mod: ABBModule = r[0]
+	var ops := ABBOperations.new(state, mod)
+	# Phase I: Reds Attack rifiutato
+	_eq("Phase I al setup", int(state.tracks.get("phase", 0)), 1)
+	var a1 = ops.attack("reds", "helsinki", 0)
+	_check("Reds Attack rifiutato in Phase I", not a1.get("ok", false))
+	# Reds March rifiutato
+	var m1 = ops.march("reds", "uusimaa", "helsinki", "cell", 1)
+	_check("Reds March rifiutato in Phase I", not m1.get("ok", false))
+	# Phase II: Attack OK (anche se può fallire per altri motivi)
+	state.tracks["phase"] = 2
+	# Add a Senate cell to attack
+	var st: SpaceState = state.space_state("helsinki")
+	if st.count("senate", "cell") <= 0:
+		st.add_piece("senate", "cell", 1, "underground")
+	var a2 = ops.attack("reds", "helsinki", 0)
+	# Può fallire ancora per "no enemy" ma NON deve essere il gate Phase II
+	_check("Reds Attack non più phase-gated in Phase II",
+		String(a2.get("error", "")).find("Phase II") == -1)
 
 
 func _test_abb_germans_phase_gate() -> void:

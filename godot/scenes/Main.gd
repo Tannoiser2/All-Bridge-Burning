@@ -401,6 +401,9 @@ func _build_action_bar() -> VBoxContainer:
 	roles_grid.add_theme_constant_override("v_separation", 2)
 	for f in GameController.game_def.factions:
 		var fid: String = f.id
+		# In ABB i Powers (Germans/Russians) sono SEMPRE bot: nessun toggle.
+		if GameRegistry.game_id == "all_bridges_burning" and fid in ["germans", "russians"]:
+			continue
 		var rb := _mk_btn("", _toggle_role.bind(fid))
 		rb.add_theme_font_size_override("font_size", 11)
 		_role_btns[fid] = rb
@@ -1648,6 +1651,9 @@ const _ROLE_SHORT := {"government": "Gov", "m26": "26J", "directorio": "DR", "sy
 
 
 func _toggle_role(fid: String) -> void:
+	# I Powers ABB (Germans/Russians) sono sempre bot: ignora il toggle.
+	if GameRegistry.game_id == "all_bridges_burning" and fid in ["germans", "russians"]:
+		return
 	GameController.set_role(fid, "bot" if GameController.is_player(fid) else "player")
 	_update_role_btns()
 
