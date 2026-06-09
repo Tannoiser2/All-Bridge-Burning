@@ -163,7 +163,7 @@ var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Specia
 
 ## Numero di build incrementato a ogni fix UI. Mostrato in basso a destra così
 ## puoi dirmi ESATTAMENTE quale versione stai vedendo (cache-busting diagnostico).
-const BUILD_VERSION := "build 97"
+const BUILD_VERSION := "build 98"
 
 
 ## Etichetta diagnostica in ALTO A SINISTRA (niente la copre). Mostra il numero
@@ -193,17 +193,32 @@ func _data_selftest() -> String:
 	var s = GameController.state
 	if s == null:
 		return "state:NULL"
-	var ov_sz := "?"
+	var ov_sz := "NULL"
+	var ov_vis := "?"
 	if _track_overlay != null:
 		ov_sz = "%dx%d" % [int(_track_overlay.size.x), int(_track_overlay.size.y)]
+		ov_vis = "vis" if _track_overlay.visible else "hid"
+	# Ispezione albero: figli di _map + un campione pedina.
+	var map_children := _map.get_child_count() if _map != null else -1
+	var sample := "noPiece"
+	for sid in _space_views.keys():
+		var rv := _space_views[sid] as RegionView
+		if rv._pieces.size() > 0:
+			var p0 = rv._pieces[0]
+			sample = "pos(%d,%d) sz(%d,%d) %s" % [
+				int(p0.position.x), int(p0.position.y),
+				int(p0.size.x), int(p0.size.y),
+				"vis" if p0.visible else "hid"]
+			break
 	var n_pieces := 0
 	for sid in _space_views.keys():
 		n_pieces += (_space_views[sid] as RegionView)._pieces.size()
-	return "res:%d availC:%d onmapC:%d ovl:%s mapPieces:%d" % [
+	return "res:%d availC:%d onmapC:%d ovl:%s/%s mapChildren:%d mapPieces:%d P0:%s" % [
 		int(s.get_resources("reds")),
 		int(s.available("reds", "cell")),
 		int(s.count_on_map("reds", "cell")),
-		ov_sz, n_pieces,
+		ov_sz, ov_vis, map_children,
+		n_pieces, sample,
 	]
 
 
