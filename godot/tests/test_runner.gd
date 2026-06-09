@@ -22,6 +22,7 @@ func _initialize() -> void:
 	_test_abb_victory()
 	_test_abb_red_revolt()
 	_test_abb_germans_phase_gate()
+	_test_abb_crisis_powers_phase_ii()
 	_test_game_def()
 	_test_setup_forces()
 	_test_setup_tracks()
@@ -262,6 +263,26 @@ func _test_abb_red_revolt() -> void:
 	var res2 = ev.apply(24, "unshaded", "reds")
 	_check("Apply secondario ok", bool(res2.get("ok", false)))
 	_eq("Phase resta II", int(state.tracks.get("phase", 0)), 2)
+
+
+func _test_abb_crisis_powers_phase_ii() -> void:
+	print("\n[ABB Crisis §6.5.3 Powers adjustment]")
+	var r := _new_abb()
+	var mod: ABBModule = r[0]
+	var state: GameState = r[2]
+	var crisis := ABBCrisis.new(state, mod)
+	# Phase I: nessun aggiustamento Powers.
+	var r1 = crisis.resolve()
+	_check("Phase I: no powers key", not r1.has("powers"))
+	# Phase II + Vassalage Russian elevato: forza riduzione/aumento di Russian Troops sulla mappa.
+	state.tracks["phase"] = 2
+	var rus_before: int = state.count_on_map("russians", "troops")
+	# Setup standard ha vassalage_russian = 3; metto 0 per testare la rimozione.
+	state.tracks["vassalage_russian"] = 0
+	var r2 = crisis.resolve()
+	_check("Phase II: powers report presente", r2.has("powers"))
+	_eq("Russians sulla mappa = 0", state.count_on_map("russians", "troops"), 0)
+	_check("Log contiene Russians", String(r2["powers"]["log"]).contains("Russians"))
 
 
 func _test_abb_germans_phase_gate() -> void:
