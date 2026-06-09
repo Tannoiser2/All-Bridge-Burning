@@ -74,20 +74,21 @@ esatti del Vassal, e le Cell occupano i loro slot dedicati.
 | **Phase II gating §3.2.4/§3.2.5** | ✅ Attack/March solo in Phase II per player factions |
 | **Polarization effects** | ✅ Moderati Rally cost 3 se Pol ≥ 6 (§3.3.1) |
 | **Powers Germans/Russians** | ✅ sempre Bot, no UI toggle |
+| **Capability +2 Attack Strength** | ✅ Jaeger/Commander/Cannons/Trains bonus on-space (§5.3) |
+| **Sabotage border UI** | ✅ X rossa sul punto medio fra spazi sabotati |
+| **Senato Coordinate UI** | ✅ pulsante "Coord. Germ." nella action bar (Phase II) |
+| **Eventi semplici** | ✅ 12 carte con effetti atomici (Risorse/Polarization/Vassalage) |
 | Testi carte | ✅ Unshaded/Shaded da OCR + cleanup; 47/47 traduzioni IT (Chiaro/Ombr.) |
 
 ## Cosa rimane da fare
 
 - **PAC2 fidelity**: le sub-priorità interne alle carte sono ancora pick greedy
   semplificati. Framework + 10 handler concreti.
-- **Sabotage UI**: rendering visivo della linea rossa sul bordo (data model
-  + meccanica già implementate).
-- **Capability effects on Attack Strength**: i marker sono piazzati ma il
-  bonus +2 non è ancora applicato nell'algoritmo `attack`.
-- **Senate-decides-Germans UI**: bit `coordinate_marker` esposto, manca
-  flow UI override.
-- **Eventi non-Pivotal non-Capability**: 40 carte hanno OCR text ma nessun
-  effetto programmato. Necessario implementazione per-carta.
+- **Eventi residui**: 12 carte ora hanno effetto atomico (Risorse/Polarization/
+  Vassalage). Restano ~30 carte con effetti complessi non implementati che
+  richiedono UI di scelta (sposta spazio, rimuovi cellula, ecc.).
+- **Aspect ratio mappa**: ✅ fix in PR#76. Marker Control/Support ora
+  allineati ai box stampati (era hardcoded a Cuba ratio).
 - Crisis Round Phase II adjustment (Vassalage shift per i Powers).
 
 ## Struttura
