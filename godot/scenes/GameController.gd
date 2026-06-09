@@ -549,13 +549,19 @@ func current_card_text() -> String:
 	elif c.is_momentum: tag = " · Momentum"
 	var tr := ""
 	if c.translation != "":
-		tr = "[font_size=11]%s[/font_size]\n" % c.translation
+		tr = "[font_size=11][i]%s[/i][/font_size]\n" % c.translation
+	# Testo unshaded/shaded dell'Evento (popolato da OCR per ABB).
+	var fx := ""
+	if c.unshaded != "":
+		fx += "[font_size=11][b]Unshaded:[/b] %s[/font_size]\n" % c.unshaded
+	if c.shaded != "":
+		fx += "[font_size=11][b]Shaded:[/b] %s[/font_size]\n" % c.shaded
 	# L'ordine delle Fazioni è già stampato sulla carta: non lo ripetiamo qui.
 	var phase_tag := ""
 	if GameRegistry.game_id == "all_bridges_burning":
 		var ph: int = int(state.tracks.get("phase", 1))
 		phase_tag = " · Phase %s" % ("II" if ph >= 2 else "I")
-	return "[b]#%d %s[/b]%s%s\n%sCarte rimaste: %d" % [c.number, c.title, tag, phase_tag, tr, cards_left()]
+	return "[b]#%d %s[/b]%s%s\n%s%sCarte rimaste: %d" % [c.number, c.title, tag, phase_tag, tr, fx, cards_left()]
 
 
 ## Esegue un'Operazione per id e ne propaga il risultato/log.
