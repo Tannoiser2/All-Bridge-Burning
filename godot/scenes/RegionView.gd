@@ -325,6 +325,16 @@ func _draw_abb_markers() -> void:
 		var nt := CLAssets.news()
 		if nt != null:
 			draw_texture_rect(nt, Rect2(Vector2(ax - sz * 0.5 + offset, ay - sz * 1.8), Vector2(sz, sz)), false)
+	# Capability markers su mappa (Jaeger/Commander).
+	var col := 0
+	for cap_key in ["jaeger_senate", "commander_reds"]:
+		if st.marker(cap_key) > 0:
+			var ct := CLAssets.abb_cap(cap_key)
+			if ct != null:
+				draw_texture_rect(ct,
+					Rect2(Vector2(ax - sz * 0.5 + col * offset, ay + sz * 0.8),
+						Vector2(sz, sz)), false)
+				col += 1
 
 
 func _gui_input(event: InputEvent) -> void:

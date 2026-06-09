@@ -88,6 +88,17 @@ static func card(number: int) -> Texture2D:
 static func cash() -> Texture2D: return tex("cash.png")
 static func personality() -> Texture2D: return tex("personality.png")
 static func news() -> Texture2D: return tex("news.png")
+
+# ABB Capabilities su mappa (Phase II)
+static func abb_cap(marker_key: String) -> Texture2D:
+	match marker_key:
+		"jaeger_senate": return tex("jaeger_senate.png")
+		"commander_reds": return tex("commander_reds.png")
+		"cannon_reds": return tex("cannon_reds.png")
+		"cannon_senate": return tex("cannon_senate.png")
+		"train_reds": return tex("train_reds.png")
+		"train_senate": return tex("train_senate.png")
+	return null
 static func terror() -> Texture2D: return tex("terror.png")
 static func sabotage() -> Texture2D: return tex("sabotage.png")
 
