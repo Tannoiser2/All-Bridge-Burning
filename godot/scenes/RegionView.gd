@@ -130,21 +130,26 @@ func relayout() -> void:
 	_stack.reset_size()
 	_stack.position = Vector2(a.x - _stack.size.x * 0.5, grid_top - 16.0)
 	# Marcatori Controllo/Supporto nelle caselle.
-	# Counter Vassal piccoli e nettamente separati: 0.019 della larghezza mappa.
-	# Le due caselle sono a 0.033 di distanza → con marker 0.019 il gap è 0.014
-	# (zero sovrapposizione). Quadrato.
-	var mk_w: float = size.x * 0.019 if GameRegistry.game_id == "all_bridges_burning" else size.x * 0.028
-	var mk_h: float = mk_w if GameRegistry.game_id == "all_bridges_burning" else mk_w * 0.97
-	if _ctrl_tr != null:
-		_ctrl_tr.size = Vector2(mk_w, mk_h)
-		_ctrl_tr.custom_minimum_size = _ctrl_tr.size
-		var cp := _cbox if _cbox.x >= 0 else Vector2(_anchor_norm.x - 0.012, _anchor_norm.y - 0.03)
-		_ctrl_tr.position = Vector2(cp.x * size.x, cp.y * size.y) - _ctrl_tr.size * 0.5
-	if _sup_tr != null:
-		_sup_tr.size = Vector2(mk_w, mk_h)
-		_sup_tr.custom_minimum_size = _sup_tr.size
-		var sp := _sbox if _sbox.x >= 0 else Vector2(_anchor_norm.x + 0.012, _anchor_norm.y - 0.03)
-		_sup_tr.position = Vector2(sp.x * size.x, sp.y * size.y) - _sup_tr.size * 0.5
+	# Per ABB li disegniamo in _draw() (controllo pixel-preciso); i TextureRect
+	# nodi restano solo per Cuba Libre.
+	if GameRegistry.game_id == "all_bridges_burning":
+		if _ctrl_tr != null:
+			_ctrl_tr.visible = false
+		if _sup_tr != null:
+			_sup_tr.visible = false
+	else:
+		var mk_w: float = size.x * 0.028
+		var mk_h: float = mk_w * 0.97
+		if _ctrl_tr != null:
+			_ctrl_tr.size = Vector2(mk_w, mk_h)
+			_ctrl_tr.custom_minimum_size = _ctrl_tr.size
+			var cp := _cbox if _cbox.x >= 0 else Vector2(_anchor_norm.x - 0.012, _anchor_norm.y - 0.03)
+			_ctrl_tr.position = Vector2(cp.x * size.x, cp.y * size.y) - _ctrl_tr.size * 0.5
+		if _sup_tr != null:
+			_sup_tr.size = Vector2(mk_w, mk_h)
+			_sup_tr.custom_minimum_size = _sup_tr.size
+			var sp := _sbox if _sbox.x >= 0 else Vector2(_anchor_norm.x + 0.012, _anchor_norm.y - 0.03)
+			_sup_tr.position = Vector2(sp.x * size.x, sp.y * size.y) - _sup_tr.size * 0.5
 	queue_redraw()
 
 
@@ -317,6 +322,23 @@ func _draw_abb_markers() -> void:
 	if s == null or not s.spaces.has(space_id):
 		return
 	var st: SpaceState = s.space_state(space_id)
+
+	# Controllo/Supporto: disegnati qui con dimensione ESPLICITA (0.019 della
+	# larghezza mappa) e posizione cbox/sbox. Niente TextureRect → niente
+	# sorprese di sizing. Le caselle distano 0.033 → con marker 0.019 c'è un
+	# gap netto, nessuna sovrapposizione.
+	var mk: float = size.x * 0.019
+	if _control != "" and _control != "russians" and _control != "germans" and _cbox.x >= 0:
+		var ct := CLAssets.control(_control)
+		if ct != null:
+			var c := Vector2(_cbox.x * size.x, _cbox.y * size.y)
+			draw_texture_rect(ct, Rect2(c - Vector2(mk, mk) * 0.5, Vector2(mk, mk)), false)
+	if space_def.has_population() and st.support != 0 and _sbox.x >= 0:
+		var sup := CLAssets.support(st.support)
+		if sup != null:
+			var sc := Vector2(_sbox.x * size.x, _sbox.y * size.y)
+			draw_texture_rect(sup, Rect2(sc - Vector2(mk, mk) * 0.5, Vector2(mk, mk)), false)
+
 	var ax := _anchor_norm.x * size.x
 	var ay := _anchor_norm.y * size.y
 	var sz := size.x * 0.022
