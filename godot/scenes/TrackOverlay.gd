@@ -419,6 +419,11 @@ func _abb_draw_capabilities(s: GameState) -> void:
 
 ## Mappa lo stato Sequence/Eligibility della fazione a una colonna del SoP.
 func _sop_col_for(s: GameState, seq, fid: String) -> String:
+	# Germans: in Phase II, posizione dipende dal roll German Eligibility.
+	if fid == "germans" and int(s.tracks.get("phase", 1)) >= 2:
+		var roll: int = int(s.tracks.get("german_eligibility_roll", 0))
+		if roll > 0:
+			return "eligible"  # ha agito o agirà; la colonna acted è gestita dopo
 	if seq != null and seq.action_box.has(fid):
 		var k := String(seq.action_box[fid])
 		if k == "pass":

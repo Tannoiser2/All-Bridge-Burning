@@ -108,6 +108,27 @@ func _plan_moderates() -> Array:
 const GERMAN_LANDING_SITES := ["helsinki", "turku", "vaasa"]
 
 
+## §3.4: 1d6 Senate roll. 1-3 = Germans agiscono prima delle Fazioni; 4-6 = dopo.
+## Salvato in state.tracks.german_eligibility_roll per UI / debug.
+func roll_german_eligibility(rng_seed: int = -1) -> int:
+	var rng := RandomNumberGenerator.new()
+	if rng_seed >= 0:
+		rng.seed = rng_seed
+	else:
+		rng.randomize()
+	var roll := rng.randi_range(1, 6)
+	state.tracks["german_eligibility_roll"] = roll
+	state.tracks["germans_act_first"] = 1 if roll <= 3 else 0
+	return roll
+
+
+## Senate ha piazzato il marker Coordinate sul cilindro German Eligibility?
+## (Quando true, è il giocatore Senate a decidere l'azione dei Germans — qui
+## il bot continua a fare la sua scelta, ma il flag è esposto per la UI.)
+func germans_coordinated() -> bool:
+	return int(state.tracks.get("coordinate_marker", 0)) > 0
+
+
 func _plan_germans() -> Array:
 	# §3.4: i Germans agiscono SOLO in Phase II (dopo Red Revolt!).
 	if int(state.tracks.get("phase", 1)) < 2:
