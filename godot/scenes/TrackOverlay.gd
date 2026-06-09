@@ -335,8 +335,9 @@ func _abb_draw_available(s: GameState, tok: float) -> void:
 			_abb_draw_moderates_extra(s, r, tok)
 
 
-## Disegna News (×2) + Personality nei placeholder del box Available Forces Moderati.
-func _abb_draw_moderates_extra(s: GameState, box: Rect2, tok: float) -> void:
+## Disegna News (×2) + Personality nei 3 grandi cerchi stampati del box Moderati.
+## I cerchi sono nella metà SINISTRA del box, riga centrale.
+func _abb_draw_moderates_extra(s: GameState, box: Rect2, _tok: float) -> void:
 	# Conta quanti marker News/Personality sono sulla mappa.
 	var news_on_map := 0
 	var pers_on_map := false
@@ -348,22 +349,29 @@ func _abb_draw_moderates_extra(s: GameState, box: Rect2, tok: float) -> void:
 	# Disponibili: 2 News - su mappa, 1 Personality - su mappa.
 	var news_avail: int = maxi(0, 2 - news_on_map)
 	var pers_avail: int = 0 if pers_on_map else 1
-	# Slot in alto del box (sotto la dicitura stampata "News News Personality").
-	var slot_y := box.position.y + box.size.y * 0.18
-	var slot_size: float = tok * 1.15
-	var slot_w: float = (box.size.x - 24.0) / 3.0
+	# Calibrato sulla map.jpg ABB: i 3 cerchi sono al 35% verticale, centri X
+	# a ~10%, 25%, 40% del box.
+	var cy: float = box.position.y + box.size.y * 0.35
+	var slot_size: float = box.size.x * 0.13
 	var nt := CLAssets.news()
 	var pt := CLAssets.personality()
-	# 2 slot News a sinistra
+	var centers_x: Array = [
+		box.position.x + box.size.x * 0.10,
+		box.position.x + box.size.x * 0.25,
+		box.position.x + box.size.x * 0.40,
+	]
 	for i in range(news_avail):
-		var x := box.position.x + 12.0 + i * slot_w + slot_w * 0.5 - slot_size * 0.5
 		if nt != null:
-			draw_texture_rect(nt, Rect2(Vector2(x, slot_y), Vector2(slot_size, slot_size)), false)
-	# 1 slot Personality a destra
+			var cx: float = float(centers_x[i])
+			draw_texture_rect(nt,
+				Rect2(Vector2(cx - slot_size * 0.5, cy - slot_size * 0.5),
+					Vector2(slot_size, slot_size)), false)
 	if pers_avail > 0:
-		var x_p := box.position.x + 12.0 + 2 * slot_w + slot_w * 0.5 - slot_size * 0.5
 		if pt != null:
-			draw_texture_rect(pt, Rect2(Vector2(x_p, slot_y), Vector2(slot_size, slot_size)), false)
+			var cx_p: float = float(centers_x[2])
+			draw_texture_rect(pt,
+				Rect2(Vector2(cx_p - slot_size * 0.5, cy - slot_size * 0.5),
+					Vector2(slot_size, slot_size)), false)
 
 
 ## Disegna fino a `n` copie di `tex` posizionate sui primi `n` slot Vassal.
