@@ -14,7 +14,8 @@
       "pivotal": false,
       "unshaded": "Activists plan intervention:\nSenate take a Jaeger marker.\nIn Phase II, place in Vaasa (2.4.1).",
       "shaded": "Mobilization in the ranks:\nFlip up to 2 non-Senate Cells.",
-      "it": "1917 was a tumultuous year in Russia, with successive revolutions overthrowing governments. Events #1 to #3 represent a number of effects Russian disintegration had in Finland. On one hand, the so-called activists—who for years had been secretly channeling Finnish men to Germany to receive military training (the so-called jaegers)—got new..."
+      "it": "Chiaro: Senato prende un marker Jaeger; in Fase II lo piazza a Vaasa.\nOmbr.: Capovolgi fino a 2 Cellule non-Senato.",
+      "history": "1917 was a tumultuous year in Russia, with successive revolutions overthrowing governments. Events #1 to #3 represent a number of effects Russian disintegration had in Finland. On one hand, the so-called activists—who for years had been secretly channeling Finnish men to Germany to receive military training (the so-called jaegers)—got new..."
     },
     {
       "number": 2,
@@ -28,8 +29,9 @@
       "propaganda": false,
       "pivotal": false,
       "unshaded": "Filling the power vacuum:\nFlip up to 1d6 of friendly Cells.",
-      "shaded": "Independence consensus:\nModerates Resources +3.\nYer 2",
-      "it": "See above."
+      "shaded": "Independence consensus:\nModerates Resources +3.\n\nYer 2",
+      "it": "Chiaro: Capovolgi fino a 1d6 Cellule amiche.\nOmbr.: Moderati Risorse +3.",
+      "history": "See above."
     },
     {
       "number": 3,
@@ -44,7 +46,8 @@
       "pivotal": false,
       "unshaded": "Russian Bolsheviks and\nFinnish working class:\nAdjust Russian Vassalage by one.",
       "shaded": "Finland on course towards revolt:\nFlip up to 1d6 of friendly Cells.",
-      "it": "See above."
+      "it": "Chiaro: Aggiusta la Vassallaggio Russo di uno.\nOmbr.: Capovolgi fino a 1d6 Cellule amiche.",
+      "history": "See above."
     },
     {
       "number": 4,
@@ -59,7 +62,8 @@
       "pivotal": false,
       "unshaded": "Mobs out of control:\nIn one space with a friendly Cell, Senate\nor Reds free Terror regardless of Active\nstatus removing one enemy Cell.",
       "shaded": "Public weary of disorder:\nPlace an Available Moderates\nCell anywhere.",
-      "it": "On several occasions throughout 1917, the working-class movement used strikes as a means for advancing their political aims. In the absence of an effective national police force, often these strikes would turn violent and lead to deaths (see #20 The Leg of Tokoi's Chair)."
+      "it": "Chiaro: In uno spazio con Cellula amica, Senato o Rossi fanno Terrore gratis (anche su Inattiva) rimuovendo una Cellula nemica.\nOmbr.: Piazza una Cellula Moderati disponibile ovunque.",
+      "history": "On several occasions throughout 1917, the working-class movement used strikes as a means for advancing their political aims. In the absence of an effective national police force, often these strikes would turn violent and lead to deaths (see #20 The Leg of Tokoi's Chair)."
     },
     {
       "number": 5,
@@ -74,7 +78,8 @@
       "pivotal": false,
       "unshaded": "Law spurs frustration:\nPlace two friendly Cells from Available\n- or place one friendly Active Cell -\nanywhere without enemy's Active\nSupport or Active Opposition.",
       "shaded": "Willunifiea: ™O+\nShift any space one level towards Active\nSupport or Active Opposition.",
-      "it": "This act of the Finnish parliament was prepared during the latter half of 1917. On one hand, it meant independence and a transfer of power from Russia to the Finnish Parliament. It was thus welcomed across the Finnish political spectrum. On the other hand, the act would transfer power to the parliament and thus reflect its then current..."
+      "it": "Chiaro: Piazza 2 Cellule amiche dalle Disponibili — o piazza 1 Cellula amica Attiva — ovunque senza Supporto Attivo nemico.\nOmbr.: Sposta uno spazio di un livello verso Supporto/Opposizione Attiva.",
+      "history": "This act of the Finnish parliament was prepared during the latter half of 1917. On one hand, it meant independence and a transfer of power from Russia to the Finnish Parliament. It was thus welcomed across the Finnish political spectrum. On the other hand, the act would transfer power to the parliament and thus reflect its then current..."
     },
     {
       "number": 6,
@@ -87,9 +92,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "1-2 October 1917",
-      "shaded": "A power shift: me:\n'The executing Faction places one\nAvailable enemy Cell in a Town, then\nshift any space one level towards Active\nSupport or Active Opposition",
-      "it": "The general election of October 1917 in Finland was held in an antagonistic atmosphere of riots, unrest, and strikes. In that election, the Social Democratic Party received more votes than in the previous election—but lost their absolute majority in the parliament—as the conservative and centrist parties put their differences aside to form a..."
+      "unshaded": "A power shift: me:\n'The executing Faction places one\nAvailable enemy Cell in a Town, then\nshift any space one level towards Active\nSupport or Active Opposition",
+      "shaded": "",
+      "it": "Chiaro: La Fazione esecutrice piazza 1 Cellula nemica Disponibile in una Città, poi sposta uno spazio di un livello verso Supporto/Opposizione Attiva.\nOmbr.: (vedi Chiaro)",
+      "history": "The general election of October 1917 in Finland was held in an antagonistic atmosphere of riots, unrest, and strikes. In that election, the Social Democratic Party received more votes than in the previous election—but lost their absolute majority in the parliament—as the conservative and centrist parties put their differences aside to form a..."
     },
     {
       "number": 7,
@@ -102,9 +108,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "1 November 1917",
-      "shaded": "Manifesto ignored:\nSenate Resources +3.\n'The left demonstrates Geenceene\n'Moderates then the Reds place one\nAvailable Cell each anywhere without\nActive Support. Then the executing\nFaction may place or remove one cube in\nthe Political Display.\n7",
-      "it": "Published in November 1917 by the Social Democratic Party, the manifesto contained demands for a number of reforms, among others, the introduction of an eight-hour work day. The key demands of the manifesto—including the eight-hour work day—were eventually ratified after a general strike (Event #8)."
+      "unshaded": "Manifesto ignored:\nSenate Resources +3.",
+      "shaded": "'The left demonstrates Geenceene\n'Moderates then the Reds place one\nAvailable Cell each anywhere without\nActive Support. Then the executing\nFaction may place or remove one cube in\nthe Political Display.\n\n7",
+      "it": "Chiaro: Senato Risorse +3.\nOmbr.: Moderati e poi Rossi piazzano 1 Cellula Disponibile ciascuno ovunque senza Supporto Attivo nemico.",
+      "history": "Published in November 1917 by the Social Democratic Party, the manifesto contained demands for a number of reforms, among others, the introduction of an eight-hour work day. The key demands of the manifesto—including the eight-hour work day—were eventually ratified after a general strike (Event #8)."
     },
     {
       "number": 8,
@@ -117,9 +124,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "14-19 November 1917",
-      "shaded": "Violence erupts:\nIn a space with friendly Cell, Senate or\nReds free Terror regardless of Active\nstatus removing one enemy Cell.\nCompromise ends strike: BO\nResources +3. Place an Available\nModerates Network anywhere.\nRe 8",
-      "it": ""
+      "unshaded": "Violence erupts:",
+      "shaded": "In a space with friendly Cell, Senate or\nReds free Terror regardless of Active\nstatus removing one enemy Cell.\n\nCompromise ends strike: BO\nResources +3. Place an Available\nModerates Network anywhere.\n\nRe 8",
+      "it": "Chiaro: In uno spazio con Cellula amica, Senato o Rossi fanno Terrore gratis (anche su Inattiva) rimuovendo una Cellula nemica.\nOmbr.: Moderati Risorse +3 e piazza una Cellula Moderati Disponibile.",
+      "history": ""
     },
     {
       "number": 9,
@@ -132,9 +140,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "Declaration of Finnish",
-      "shaded": "Independence\n14-19 November 1917\nA a ite!\nOne side reaps political capital:\nShift one space one level towards\nActive Support or Active Opposition.\nReminder of a common cause:\nPolarization -1, Resources +3, place\none cube in the Political Display.",
-      "it": ""
+      "unshaded": "| TISENNISY YSSENAATTT |\n= |",
+      "shaded": "Declaration of Finnish\n\nIndependence\nA a ite!\nOne side reaps political capital:\n\nShift one space one level towards\nActive Support or Active Opposition.\n\nReminder of a common cause:\nPolarization -1, Resources +3, place\none cube in the Political Display.",
+      "it": "Chiaro: Sposta uno spazio di un livello verso Supporto/Opposizione Attiva.\nOmbr.: La Fazione esecutrice conduce un Comando Limitato gratis (3.1.2).",
+      "history": ""
     },
     {
       "number": 10,
@@ -148,8 +157,9 @@
       "propaganda": false,
       "pivotal": false,
       "unshaded": "Connections to Germany bear fruit:\nGerman Vassalage +1. Senate take one Jaeger\nmarker, In Phase II, place per 2.4.1.",
-      "shaded": "Distrust mobilizes the left: S\nPlace two Available Moderates or Reds\nCells anywhere without Active Support.\n:\nYee 10 wen\nGl ae Ss a",
-      "it": "Jaeger were Finnish volunteers who, since 1914, had been receiving military training in Germany. The return of the jaeger, starting in October 1917, greatly strengthened the Senate forces, affording them much-needed trained and disciplined soldiers and leaders. The historian Alapuro (1988: 157-158) wrote: A group of 'Activists' had worked for..."
+      "shaded": "Distrust mobilizes the left: S\n\nPlace two Available Moderates or Reds\n\nCells anywhere without Active Support.\n:\n\nYee 10 wen\n\nGl ae Ss a",
+      "it": "Chiaro: Vassallaggio Tedesco +1. Senato prende un marker Jaeger; in Fase II lo piazza per 2.4.1.\nOmbr.: Piazza 2 Cellule Moderati o Rossi Disponibili ovunque senza Supporto Attivo.",
+      "history": "Jaeger were Finnish volunteers who, since 1914, had been receiving military training in Germany. The return of the jaeger, starting in October 1917, greatly strengthened the Senate forces, affording them much-needed trained and disciplined soldiers and leaders. The historian Alapuro (1988: 157-158) wrote: A group of 'Activists' had worked for..."
     },
     {
       "number": 11,
@@ -162,9 +172,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "December 1917",
-      "shaded": "Concerns over foreign involvement:\nShift either Vassalage by one.",
-      "it": "After coming to power in November 1917, Lenin and the Bolsheviks in Russia were attempting to supply the Red rebels in Finland with weaponry (see Event #14 below). Despite this assistance, the aims of the Finnish Reds and the Russian Bolsheviks did not entirely coincide. The historian Seppo Hentilä wrote (Jussila et al 1999: 118): In late..."
+      "unshaded": "Concerns over foreign involvement:\nShift either Vassalage by one.",
+      "shaded": "",
+      "it": "Chiaro: Aggiusta uno dei Vassallaggi di uno.\nOmbr.: Aggiusta uno dei Vassallaggi di uno.",
+      "history": "After coming to power in November 1917, Lenin and the Bolsheviks in Russia were attempting to supply the Red rebels in Finland with weaponry (see Event #14 below). Despite this assistance, the aims of the Finnish Reds and the Russian Bolsheviks did not entirely coincide. The historian Seppo Hentilä wrote (Jussila et al 1999: 118): In late..."
     },
     {
       "number": 12,
@@ -177,9 +188,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "1917\nversialan prices scerk acres",
-      "shaded": "In one space with a friendly Cell, Senate\nor Reds free Terror regardless of Active\nstatus removing one enemy Cell.\nModerates Resources -3.\nTanner masters the situatio: S\nModerates conduct a Special Activity\nora free Limited Command (3.1.2).\nYoo 12\n— Ee",
-      "it": "The historian Risto Alapuro (1988: 163) wrote: The worsening food shortage played a central role in radicalizing the masses. In late September [1917] party leaders stated that the masses were growing restless over the food situation, and a few days before the foundation of the national security guard organization, party and trade union leaders..."
+      "unshaded": "versialan prices scerk acres",
+      "shaded": "In one space with a friendly Cell, Senate\nor Reds free Terror regardless of Active\nstatus removing one enemy Cell.\nModerates Resources -3.\n\nTanner masters the situatio: S\nModerates conduct a Special Activity\nora free Limited Command (3.1.2).\n\nYoo 12\n— Ee",
+      "it": "Chiaro: In uno spazio con Cellula amica, Senato o Rossi fanno Terrore gratis rimuovendo una Cellula nemica. Moderati Risorse -3.\nOmbr.: Moderati conducono un'Attività Speciale o un Comando Limitato gratis (3.1.2).",
+      "history": "The historian Risto Alapuro (1988: 163) wrote: The worsening food shortage played a central role in radicalizing the masses. In late September [1917] party leaders stated that the masses were growing restless over the food situation, and a few days before the foundation of the national security guard organization, party and trade union leaders..."
     },
     {
       "number": 13,
@@ -194,7 +206,8 @@
       "pivotal": false,
       "unshaded": "Unhappiness mobilizes: 0\nPlace two friendly Cells from Available - or\nplace one friendly Active Cell - anywhere\nwithout enemy's Active Support or Active\nOpposition. Moderates Resources -3.",
       "shaded": "Situation contained: BO\nFirst, the executing Faction conducts a free\nLimited Command (3.1.2). Then, the\nModerates place 1 cube in the Political Display.",
-      "it": "As a part of the Russian Empire, Finland's economy depended heavily on Russia's. Initially, Russian participation in the First World War stimulated agricultural production, as well as manufacturing in Finland. Eventually, however, and especially from the Summer of 1917 on, instability in Russia led to decreased demand, then to further economic..."
+      "it": "Chiaro: Piazza 2 Cellule amiche dalle Disponibili — o piazza 1 Cellula amica Attiva — ovunque senza Supporto Attivo nemico.\nOmbr.: La Fazione esecutrice conduce un Comando Limitato gratis (3.1.2); poi i Moderati piazzano 1 cubo nel Political Display.",
+      "history": "As a part of the Russian Empire, Finland's economy depended heavily on Russia's. Initially, Russian participation in the First World War stimulated agricultural production, as well as manufacturing in Finland. Eventually, however, and especially from the Summer of 1917 on, instability in Russia led to decreased demand, then to further economic..."
     },
     {
       "number": 14,
@@ -209,7 +222,8 @@
       "pivotal": false,
       "unshaded": "Take one Cannons marker. In Phase I,\nplace per 2.4.1.",
       "shaded": "",
-      "it": "Alongside Armored Trains (see Event #15 Trains below), cannons were some of the heavier weaponry used in the Finnish Civil War. These were acquired from Russian garrisons in Finland, or secretly from the Germans (Event #10) and from the Bolsheviks in Russia. For example, on 27 January, 1918, on Lenin's orders, a weapons train carrying 10,000..."
+      "it": "Chiaro: Prendi un marker Cannons. In Fase I, piazzalo per 2.4.1. [Capacità]",
+      "history": "Alongside Armored Trains (see Event #15 Trains below), cannons were some of the heavier weaponry used in the Finnish Civil War. These were acquired from Russian garrisons in Finland, or secretly from the Germans (Event #10) and from the Bolsheviks in Russia. For example, on 27 January, 1918, on Lenin's orders, a weapons train carrying 10,000..."
     },
     {
       "number": 15,
@@ -224,7 +238,8 @@
       "pivotal": false,
       "unshaded": "Take one Trains marker. In Phase I,\nplace per 2.4.1.",
       "shaded": "",
-      "it": "In 1918, in Finland, the railways represented virtually the only viable mode of speedy mass transportation. Through the long Winter and late into the Spring, snow and ice would hinder road-based transportation in a country whose motorized transportation and road networks were underdeveloped anyway. For those reasons, the rail net-"
+      "it": "Chiaro: Prendi un marker Trains. In Fase I, piazzalo per 2.4.1. [Capacità]",
+      "history": "In 1918, in Finland, the railways represented virtually the only viable mode of speedy mass transportation. Through the long Winter and late into the Spring, snow and ice would hinder road-based transportation in a country whose motorized transportation and road networks were underdeveloped anyway. For those reasons, the rail net-"
     },
     {
       "number": 16,
@@ -237,9 +252,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "1917",
-      "shaded": "German-trained forces:\nSenate take one Jaeger marker. In Phase II,\nplace per 2.4.1.\nRussian officers help Reds:\nReds take one Commander marker. In\nPhase II, place it with any Reds Cell.\nYor 16\naN a",
-      "it": "See Event #10 above. The shaded Event-text refers to the historical role of the few Russian military advisers that worked on the Reds' side. One of them was Colonel Mihail Svetsnikov (1882-1938), the former chief of staff of the Russian 106th Army Division. He advised the Reds, among others, in the battle of Tampere (Event #40)."
+      "unshaded": "German-trained forces:\nSenate take one Jaeger marker. In Phase II,\nplace per 2.4.1.",
+      "shaded": "Russian officers help Reds:\nReds take one Commander marker. In\nPhase II, place it with any Reds Cell.\n\nYor 16\naN a",
+      "it": "Chiaro: Senato prende un marker Jaeger; in Fase II lo piazza per 2.4.1.\nOmbr.: Rossi prendono un marker Commander; in Fase II lo piazzano per 2.4.1.",
+      "history": "See Event #10 above. The shaded Event-text refers to the historical role of the few Russian military advisers that worked on the Reds' side. One of them was Colonel Mihail Svetsnikov (1882-1938), the former chief of staff of the Russian 106th Army Division. He advised the Reds, among others, in the battle of Tampere (Event #40)."
     },
     {
       "number": 17,
@@ -253,8 +269,9 @@
       "propaganda": false,
       "pivotal": false,
       "unshaded": "'The executing Faction takes one Train\nmarker. In Phase II, place it with any\nexecuting Faction's Cell (2.4.1).",
-      "shaded": "® 17",
-      "it": "See #15 above. A Finnish family peels tree bark for making bark bread."
+      "shaded": "",
+      "it": "Chiaro: La Fazione esecutrice prende un marker Train. In Fase II lo piazza con una Cellula amica (2.4.1).",
+      "history": "See #15 above. A Finnish family peels tree bark for making bark bread."
     },
     {
       "number": 18,
@@ -267,9 +284,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "Place up to two Available Cells in total in\nany 0 Population Province(s) or\nShift Support or Opposition one level\nina 0 Population Province.",
-      "shaded": "Mobilization channels s\ninto politics:\nConduct the Politics Phase (6.2).",
-      "it": "All Bridges Burning focuses on the events in central and southern Finland, where most of the civil war was fought (and most of the populace lived). In the early parts of the war, some fighting also took place in the northern parts of the country. For example, the town of Oulu (just beyond the map's northern edge) and its surroundings were said..."
+      "unshaded": "Mobilization despite lack of\norganization and arms:",
+      "shaded": "Place up to two Available Cells in total in\nany 0 Population Province(s) or\nShift Support or Opposition one level\nina 0 Population Province.\n\nMobilization channels s\n\ninto politics:\nConduct the Politics Phase (6.2).",
+      "it": "Chiaro: Piazza fino a 2 Cellule Disponibili in Province a Popolazione 0, oppure sposta Supporto/Opposizione di un livello in una Provincia a Popolazione 0.\nOmbr.: Conduci la Fase Politica (6.2).",
+      "history": "All Bridges Burning focuses on the events in central and southern Finland, where most of the civil war was fought (and most of the populace lived). In the early parts of the war, some fighting also took place in the northern parts of the country. For example, the town of Oulu (just beyond the map's northern edge) and its surroundings were said..."
     },
     {
       "number": 19,
@@ -283,8 +301,9 @@
       "propaganda": false,
       "pivotal": false,
       "unshaded": "coeeeesiven ied tarieee ae",
-      "shaded": "Remove a cube from the\nPolitical Display, then conduct the\nPolitics Phase (6.2).\nShaky progress: es\nRoll 1d6, On 1-4, place a cube in the\nPolitical Display. Otherwise, no effect.\nWe 19\nte",
-      "it": "Throughout 1917 and the build-up to the Finnish Civil War, a parliamentary struggle for political reforms went on. Strikes, the mobilization of the guards, and an effective power vacuum on the streets, gave rise to many opportunities for political blackmail."
+      "shaded": "Remove a cube from the\nPolitical Display, then conduct the\nPolitics Phase (6.2).\n\nShaky progress: es\nRoll 1d6, On 1-4, place a cube in the\nPolitical Display. Otherwise, no effect.\n\nWe 19\nte",
+      "it": "Chiaro: Rimuovi un cubo dal Political Display, poi conduci la Fase Politica (6.2).\nOmbr.: Tira 1d6: con 1-4 piazza un cubo nel Political Display; con 5-6 nessun effetto.",
+      "history": "Throughout 1917 and the build-up to the Finnish Civil War, a parliamentary struggle for political reforms went on. Strikes, the mobilization of the guards, and an effective power vacuum on the streets, gave rise to many opportunities for political blackmail."
     },
     {
       "number": 20,
@@ -297,9 +316,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "1917",
-      "shaded": "@i\nArbitrary class power:\nRemove a Prepared marker ot a Cell (never\nremove a Cell that would remove a marker) from\na Town. If Personality removed, Moderates\ntransfer 3 Resources to executing Faction.\nMilitia as the police:\nFlip any one Active Cell.",
-      "it": "The \"leg of Tokoi's chair\" was the nickname given to the batons carried by the replacement police force (essentially, militias) that in the course of 1917, in a situation of deteriorating law and order throughout the country, was ordered by the Finnish Senate to replace the forces of the Russian gendarmerie in Finland. Oskari Tokoi (1873-1963),..."
+      "unshaded": "@i\nArbitrary class power:",
+      "shaded": "Remove a Prepared marker ot a Cell (never\nremove a Cell that would remove a marker) from\na Town. If Personality removed, Moderates\ntransfer 3 Resources to executing Faction.\n\nMilitia as the police:\nFlip any one Active Cell.",
+      "it": "Chiaro: Rimuovi un marker Prepared o una Cellula (mai una Cellula che farebbe rimuovere un marker) da una Città. Se rimuovi una Personality, Moderati trasferiscono 3 Risorse alla Fazione esecutrice.\nOmbr.: (vedi Chiaro)",
+      "history": "The \"leg of Tokoi's chair\" was the nickname given to the batons carried by the replacement police force (essentially, militias) that in the course of 1917, in a situation of deteriorating law and order throughout the country, was ordered by the Finnish Senate to replace the forces of the Russian gendarmerie in Finland. Oskari Tokoi (1873-1963),..."
     },
     {
       "number": 21,
@@ -312,9 +332,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "1917",
-      "shaded": "Tensions:\nFlip two Cells anywhere.\n®\nSomewhere under the North Star:\nReds may place an Available\nAdministration in a Province with\nfriendly pieces.",
-      "it": "Workers' Halls, built throughout the country, served as central meeting points for the Reds, offering premises for political organization and activity."
+      "unshaded": "Tensions:\nFlip two Cells anywhere.",
+      "shaded": "Somewhere under the North Star:\nReds may place an Available\nAdministration in a Province with\nfriendly pieces.",
+      "it": "Chiaro: Capovolgi 2 Cellule ovunque.\nOmbr.: Rossi piazzano un'Amministrazione Disponibile in una Provincia con Cellule Rosse amiche.",
+      "history": "Workers' Halls, built throughout the country, served as central meeting points for the Reds, offering premises for political organization and activity."
     },
     {
       "number": 22,
@@ -324,7 +345,8 @@
       "pivotal": false,
       "unshaded": "\"1s 'Propaganda\nConduct a Propaganda Round (6.0).",
       "shaded": "",
-      "it": "Pictured on the card is a political drawing from Velikulta magazine, published in 1917. The drawing argues that despite svaboda—liberation—achieved by the workers in Russia, working-class demonstrations in Finland were continuing to be suppressed by the bourgeoisie, represented by the man in the white coat, as well as the men wearing a white..."
+      "it": "Carta Propaganda (1ª): conduci un Round di Propaganda (6.0).",
+      "history": "Pictured on the card is a political drawing from Velikulta magazine, published in 1917. The drawing argues that despite svaboda—liberation—achieved by the workers in Russia, working-class demonstrations in Finland were continuing to be suppressed by the bourgeoisie, represented by the man in the white coat, as well as the men wearing a white..."
     },
     {
       "number": 23,
@@ -332,9 +354,10 @@
       "factionOrder": [],
       "propaganda": true,
       "pivotal": false,
-      "unshaded": "2™4 Propaganda",
-      "shaded": "Conduct a Propaganda Round (6.0).",
-      "it": "This card features a White Senate propaganda poster. It attempts to illustrate that a far larger portion of Finland was in White, rather than in Red, hands. What the poster fails to mention is that by far the largest portion of the Finnish population lived in the southern areas, which was controlled by the Reds. position as the workers movement..."
+      "unshaded": "rowaeis.\nJAKAROL",
+      "shaded": "2™4 Propaganda\n\nConduct a Propaganda Round (6.0).",
+      "it": "Carta Propaganda (2ª): conduci un Round di Propaganda (6.0).",
+      "history": "This card features a White Senate propaganda poster. It attempts to illustrate that a far larger portion of Finland was in White, rather than in Red, hands. What the poster fails to mention is that by far the largest portion of the Finnish population lived in the southern areas, which was controlled by the Reds. position as the workers movement..."
     },
     {
       "number": 24,
@@ -348,8 +371,9 @@
       "propaganda": false,
       "pivotal": true,
       "unshaded": "'This Event becomes the next Event\nwhen Reds and Senate on map Cells\ncombined ≥27 or at 2nd Propaganda\nRound. (Discard the previous next Event.)",
-      "shaded": "When this card becomes the current\nEvent, conduct these steps (2.4.1):\n• Reds cylinder to Event box.\n• In one Town with Reds Cells, Reds may\nremove all Senate or free Rally there.\n• Place Capabilities.\n• Adjust Powers' Forces.\n'The game now enters Phase II",
-      "it": "(Pivotal Event) On 27 January, 1918, the Reds launched a revolt, taking control of the major population centers in the south of the country. The historian Alapuro (1988: 172-173) wrote: Even the party leadership could not ignore the government's intention to put down the worker security guards as soon as it felt strong enough. After encounters..."
+      "shaded": "When this card becomes the current\nEvent, conduct these steps (2.4.1):\n• Reds cylinder to Event box.\n• In one Town with Reds Cells, Reds may\nremove all Senate or free Rally there.\n• Place Capabilities.\n• Adjust Powers' Forces.\n\n'The game now enters Phase II",
+      "it": "Pivotal: Questa carta diventa il prossimo Evento quando le Cellule Rosse+Senato sulla mappa raggiungono ≥27, oppure al 2° Round di Propaganda.\nQuando diventa l'Evento corrente: cilindro Rossi nella casella Evento; in una Città con Cellule Rosse, Rossi rimuovono tutti i Senato o fanno Rally gratis; piazza le Capacità; aggiusta le Truppe dei Poteri. Inizia la Fase II.",
+      "history": "(Pivotal Event) On 27 January, 1918, the Reds launched a revolt, taking control of the major population centers in the south of the country. The historian Alapuro (1988: 172-173) wrote: Even the party leadership could not ignore the government's intention to put down the worker security guards as soon as it felt strong enough. After encounters..."
     },
     {
       "number": 25,
@@ -364,7 +388,8 @@
       "pivotal": false,
       "unshaded": "Mannerheim orders disarmament:\nIna space with both, replace each Russian\nTroop with an Available Senate Cell.\n(Do not adjust Vassalage.)\nInexperienced White Guards panic:\nRemove up to two Senate Cells (never\nremove a Cell that would remove a marker)\nfrom where Russian Troop to Available.",
       "shaded": "a 25",
-      "it": "Russian garrisons existed all over Finland in 1917. As political instability in Russia grew, many garrisons gradually evaporated into thin air as soldiers were either ordered to head home or did so on their own initiative. One attempt to disarm a Russian garrison in Laihia (near Vaasa) ended in untrained White Guards there panicking, with some..."
+      "it": "Chiaro: In uno spazio con entrambi, sostituisci ogni Truppa Russa con una Cellula Senato Disponibile (non aggiustare Vassallaggio).\nOmbr.: (vedi Chiaro)",
+      "history": "Russian garrisons existed all over Finland in 1917. As political instability in Russia grew, many garrisons gradually evaporated into thin air as soldiers were either ordered to head home or did so on their own initiative. One attempt to disarm a Russian garrison in Laihia (near Vaasa) ended in untrained White Guards there panicking, with some..."
     },
     {
       "number": 26,
@@ -377,9 +402,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "Jaeger arrive in Vaasa:\n'The Senate place a Jaeger\nmarker (2.4.1).",
-      "shaded": "Rumors of jaeger:\nModerates or Reds conduct a free\nRally in any one space.",
-      "it": "The card image shows a contingent of jaeger being received by the commander-in-chief Mannerheim, in the marketplace in the town of Vaasa. See also #10 above."
+      "unshaded": "eee Fi\nJaeger Return to Finland\n18 & 25 February 1918",
+      "shaded": "Jaeger arrive in Vaasa:\n'The Senate place a Jaeger\nmarker (2.4.1).\n\nRumors of jaeger:\nModerates or Reds conduct a free\nRally in any one space.",
+      "it": "Chiaro: Senato piazza un marker Jaeger (2.4.1).\nOmbr.: Moderati o Rossi conducono un Rally gratis in uno spazio.",
+      "history": "The card image shows a contingent of jaeger being received by the commander-in-chief Mannerheim, in the marketplace in the town of Vaasa. See also #10 above."
     },
     {
       "number": 27,
@@ -393,8 +419,9 @@
       "propaganda": false,
       "pivotal": false,
       "unshaded": "Beaten back by the Senate:\nSenate may free Attack in one space\nwith Senate pieces adding up to +2\nfree to Attack Strength.\nSurprising gains: be\nReds may March free to a space then\nAttack there adding up to +2 free\nto Attack Strength.",
-      "shaded": "Vor 27",
-      "it": "In February 1918, the Reds launched a major offensive on all fronts. A harbinger of the Reds military ineptitude, it failed to produce any notable results. The next offensive was planned and partially executed in March of 1918. By that time, however, Senate forces were already in the midst of an operation to retake Tampere (see #40 Battle of..."
+      "shaded": "",
+      "it": "Chiaro: Senato può fare Attacco gratis in uno spazio con pezzi Senato aggiungendo +2 alla Forza d'Attacco.\nOmbr.: (vedi Chiaro)",
+      "history": "In February 1918, the Reds launched a major offensive on all fronts. A harbinger of the Reds military ineptitude, it failed to produce any notable results. The next offensive was planned and partially executed in March of 1918. By that time, however, Senate forces were already in the midst of an operation to retake Tampere (see #40 Battle of..."
     },
     {
       "number": 28,
@@ -408,8 +435,9 @@
       "propaganda": false,
       "pivotal": false,
       "unshaded": "Mistreatment in notorious\nprison camp:",
-      "shaded": "Conduct the Prisoners of War step\nof the Propaganda Round (6.5).\n'Then, the executing Faction either adds\n1d6 Resources to itself or subtracts 16\nResources (decide before roll), as\nevenly as possible, from both\nenemy Factions combined.\nYow 28",
-      "it": "This was a former Russian garrison base in the town of Lahti (see Event #41), was the location of the one of the more notorious Senate prison camps. Formed in May 1918, at the end of the war, it housed over 20,000 Red prisoners and refugees. The camp—essentially an open field—was not equipped to handle such a large number of prisoners. The..."
+      "shaded": "Conduct the Prisoners of War step\nof the Propaganda Round (6.5).\n'Then, the executing Faction either adds\n1d6 Resources to itself or subtracts 16\nResources (decide before roll), as\nevenly as possible, from both\nenemy Factions combined.\n\nYow 28",
+      "it": "Chiaro: Conduci la fase Prigionieri di Guerra del Round di Propaganda (6.5).\nOmbr.: La Fazione esecutrice aggiunge 1d6 Risorse a sé stessa o ne sottrae 1d6 a un avversario.",
+      "history": "This was a former Russian garrison base in the town of Lahti (see Event #41), was the location of the one of the more notorious Senate prison camps. Formed in May 1918, at the end of the war, it housed over 20,000 Red prisoners and refugees. The camp—essentially an open field—was not equipped to handle such a large number of prisoners. The..."
     },
     {
       "number": 29,
@@ -424,7 +452,8 @@
       "pivotal": false,
       "unshaded": "War of Liberation:\nSenate free Rallies in a space then free\nMarches to an adjacent space (3.1.2).",
       "shaded": "War Between Brothers:\nModerates free Rally in one space.\nPolarization -1.",
-      "it": "Already during the conflict itself, the war came to bear different names, depending on who was speaking about it. The Senate side viewed it as a \"war of liberation\" for Finland from Russian influence. Others, such as the Finnish novelist Juhani Aho (1918b: 166), described it as a \"war between brothers\" to emphasize the particularly tragic..."
+      "it": "Chiaro: Senato fa Rally gratis in uno spazio, poi March gratis verso uno spazio adiacente (3.1.2).\nOmbr.: Moderati fanno Rally gratis in uno spazio. Polarizzazione -1.",
+      "history": "Already during the conflict itself, the war came to bear different names, depending on who was speaking about it. The Senate side viewed it as a \"war of liberation\" for Finland from Russian influence. Others, such as the Finnish novelist Juhani Aho (1918b: 166), described it as a \"war between brothers\" to emphasize the particularly tragic..."
     },
     {
       "number": 30,
@@ -439,7 +468,8 @@
       "pivotal": false,
       "unshaded": "Meeting interrupted:\nIn one space with friendly pieces, remove\nup to two Moderates Cells there.\nIf Personality removed, Moderates\ntransfer 3 Resources to executing Faction.",
       "shaded": "Finnish Social Democrat\nnewspaper founded:\nModerates Resources +3 or Moderates\nplace a cube in the Political Display.",
-      "it": "The \"catacombs\" was the nickname of the secret meeting place for those working-class Social Democrats who did not join the Red Revolt, among them Väinö Tanner. The card's image pictures the building in Helsinki, in the catacomb-like basement where the secret meetings were held (Image: Helsinki City Museum, License CC BY 4.0). For decades, the..."
+      "it": "Chiaro: In uno spazio con pezzi amici, rimuovi fino a 2 Cellule Moderati. Se rimuovi una Personality, Moderati trasferiscono 3 Risorse alla Fazione esecutrice.\nOmbr.: Moderati Risorse +3, oppure Moderati piazzano un cubo nel Political Display.",
+      "history": "The \"catacombs\" was the nickname of the secret meeting place for those working-class Social Democrats who did not join the Red Revolt, among them Väinö Tanner. The card's image pictures the building in Helsinki, in the catacomb-like basement where the secret meetings were held (Image: Helsinki City Museum, License CC BY 4.0). For decades, the..."
     },
     {
       "number": 31,
@@ -452,9 +482,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "3 April 1918",
-      "shaded": "German forces arrive:\nSenate may Coordinate.\nRumors of Germans:\nModerates or Reds conduct a free Limited\n'Command in Uusimaa (excluding Attack).\nYor 31 ae\nYa s",
-      "it": "With the treaty of Brest-Litovsk, in March 1918, the Russians agreed to give up a host of their European possessions, including Finland. This freed the Germans to assert themselves in the country. On 3 April, the Germans landed in Hanko, about 77 miles (or 125 kilometers) southwest of Helsinki, unopposed. A week later they arrived in Helsinki..."
+      "unshaded": "German forces arrive:\nSenate may Coordinate.",
+      "shaded": "Rumors of Germans:\nModerates or Reds conduct a free Limited\n'Command in Uusimaa (excluding Attack).\n\nYor 31 ae\nYa s",
+      "it": "Chiaro: Senato può fare Coordinate.\nOmbr.: Moderati o Rossi conducono un Comando Limitato gratis in Uusimaa (escluso Attacco).",
+      "history": "With the treaty of Brest-Litovsk, in March 1918, the Russians agreed to give up a host of their European possessions, including Finland. This freed the Germans to assert themselves in the country. On 3 April, the Germans landed in Hanko, about 77 miles (or 125 kilometers) southwest of Helsinki, unopposed. A week later they arrived in Helsinki..."
     },
     {
       "number": 32,
@@ -467,9 +498,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "Armistice Proposal\n10 April 1918",
-      "shaded": "Publication prevented:\nRemove one Moderates Cell anywhere. If\nPersonality removed, Moderates transfer 3\nResources to executing Faction.\nD fs 2)\nocument published:\nModerates place one Available\nCell anywhere, reduce Polarization\nby 1d6 halved (round up).\nYe 32\n~e",
-      "it": "On 10 April 1918, towards the end of the civil war, the Työmies newspaper—hitherto the voice © 2023 GMT Games, LLC 34 All Bridges Burning ~ Playbook of the Red Revolt, but now changing course as the defeat of the Reds began to seem inevitable—published an armistice proposal that Tanner and 20 other Social Democrat signatories, who had not..."
+      "unshaded": "Ranhan waatimufjia,",
+      "shaded": "Armistice Proposal\n\nPublication prevented:\nRemove one Moderates Cell anywhere. If\nPersonality removed, Moderates transfer 3\n\nResources to executing Faction.\nD fs 2)\nocument published:\nModerates place one Available\nCell anywhere, reduce Polarization\nby 1d6 halved (round up).\n\nYe 32\ne",
+      "it": "Chiaro: Rimuovi una Cellula Moderati ovunque. Se rimuovi una Personality, Moderati trasferiscono 3 Risorse alla Fazione esecutrice.\nOmbr.: (vedi Chiaro)",
+      "history": "On 10 April 1918, towards the end of the civil war, the Työmies newspaper—hitherto the voice © 2023 GMT Games, LLC 34 All Bridges Burning ~ Playbook of the Red Revolt, but now changing course as the defeat of the Reds began to seem inevitable—published an armistice proposal that Tanner and 20 other Social Democrat signatories, who had not..."
     },
     {
       "number": 33,
@@ -482,9 +514,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "Battle of Helsinki\n12-13 April 1918\nGerman forces arrive:\nSenate Coordinate\nPore",
-      "shaded": "Senate Rally free in Helsinki (3.1.2).\nReds prepare:\nAnon-Senate Faction may conduct one\nfree Limited Command in or adjacent\nto Helsinki (excluding Attack).",
-      "it": "The Finnish historian Seppo Hentilä wrote (Jussila et al 1999: 119): The main German force ― the Baltic division, consisting of some 11,000 men under the command of General Rüdiger von der Goltz ― landed in Hankoniemi on 3 April [see Event #31]. Another detachment of some 3,000 men landed in Loviisa on 7 April and invaded Lahti two weeks later..."
+      "unshaded": "German Action Phase",
+      "shaded": "Battle of Helsinki\nGerman forces arrive:\nSenate Coordinate\nPore\n\nSenate Rally free in Helsinki (3.1.2).\n\nReds prepare:\nAnon-Senate Faction may conduct one\nfree Limited Command in or adjacent\nto Helsinki (excluding Attack).",
+      "it": "Chiaro: Senato fa Rally gratis a Helsinki (3.1.2).\nOmbr.: Una Fazione non-Senato conduce un Comando Limitato gratis a Helsinki o in spazio adiacente (escluso Attacco).",
+      "history": "The Finnish historian Seppo Hentilä wrote (Jussila et al 1999: 119): The main German force ― the Baltic division, consisting of some 11,000 men under the command of General Rüdiger von der Goltz ― landed in Hankoniemi on 3 April [see Event #31]. Another detachment of some 3,000 men landed in Loviisa on 7 April and invaded Lahti two weeks later..."
     },
     {
       "number": 34,
@@ -499,7 +532,8 @@
       "pivotal": false,
       "unshaded": "Arrests made: ae\nRemove a Personality to Available\nand Moderates Resources -3\nfore\nSenate Crackdown.\nTanner avoids arrest: ee\nModerates free Rally in any\none space (3.1.2).",
       "shaded": "",
-      "it": "Both the Reds and Whites held suspicions about the true allegiance of the well-known Social Democrat politician Väinö Tanner. Tanner (1949) details a number of failed and successful attempts to arrest him for allegedly supporting the enemy. Tanner survived the war, and in subsequent decades, served in important political roles—through World War..."
+      "it": "Chiaro: Rimuovi una Personality (Disponibile) e Moderati Risorse -3, oppure Senato Crackdown.\nOmbr.: Moderati conducono un'Attività Speciale gratis.",
+      "history": "Both the Reds and Whites held suspicions about the true allegiance of the well-known Social Democrat politician Väinö Tanner. Tanner (1949) details a number of failed and successful attempts to arrest him for allegedly supporting the enemy. Tanner survived the war, and in subsequent decades, served in important political roles—through World War..."
     },
     {
       "number": 35,
@@ -512,9 +546,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "Home Front\nFebruary - March 1918",
-      "shaded": "White Senate conscription:\nSenate free Rally in up to two spaces\nwith Support (3.1.2).\nii\n'Tokoi's \"grain train\" finally arrives:\"\nModerates free Rally (3.1.2) in two\nspaces or Reds shift one space one\nlevel towards Active Opposition.",
-      "it": "On 18 February, 1918, the White Senate ordered the conscription of all males aged 21 to 39. By April, an estimated 11,000 conscripts were fighting in the war on the White side. (Haapala & Hoppu 2009: 137) The shaded text on the Event card refers to trains sent by the Finnish Reds to Russia to fetch grain for the purpose of relieving food-supply..."
+      "unshaded": "German Action Phase",
+      "shaded": "Home Front\n\nWhite Senate conscription:\nSenate free Rally in up to two spaces\nwith Support (3.1.2).\n\nii\n'Tokoi's \"grain train\" finally arrives:\"\nModerates free Rally (3.1.2) in two\nspaces or Reds shift one space one\n\nlevel towards Active Opposition.",
+      "it": "Chiaro: Senato fa Rally gratis in fino a 2 spazi con Supporto (3.1.2).\nOmbr.: Moderati fanno Rally gratis (3.1.2) in 2 spazi.",
+      "history": "On 18 February, 1918, the White Senate ordered the conscription of all males aged 21 to 39. By April, an estimated 11,000 conscripts were fighting in the war on the White side. (Haapala & Hoppu 2009: 137) The shaded text on the Event card refers to trains sent by the Finnish Reds to Russia to fetch grain for the purpose of relieving food-supply..."
     },
     {
       "number": 36,
@@ -528,8 +563,9 @@
       "propaganda": false,
       "pivotal": false,
       "unshaded": "No mercy:",
-      "shaded": "Remove any two Senate and/or Reds\nCells (never remove a Cell that would remove\na marker) from map to Available or Prison.\nPolarization +1 for each imprisoned Cell.\nAttempts at reconciliation: S\nMove up to two Prisoners to Available.\nFor each piece moved, Polarization -1\nand executing Faction's Resources +1.\nve 36",
-      "it": "See Event #28."
+      "shaded": "Remove any two Senate and/or Reds\nCells (never remove a Cell that would remove\na marker) from map to Available or Prison.\nPolarization +1 for each imprisoned Cell.\n\nAttempts at reconciliation: S\nMove up to two Prisoners to Available.\nFor each piece moved, Polarization -1\nand executing Faction's Resources +1.\n\nve 36",
+      "it": "Chiaro: Rimuovi 2 Cellule Senato e/o Rosse (mai Cellule che farebbero rimuovere un marker) dalla mappa, in Disponibili o Prigione. Polarizzazione +1 per ogni Cellula in Prigione.\nOmbr.: (vedi Chiaro)",
+      "history": "See Event #28."
     },
     {
       "number": 37,
@@ -542,9 +578,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "May 1918",
-      "shaded": "Department for the me:\nPacification of Conquered Areas:\nShift one space with a Senate piece\none level towards Active Support\nor Active Opposition.",
-      "it": "In the course of 1918, a special purpose department of the Senate forces' headquarters, named VATO (Valloitettujen Alueiden Turvaamisosasto) or the Department for the Pacification of Conquered Areas, was formed to oversee the management of the prison camps, as well as for other reasons. For instance, the department also directed units in the..."
+      "unshaded": "Department for the me:\nPacification of Conquered Areas:\nShift one space with a Senate piece",
+      "shaded": "one level towards Active Support\nor Active Opposition.",
+      "it": "Chiaro: Sposta uno spazio con pezzo Senato di un livello verso Supporto/Opposizione Attivi.\nOmbr.: (vedi Chiaro)",
+      "history": "In the course of 1918, a special purpose department of the Senate forces' headquarters, named VATO (Valloitettujen Alueiden Turvaamisosasto) or the Department for the Pacification of Conquered Areas, was formed to oversee the management of the prison camps, as well as for other reasons. For instance, the department also directed units in the..."
     },
     {
       "number": 38,
@@ -557,9 +594,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "Summer 1918",
-      "shaded": "Trip prevented:\nRemove two Moderates Cells\n(if Personality removed, Moderates\ntransfer 3 Resources to executing Faction)\nor Senate Crackdown,\nTig ¢\nigerstedt report leaked\nto Swedish media:\nReduce Polarization by 146\nhalved (round up).\nRe 38",
-      "it": "In the Summer of 1918, after the hostilities had already ended and the White retributions against the Reds were in full swing, the leading Social Democratic politician Väinö Tanner left on a trip to neighboring Sweden. His intention was to inform the Swedish and international media about the White retributions taking place in Finland. Armed..."
+      "unshaded": "Trip prevented:\nRemove two Moderates Cells\n(if Personality removed, Moderates\ntransfer 3 Resources to executing Faction)\nor Senate Crackdown,\nTig ¢\nigerstedt report leaked\nto Swedish media:\nReduce Polarization by 146\nhalved (round up).",
+      "shaded": "Re 38",
+      "it": "Chiaro: Rimuovi 2 Cellule Moderati (se rimuovi Personality, Moderati trasferiscono 3 Risorse) oppure Senato Crackdown.\nOmbr.: Moderati conducono un'Attività Speciale gratis.",
+      "history": "In the Summer of 1918, after the hostilities had already ended and the White retributions against the Reds were in full swing, the leading Social Democratic politician Väinö Tanner left on a trip to neighboring Sweden. His intention was to inform the Swedish and international media about the White retributions taking place in Finland. Armed..."
     },
     {
       "number": 39,
@@ -572,9 +610,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "First Post-War Parliament\nMay 1918",
-      "shaded": "Victor's parliament: oH\nRemove a Resolved Issue marker.\nLagerlaf speech: oY\n'Moderates place an Available\nNetwork anywhere.\nVe 39\nSN",
-      "it": "The new Finnish parliament met for the first time on 15 May, 1918. It was a rump parliament of the victor, lacking many of its members, over half of which had been Social Democrats, implicated or killed in the revolt, or escaped to Russia: The Eduskunta [the Finnish parliament] assembled for the first time on 15 May 1918, the day before the..."
+      "unshaded": "German Action Phase\nal |",
+      "shaded": "First Post-War Parliament\n\nVictor's parliament: oH\nRemove a Resolved Issue marker.\nLagerlaf speech: oY\n'Moderates place an Available\nNetwork anywhere.\n\nVe 39\n\nSN",
+      "it": "Chiaro: Conduci la Fase Politica (6.2).\nOmbr.: (vedi Chiaro)",
+      "history": "The new Finnish parliament met for the first time on 15 May, 1918. It was a rump parliament of the victor, lacking many of its members, over half of which had been Social Democrats, implicated or killed in the revolt, or escaped to Russia: The Eduskunta [the Finnish parliament] assembled for the first time on 15 May 1918, the day before the..."
     },
     {
       "number": 40,
@@ -587,9 +626,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "weak; that is, shoot as you see fit\":\nIn Tampere or Häme, the Reds or Senate\nmay free Attack removing (or relocating)\nReds or Senate enemy Cells up to the\nnumber of friendly Cells there\nhalved (round up).",
+      "unshaded": "cgi cimses ©\nweak; that is, shoot as you see fit\":\nIn Tampere or Häme, the Reds or Senate\nmay free Attack removing (or relocating)\nReds or Senate enemy Cells up to the\nnumber of friendly Cells there\nhalved (round up).",
       "shaded": "",
-      "it": "One of the fiercest and strategically most important battles of the war, winning the the Battle of Tampere was also a major morale-boost victory for the Senate forces. The order \"shoot where you see fit,\" referenced in the card's text, was given by a Red commander (Haapala & Hoppu 2009: 195) indicating the level of poor military organization..."
+      "it": "Chiaro: \"Spara dove vedi nemici, anche se sembrano deboli\": a Tampere o Häme, Rossi o Senato possono fare Attacco gratis rimuovendo (o riposizionando) Cellule nemiche fino al numero delle Cellule amiche presenti diviso 2 (arrotondato per eccesso).\nOmbr.: (vedi Chiaro)",
+      "history": "One of the fiercest and strategically most important battles of the war, winning the the Battle of Tampere was also a major morale-boost victory for the Senate forces. The order \"shoot where you see fit,\" referenced in the card's text, was given by a Red commander (Haapala & Hoppu 2009: 195) indicating the level of poor military organization..."
     },
     {
       "number": 41,
@@ -602,9 +642,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "19 April- 1 May 1918",
-      "shaded": "Lahti falls to Germans:\nIf Germans Troops in Uusimaa, conduct\na German Attack there now.\n'The Red Guards counterattack: ®\nPlace Sabotage anywhere. Then, ~either~\nReds in Uusimaa free Attack there adding\nup to +2 to Attack Strength free or\nremove one German Troop there\n(do not adjust Vassalage).",
-      "it": "The town of Lahti lies 62 miles or 100 kilometers north of Helsinki. After the German contingent led by Goltz had taken Helsinki, they headed north towards Lahti, as did the Brandestein contingent from Loviisa. The Germans were quick to defeat the Reds along the way, but not always without taking casualties. On the 20 April, the Senate army and..."
+      "unshaded": "German Action Phase",
+      "shaded": "Lahti falls to Germans:\nIf Germans Troops in Uusimaa, conduct\na German Attack there now.\n\n'The Red Guards counterattack: ®\nPlace Sabotage anywhere. Then, ~either~\nReds in Uusimaa free Attack there adding\nup to +2 to Attack Strength free or\nremove one German Troop there\n(do not adjust Vassalage).",
+      "it": "Chiaro: A Lahti, Senato fa Attacco gratis (3.1.2). Polarizzazione +1.\nOmbr.: Moderati o Rossi conducono un Comando Limitato gratis in Uusimaa o Häme.",
+      "history": "The town of Lahti lies 62 miles or 100 kilometers north of Helsinki. After the German contingent led by Goltz had taken Helsinki, they headed north towards Lahti, as did the Brandestein contingent from Loviisa. The Germans were quick to defeat the Reds along the way, but not always without taking casualties. On the 20 April, the Senate army and..."
     },
     {
       "number": 42,
@@ -618,8 +659,9 @@
       "propaganda": false,
       "pivotal": false,
       "unshaded": "Shift ofemphasis: =\"",
-      "shaded": "Senate may redeploy 1d6 of friendly\nCells (with Capabilities if desired) on\nthe map to spaces with existing\nfriendly Cells.\nReds' last stand:\nModerates or Reds conduct a free\nLimited Command (excluding Attack)\nin Viipuri or Karelia,",
-      "it": "Having taken Tampere (see Event #33) and secured a strategically important railway junction toward the east at Haapamäki North of Tampere, Mannerheim quickly shifted the emphasis to the eastern front (Mannerheim 1951: 325). Senate forces would soon cut the Reds' resupply and escape routes to Russia. The move culminated in the capture of the..."
+      "shaded": "Senate may redeploy 1d6 of friendly\nCells (with Capabilities if desired) on\nthe map to spaces with existing\nfriendly Cells.\n\nReds' last stand:\nModerates or Reds conduct a free\nLimited Command (excluding Attack)\nin Viipuri or Karelia,",
+      "it": "Chiaro: A Viipuri, Senato fa Attacco gratis (3.1.2). Polarizzazione +1.\nOmbr.: Moderati o Rossi conducono un Comando Limitato gratis adiacente a Viipuri.",
+      "history": "Having taken Tampere (see Event #33) and secured a strategically important railway junction toward the east at Haapamäki North of Tampere, Mannerheim quickly shifted the emphasis to the eastern front (Mannerheim 1951: 325). Senate forces would soon cut the Reds' resupply and escape routes to Russia. The move culminated in the capture of the..."
     },
     {
       "number": 43,
@@ -633,8 +675,9 @@
       "propaganda": false,
       "pivotal": false,
       "unshaded": "@i",
-      "shaded": "Justice in random hands:\nIna space with friendly Cell, Senate or\nReds free Terror regardless of Active\nstatus, removing one enemy Cell.\nMannerheim's order heard:\nPolarization -1, Resources +3.\nre 43",
-      "it": "Terror was an inseparable part of how both the Reds and Senate forces conducted the war. It took increasingly arbitrary forms as the conflict progressed. The Red Revolt, from January 1918 onward, had seen the Red Guards avenge personal retributions on the bourgeoisie and nobility for perceived past injustices. Upon their reconquest of the..."
+      "shaded": "Justice in random hands:\nIna space with friendly Cell, Senate or\nReds free Terror regardless of Active\nstatus, removing one enemy Cell.\n\nMannerheim's order heard:\nPolarization -1, Resources +3.\n\nre 43",
+      "it": "Chiaro: Piazza 1 marker Terrore in fino a 2 spazi con Cellule amiche (anche al di sopra del massimo). Polarizzazione +1 per marker.\nOmbr.: Moderati Pacificazione: rimuovi 1 Terrore da uno spazio, Polarizzazione -1.",
+      "history": "Terror was an inseparable part of how both the Reds and Senate forces conducted the war. It took increasingly arbitrary forms as the conflict progressed. The Red Revolt, from January 1918 onward, had seen the Red Guards avenge personal retributions on the bourgeoisie and nobility for perceived past injustices. Upon their reconquest of the..."
     },
     {
       "number": 44,
@@ -647,9 +690,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "16 May 1918",
-      "shaded": "Show of Finnish force: :\nGerman Vassalage -1.\nSenate Resources +3.\nNo victory in sight: ®\nIf any Reds in Helsinki, shift Helsinki one\nlevel towards Active Opposition or\nReds free Rally there (3.1.2).\nYee 44\na a",
-      "it": "The card's image shows one of the most memorable photos taken during the war: the commander-in-chief of the White army, Mannerheim, and his entourage, leading the Helsinki victory parade on horseback. The parade was politically charged. As recounted in his memoirs, already on 16 January 1918, Mannerheim had received the promise from the head of..."
+      "unshaded": "Show of Finnish force: :",
+      "shaded": "German Vassalage -1.\nSenate Resources +3.\n\nNo victory in sight: ®\nIf any Reds in Helsinki, shift Helsinki one\nlevel towards Active Opposition or\nReds free Rally there (3.1.2).\n\nYee 44\na a",
+      "it": "Chiaro: Senato fa Rally gratis in Helsinki e in 2 spazi adiacenti (3.1.2).\nOmbr.: (vedi Chiaro)",
+      "history": "The card's image shows one of the most memorable photos taken during the war: the commander-in-chief of the White army, Mannerheim, and his entourage, leading the Helsinki victory parade on horseback. The parade was politically charged. As recounted in his memoirs, already on 16 January 1918, Mannerheim had received the promise from the head of..."
     },
     {
       "number": 45,
@@ -662,9 +706,10 @@
       ],
       "propaganda": false,
       "pivotal": false,
-      "unshaded": "Fate in the Balance\n1918",
-      "shaded": "Fortunes in World War I:\nDecrease either Vassalage by up to two.\n'The kingmakers: ~\nRemove a Resolved Issue marker.",
-      "it": "This card represents the effects of two episodes, the historical ends of which lie outside the temporal scope of this game, yet they crucially affect some of the processes depicted in the game. © 2023 GMT Games, LLC"
+      "unshaded": "German Action Phase",
+      "shaded": "Fate in the Balance\n\nFortunes in World War I:\nDecrease either Vassalage by up to two.\n\n'The kingmakers: ~\n\nRemove a Resolved Issue marker.",
+      "it": "Chiaro: Questa carta diventa il prossimo Evento quando Helsinki passa sotto controllo Senato. Quando diventa corrente: Vassallaggio Tedesco -1, Senato Crackdown gratis, Moderati piazzano una Personality.\nOmbr.: (vedi Chiaro)",
+      "history": "This card represents the effects of two episodes, the historical ends of which lie outside the temporal scope of this game, yet they crucially affect some of the processes depicted in the game. © 2023 GMT Games, LLC"
     },
     {
       "number": 46,
@@ -672,9 +717,10 @@
       "factionOrder": [],
       "propaganda": true,
       "pivotal": false,
-      "unshaded": "Conduct a Propaganda Round (6.0).",
-      "shaded": "46",
-      "it": "This card features a cartoon drawing of a crowd of obviously frightened Red Guards looking at the ominous shadow of a German soldier's helmet rising on the snow."
+      "unshaded": "oe Prosagiads",
+      "shaded": "Conduct a Propaganda Round (6.0).\n\n46",
+      "it": "Carta Propaganda (3ª): conduci un Round di Propaganda (6.0).",
+      "history": "This card features a cartoon drawing of a crowd of obviously frightened Red Guards looking at the ominous shadow of a German soldier's helmet rising on the snow."
     },
     {
       "number": 47,
@@ -682,9 +728,10 @@
       "factionOrder": [],
       "propaganda": true,
       "pivotal": false,
-      "unshaded": "47",
-      "shaded": "",
-      "it": "The card shows an image from a period postcard depicting the \"Maiden of Finland\" waving the Finnish flag as a new day breaks— or is the sun about to go down? All Bridges Burning ~ Playbook 37 Selected Sources For a general introduction to the conflict, English-language readers can turn to the introductory chapter in Tepora & Roselius, 2014 (see..."
+      "unshaded": "4°» Propaganda\n(Condact/a Propaganda Round (6.0);",
+      "shaded": "47",
+      "it": "Carta Propaganda (4ª - finale): conduci un Round di Propaganda finale (6.0). La partita termina con verifica vittoria.",
+      "history": "The card shows an image from a period postcard depicting the \"Maiden of Finland\" waving the Finnish flag as a new day breaks— or is the sun about to go down? All Bridges Burning ~ Playbook 37 Selected Sources For a general introduction to the conflict, English-language readers can turn to the introductory chapter in Tepora & Roselius, 2014 (see..."
     }
   ]
 }
