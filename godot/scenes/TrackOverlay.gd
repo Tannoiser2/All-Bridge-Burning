@@ -12,6 +12,7 @@ const STACK := 20.0    # scostamento per segnalini sulla stessa cella
 var _track: Dictionary = {}    # "0".."49" -> [x,y] normalizzati
 var _polarization_track: Dictionary = {}  # ABB: slot 0..10 del tracciato Polarization
 var _sop: Dictionary = {}      # ABB: posizione cilindri Sequence of Play
+var _sop_slots_cache: Dictionary = {}  # ABB: 21 slot SoP esatti dal Vassal
 var _cell_slots: Dictionary = {}  # ABB: "<fid>_cell" -> [[x,y],...] slot Vassal
 var _box: Dictionary = {}      # nome -> [x0,y0,x1,y1] normalizzati
 var _circles: Dictionary = {}  # fazione -> [[x,y],...] centri dei cerchietti basi/casinò (Vassal)
@@ -28,6 +29,7 @@ func _ready() -> void:
 			_track = d.get("track", {})
 			_polarization_track = d.get("polarization_track", {})
 			_sop = d.get("sop", {})
+			_sop_slots_cache = d.get("sop_slots", {})
 			_cell_slots = d.get("cell_slots", {})
 			_box = d.get("box", {})
 			_circles = d.get("avail_circles", {})
@@ -432,16 +434,8 @@ func _abb_draw_sop(s: GameState) -> void:
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color.WHITE)
 
 
-var _sop_slots_cache: Dictionary = {}
-
-
 func _sop_slots_load_once() -> Dictionary:
-	if _sop_slots_cache.is_empty():
-		var f := FileAccess.open(GameRegistry.data_path("board_layout.json"), FileAccess.READ)
-		if f != null:
-			var d = JSON.parse_string(f.get_as_text())
-			if d is Dictionary:
-				_sop_slots_cache = d.get("sop_slots", {})
+	# Caricati in _ready(); resta come accessor.
 	return _sop_slots_cache
 
 
