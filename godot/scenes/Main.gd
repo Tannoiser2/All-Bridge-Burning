@@ -114,6 +114,7 @@ var _btn_auto: Button
 var _auto_bot := false                 # se true, i Bot giocano da soli; altrimenti aspettano il consenso
 var _role_btns: Dictionary = {}        # fid -> Button (toggle Giocatore/Bot)
 var _btn_coordinate: Button = null      # ABB: Senato Coordina Germans (§4.2.4)
+var _version_label: Label = null        # indicatore di build in basso a destra
 var _btn_ev_u: Button
 var _btn_ev_s: Button
 
@@ -160,8 +161,27 @@ var _resume_mode := "idle"            # modalità Operazione da riprendere dopo 
 var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Speciale corrente
 
 
+## Numero di build incrementato a ogni fix UI. Mostrato in basso a destra così
+## puoi dirmi ESATTAMENTE quale versione stai vedendo (cache-busting diagnostico).
+const BUILD_VERSION := "build 94 — markers pixel-perfect"
+
+
+func _add_version_label() -> void:
+	_version_label = Label.new()
+	_version_label.text = BUILD_VERSION
+	_version_label.add_theme_font_size_override("font_size", 12)
+	_version_label.add_theme_color_override("font_color", Color(1, 1, 0, 0.9))
+	_version_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	_version_label.add_theme_constant_override("outline_size", 4)
+	_version_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_version_label.position = Vector2(-220, -22)
+	_version_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_version_label)
+
+
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	_add_version_label()
 	# La fazione "corrente" di default è la prima del gioco attivo (era hardcoded
 	# a "government" per Cuba Libre; per altri moduli leggiamo dal GameDef).
 	if GameController.game_def != null and not GameController.game_def.factions.is_empty():
@@ -172,6 +192,7 @@ func _ready() -> void:
 	GameController.bot_decision.connect(_on_bot_decision)
 	get_viewport().size_changed.connect(_layout_board)
 	_rebuild_action_buttons(_cur_faction)
+	_version_label.text = BUILD_VERSION   # rifresca dopo build UI
 	# Driver automatico delle Fazioni Bot (gioca da sole al loro turno).
 	var bot_timer := Timer.new()
 	bot_timer.wait_time = 1.0
