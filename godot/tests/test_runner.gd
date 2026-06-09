@@ -222,7 +222,8 @@ func _test_abb_crisis() -> void:
 	var report = crisis.resolve()
 	_check("Crisis ritorna report", report.has("politics") and report.has("earnings"))
 	_check("Reds Earnings ≥ 0", state.get_resources("reds") >= reds_before)
-	_eq("Issues +1", int(state.tracks.get("issues_networks", 0)), 2)
+	# Issues_networks resta invariato senza cubi nel Political Display (§6.2).
+	_eq("Issues invariato senza cubi", int(state.tracks.get("issues_networks", 0)), 1)
 
 
 func _test_abb_bot() -> void:
