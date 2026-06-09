@@ -27,6 +27,8 @@ func _initialize() -> void:
 	_test_abb_capabilities()
 	_test_abb_pac2()
 	_test_abb_political_display()
+	_test_abb_politics_command()
+	_test_abb_reset_phase()
 	_test_game_def()
 	_test_setup_forces()
 	_test_setup_tracks()
@@ -386,6 +388,41 @@ func _test_abb_political_display() -> void:
 	_eq("Cubi azzerati post-resolve",
 		int(state.tracks["political_display"]["senate"]) + int(state.tracks["political_display"]["reds"]), 0)
 	_eq("Resolved count Senato = 1", pd.resolved_count("senate"), 1)
+
+
+func _test_abb_politics_command() -> void:
+	print("\n[ABB Politics Command §3.3.4]")
+	var r := _new_abb()
+	var state: GameState = r[2]
+	var mod: ABBModule = r[0]
+	var ops := ABBOperations.new(state, mod)
+	_eq("Polarization iniziale 3", int(state.tracks.get("polarization", 0)), 3)
+	var res_before: int = state.get_resources("moderates")
+	var ret = ops.politics("moderates", "senate")
+	_check("Politics ok", ret.get("ok", false))
+	_eq("Cost = 2", int(ret.get("cost", 0)), 2)
+	_eq("Risorse Moderati -2", state.get_resources("moderates"), res_before - 2)
+	_eq("1 cubo Senato in PD", int(state.tracks["political_display"]["senate"]), 1)
+	var ret2 = ops.politics("reds", "reds")
+	_check("Politics: solo Moderati", not ret2.get("ok", false))
+
+
+func _test_abb_reset_phase() -> void:
+	print("\n[ABB Reset Phase §6.5.4]")
+	var r := _new_abb()
+	var state: GameState = r[2]
+	var mod: ABBModule = r[0]
+	state.space_state("helsinki").set_marker("terror", 2)
+	state.space_state("tampere").set_marker("sabotage", 1)
+	state.space_state("uusimaa").set_marker("news", 1)
+	var crisis := ABBCrisis.new(state, mod)
+	var res = crisis.resolve()
+	_check("Crisis ha report reset", res.has("reset"))
+	_eq("Terror cleared", state.space_state("helsinki").marker("terror"), 0)
+	_eq("Sabotage cleared", state.space_state("tampere").marker("sabotage"), 0)
+	_eq("News cleared", state.space_state("uusimaa").marker("news"), 0)
+	_eq("Personality Helsinki preservata",
+		state.space_state("helsinki").marker("personality"), 1)
 
 
 func _test_abb_germans_phase_gate() -> void:

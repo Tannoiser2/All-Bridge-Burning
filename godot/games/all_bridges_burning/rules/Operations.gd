@@ -111,6 +111,31 @@ func _polarize(delta: int) -> void:
 	state.tracks["polarization"] = clampi(cur + delta, 0, 10)
 
 
+## Politics (§3.3.4, Moderati only): piazza 1 cubo nel Political Display
+## (colore scelto: "senate" o "reds"). Costo basato sulla Polarization track.
+## Polarization 0-1 → 1, 2-3 → 2, 4-5 → 3, ≥6 → impossibile.
+func politics(fid: String, cube_color: String) -> Dictionary:
+	if fid != "moderates":
+		return _err("Politics: solo Moderati")
+	var pol := int(state.tracks.get("polarization", 0))
+	if pol >= 6:
+		return _err("Politics impossibile con Polarization ≥ 6")
+	if not (cube_color in ["senate", "reds"]):
+		return _err("colore cubo non valido")
+	var cost := 1 + int(pol / 2)
+	if state.get_resources(fid) < cost:
+		return _err("risorse insufficienti (servono %d)" % cost)
+	# Moderati richiedono pezzi sulla mappa.
+	if state.count_on_map("moderates", "cell") + state.count_on_map("moderates", "network") <= 0:
+		return _err("Moderati non hanno pezzi sulla mappa")
+	var pd := ABBPoliticalDisplay.new(state)
+	if pd.current_unresolved_index() < 0:
+		return _err("nessuna Issue Unresolved")
+	state.resources[fid] -= cost
+	pd.place_cubes(cube_color, 1)
+	return _ok({"cost": cost, "cube": cube_color})
+
+
 ## Terror (§3.2.3): poni Terror marker; sposta Supporto/Opposizione.
 func terror(fid: String, sid: String) -> Dictionary:
 	if not state.spaces.has(sid):

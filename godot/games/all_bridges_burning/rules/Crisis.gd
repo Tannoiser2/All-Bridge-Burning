@@ -19,10 +19,26 @@ func resolve() -> Dictionary:
 	# §6.5.3 Powers adjustment: solo in Phase II.
 	if int(state.tracks.get("phase", 1)) >= 2:
 		out["powers"] = _powers_adjustment()
+	# §6.5.4 Old News: rimuovi tutti i Terror, Sabotage, News dalla mappa.
+	out["reset"] = _reset_phase()
 	# Conteggio Campaign per il bot (PAC2 last_campaign condition).
 	state.tracks["campaign_count"] = int(state.tracks.get("campaign_count", 0)) + 1
 	out["campaign"] = state.tracks["campaign_count"]
 	return out
+
+
+## §6.5.4 Old News: rimuove Terror, Sabotage, News markers dalla mappa
+## (Personality e Prepared rimangono).
+func _reset_phase() -> Dictionary:
+	var removed: Dictionary = {"terror": 0, "sabotage": 0, "news": 0}
+	for sid in state.spaces.keys():
+		var st: SpaceState = state.space_state(sid)
+		for mk in ["terror", "sabotage", "news"]:
+			var n := st.marker(mk)
+			if n > 0:
+				removed[mk] = int(removed[mk]) + n
+				st.set_marker(mk, 0)
+	return removed
 
 
 ## §6.5.3 — Numero di Truppe Tedesche/Russe sulla mappa allineato al marker Vassalage.
