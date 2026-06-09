@@ -28,6 +28,17 @@ var _turn_did_event := false
 ## Annulla (undo) a un livello: istantanea catturata prima dell'ultima azione eseguita.
 var _undo: Dictionary = {}
 
+## Cache anchors regioni (normalizzati) per layout overlay condivisi.
+var _region_anchors: Dictionary = {}
+
+
+func register_region_anchor(sid: String, anchor: Vector2) -> void:
+	_region_anchors[sid] = anchor
+
+
+func region_anchor(sid: String) -> Variant:
+	return _region_anchors.get(sid, null)
+
 
 func _ready() -> void:
 	new_game()

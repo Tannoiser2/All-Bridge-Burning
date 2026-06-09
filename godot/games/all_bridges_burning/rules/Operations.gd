@@ -70,6 +70,8 @@ func attack(fid: String, sid: String, rng_seed: int = -1) -> Dictionary:
 		return _err("spazio sconosciuto")
 	var st: SpaceState = state.space_state(sid)
 	var strength: int = st.count(fid, "cell") + st.count(fid, "troops")
+	# §5.3 Capability bonuses: +2 Attack Strength per Jaeger/Commander/Cannons/Trains.
+	strength += _capability_attack_bonus(fid, st)
 	if strength <= 0:
 		return _err("nessun pezzo attaccante")
 	var rng := RandomNumberGenerator.new()
@@ -165,6 +167,28 @@ func _border_sabotaged(a: String, b: String) -> bool:
 	var key := _border_key(a, b)
 	var arr: Array = state.tracks.get("sabotaged_borders", [])
 	return key in arr
+
+
+## §5.3 Capability bonus: +2 Attack Strength per marker amico nello spazio.
+## Senate: Jaeger / Cannons / Trains. Reds: Commander / Cannons / Trains.
+## (Cannons/Trains globali contano se la fazione ha la Capability attiva.)
+func _capability_attack_bonus(fid: String, st: SpaceState) -> int:
+	var bonus := 0
+	if fid == "senate":
+		if st.marker("jaeger_senate") > 0:
+			bonus += 2
+		if int(state.tracks.get("cannons", 0)) > 0:
+			bonus += 2
+		if int(state.tracks.get("trains", 0)) > 0:
+			bonus += 2
+	elif fid == "reds":
+		if st.marker("commander_reds") > 0:
+			bonus += 2
+		if int(state.tracks.get("cannons", 0)) > 0:
+			bonus += 2
+		if int(state.tracks.get("trains", 0)) > 0:
+			bonus += 2
+	return bonus
 
 
 ## Piazza Sabotage su un bordo (§4.2.3 Prepare Phase II only).
