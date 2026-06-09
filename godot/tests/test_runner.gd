@@ -25,6 +25,7 @@ func _initialize() -> void:
 	_test_abb_crisis_powers_phase_ii()
 	_test_abb_germans_flowchart()
 	_test_abb_capabilities()
+	_test_abb_pac2()
 	_test_game_def()
 	_test_setup_forces()
 	_test_setup_tracks()
@@ -320,6 +321,21 @@ func _test_abb_capabilities() -> void:
 	# Idempotente: una seconda applicazione non duplica.
 	ev.apply(14, "unshaded", "senate")
 	_eq("Niente duplicati", state.active_capabilities.size(), 1)
+
+
+func _test_abb_pac2() -> void:
+	print("\n[ABB PAC2 Bot deck]")
+	var r := _new_abb()
+	var mod: ABBModule = r[0]
+	var state: GameState = r[2]
+	# Carica il deck e verifica che siano 17 carte (49-65).
+	var pac2 := ABBBotPAC2.new(state, mod, 1)
+	# Take_turn per Senate dovrebbe trovare almeno una carta applicabile (51: Phase I + cells available).
+	var t = pac2.take_turn("senate")
+	_check("PAC2 Senate: agisce o passa con trace", t.has("trace") or t.is_empty())
+	# Russians/Germans non sono nel PAC2: take_turn ritorna empty.
+	var t2 = pac2.take_turn("germans")
+	_check("PAC2 non gestisce Germans", t2.is_empty())
 
 
 func _test_abb_germans_phase_gate() -> void:

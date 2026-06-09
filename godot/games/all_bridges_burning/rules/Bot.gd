@@ -1,10 +1,14 @@
 class_name ABBBot
 extends RefCounted
 
-## Bot ABB (rulebook §8.0) — priority-based planner per fazione.
+## Bot ABB (rulebook §8.0) — priority-based planner per fazione + PAC2 deck.
 
 var state: GameState
 var module: RulesModule
+## Quando true, il bot prova PAC2 (carte Solitaire 49-65) prima del priority planner.
+var use_pac2: bool = true
+var _pac2_dice_seed: int = -1
+
 
 func _init(_state: GameState, _module: RulesModule) -> void:
 	state = _state
@@ -16,6 +20,16 @@ func take_turn(faction_id: String, _allow_special: bool = true, _limited: bool =
 	var fdef: FactionDef = state.game_def.faction(faction_id)
 	if fdef == null or fdef.operations.is_empty():
 		return {"action": "pass", "trace": ["pass: no ops"]}
+	# 1. Prova PAC2 (solo per Reds/Senate/Moderates, le 3 fazioni con bot deck).
+	if use_pac2 and faction_id in ["reds", "senate", "moderates"]:
+		var pac2 := ABBBotPAC2.new(state, module, _pac2_dice_seed)
+		var r2 := pac2.take_turn(faction_id)
+		if not r2.is_empty():
+			trace.append("PAC2 #%d" % int(r2.get("card", 0)))
+			trace.append_array(r2.get("trace", []))
+			return {"action": String(r2.get("action", "pac2")), "trace": trace}
+		trace.append("PAC2: nessuna carta applicabile, fallback priority planner")
+	# 2. Fallback: priority planner originale.
 	var ops := ABBOperations.new(state, module)
 	var plan: Array = _plan(faction_id)
 	for step in plan:
