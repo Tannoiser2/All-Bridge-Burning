@@ -113,6 +113,7 @@ var _btn_bot: Button
 var _btn_auto: Button
 var _auto_bot := false                 # se true, i Bot giocano da soli; altrimenti aspettano il consenso
 var _role_btns: Dictionary = {}        # fid -> Button (toggle Giocatore/Bot)
+var _btn_coordinate: Button = null      # ABB: Senato Coordina Germans (§4.2.4)
 var _btn_ev_u: Button
 var _btn_ev_s: Button
 
@@ -392,6 +393,11 @@ func _build_action_bar() -> VBoxContainer:
 	_btn_pass = _mk_btn("Passa", func(): GameController.seq_pass())
 	turn_box.add_child(_btn_pass)
 	turn_box.add_child(_mk_btn("Annulla", _on_cancel))
+	# ABB only: bottone "Coordina Germans" (§4.2.4) per il Senato in Phase II.
+	if GameRegistry.game_id == "all_bridges_burning":
+		_btn_coordinate = _mk_btn("Coord. Germ.", _on_coordinate_germans)
+		_btn_coordinate.tooltip_text = "Senato decide l'azione dei Germans questo turno (§4.2.4)"
+		turn_box.add_child(_btn_coordinate)
 	row1.add_child(_labeled_group("Turno", turn_box))
 
 	# Gruppo Ruoli (Giocatore/Bot) in griglia 2x2, subito dopo il Turno.
@@ -622,6 +628,13 @@ func _refresh() -> void:
 	_refresh_side()
 	if not _role_btns.is_empty():
 		_update_role_btns()
+	if _btn_coordinate != null:
+		var ph := int(GameController.state.tracks.get("phase", 1))
+		_btn_coordinate.disabled = ph < 2
+		var active: bool = int(GameController.state.tracks.get("coordinate_marker", 0)) > 0
+		_btn_coordinate.text = "Coord. Germ. ✓" if active else "Coord. Germ."
+		var col := Color("ff6b6b") if active else Color("8aa0b3")
+		_btn_coordinate.add_theme_color_override("font_color", col)
 
 
 ## Centri normalizzati dei box "Forze Disponibili" (per animare piazzamenti/rimozioni).
@@ -1649,6 +1662,16 @@ func _on_all_bots() -> void:
 
 
 const _ROLE_SHORT := {"government": "Gov", "m26": "26J", "directorio": "DR", "syndicate": "SYN"}
+
+
+## Senato Coordinate Special Activity (§4.2.4): toggle del marker che fa decidere
+## al Senato l'azione del Bot Germans questo turno. Solo in Phase II.
+func _on_coordinate_germans() -> void:
+	if int(GameController.state.tracks.get("phase", 1)) < 2:
+		return
+	var cur := int(GameController.state.tracks.get("coordinate_marker", 0))
+	GameController.state.tracks["coordinate_marker"] = 0 if cur > 0 else 1
+	GameController.emit_signal("state_changed")
 
 
 func _toggle_role(fid: String) -> void:
