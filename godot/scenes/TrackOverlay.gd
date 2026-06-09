@@ -90,6 +90,7 @@ func _draw() -> void:
 	if GameRegistry.game_id == "all_bridges_burning":
 		_abb_draw_sop(s)
 		_abb_draw_capabilities(s)
+		_abb_draw_political_display(s)
 	else:
 		_draw_eligibility(s)
 		_draw_capabilities(s)
@@ -432,3 +433,57 @@ func _sop_col_for(s: GameState, seq, fid: String) -> String:
 	if int(s.eligibility.get(fid, CoinEnums.Eligibility.ELIGIBLE)) == CoinEnums.Eligibility.INELIGIBLE:
 		return "ineligible"
 	return "eligible"
+
+
+## Political Display §1.11: cubi Senato/Rossi (current Issue) + 3 Resolved badges.
+func _abb_draw_political_display(s: GameState) -> void:
+	var r := _box_rect("political_display")
+	if r.size == Vector2.ZERO:
+		return
+	var font := ThemeDB.fallback_font
+	var pd: Dictionary = s.tracks.get("political_display", {"senate": 0, "reds": 0})
+	var senate_cubes := int(pd.get("senate", 0))
+	var reds_cubes := int(pd.get("reds", 0))
+	# Cubi nella semicirconferenza: bianco Senato a sinistra, rosso Rossi a destra.
+	var cube_size: float = minf(r.size.y * 0.10, 22.0)
+	var mid_x := r.position.x + r.size.x * 0.5
+	var top_y := r.position.y + r.size.y * 0.10
+	# Senato (bianchi) impilati colonna sinistra.
+	for i in senate_cubes:
+		var px := r.position.x + r.size.x * 0.15 + (i % 4) * (cube_size + 2.0)
+		var py := top_y + int(i / 4) * (cube_size + 2.0)
+		draw_rect(Rect2(Vector2(px, py), Vector2(cube_size, cube_size)),
+			GameController.faction_color("senate"), true)
+		draw_rect(Rect2(Vector2(px, py), Vector2(cube_size, cube_size)), Color.BLACK, false, 1.0)
+	# Rossi a destra.
+	for i in reds_cubes:
+		var px2 := mid_x + r.size.x * 0.10 + (i % 4) * (cube_size + 2.0)
+		var py2 := top_y + int(i / 4) * (cube_size + 2.0)
+		draw_rect(Rect2(Vector2(px2, py2), Vector2(cube_size, cube_size)),
+			GameController.faction_color("reds"), true)
+		draw_rect(Rect2(Vector2(px2, py2), Vector2(cube_size, cube_size)), Color.BLACK, false, 1.0)
+	# 3 badge Resolved Issues in basso.
+	var issues: Array = s.tracks.get("issues", [])
+	var badge_w: float = (r.size.x - 16.0) / 3.0
+	var badge_h: float = r.size.y * 0.22
+	var by := r.position.y + r.size.y - badge_h - 4.0
+	for i in range(min(issues.size(), 3)):
+		var entry: Dictionary = issues[i]
+		var bx := r.position.x + 4.0 + i * (badge_w + 4.0)
+		var rect := Rect2(bx, by, badge_w, badge_h)
+		var by_who: String = String(entry.get("resolved_by", ""))
+		var fill: Color
+		if by_who == "":
+			fill = Color(0.85, 0.85, 0.85, 0.35)  # Unresolved (grigio chiaro)
+		elif by_who == "senate":
+			fill = GameController.faction_color("senate")
+		elif by_who == "reds":
+			fill = GameController.faction_color("reds")
+		else:
+			fill = GameController.faction_color("moderates")
+		fill.a = 0.85
+		draw_rect(rect, fill, true)
+		draw_rect(rect, Color.BLACK, false, 1.0)
+		var labels: Array = ["Working", "Reform", "Social"]
+		draw_string(font, Vector2(bx + 4, by + badge_h - 4), labels[i],
+			HORIZONTAL_ALIGNMENT_LEFT, badge_w - 6, 10, Color.WHITE)

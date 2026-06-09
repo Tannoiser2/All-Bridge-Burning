@@ -137,6 +137,8 @@ AVAIL_ZONES = {
 # Altre Zone Vassal mappate a box ad uso UI (Capabilities panel, ecc.).
 EXTRA_BOX_ZONES = {
     "Capabilities": "capabilities",
+    "Political Display": "political_display",
+    "Prisoners of War": "prisoners_of_war",
 }
 
 
