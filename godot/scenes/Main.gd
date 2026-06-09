@@ -160,6 +160,12 @@ var _resume_mode := "idle"            # modalità Operazione da riprendere dopo 
 var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Speciale corrente
 
 
+## Numero di build, in piccolo nell'angolo in alto a sinistra. Permanente:
+## serve a confermare a colpo d'occhio quale versione il browser ha caricato
+## (la cache HTTP del .pck è il motivo per cui a volte non vedi i fix).
+const BUILD_VERSION := "b103"
+
+
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	# La fazione "corrente" di default è la prima del gioco attivo (era hardcoded
@@ -167,6 +173,16 @@ func _ready() -> void:
 	if GameController.game_def != null and not GameController.game_def.factions.is_empty():
 		_cur_faction = GameController.game_def.factions[0].id
 	_build_ui()
+	var vl := Label.new()
+	vl.text = BUILD_VERSION
+	vl.add_theme_font_size_override("font_size", 13)
+	vl.add_theme_color_override("font_color", Color(1, 1, 0, 0.85))
+	vl.add_theme_color_override("font_outline_color", Color.BLACK)
+	vl.add_theme_constant_override("outline_size", 4)
+	vl.position = Vector2(6, 2)
+	vl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vl.z_index = 4096
+	add_child(vl)
 	GameController.state_changed.connect(_refresh)
 	GameController.action_logged.connect(_on_log)
 	GameController.bot_decision.connect(_on_bot_decision)
