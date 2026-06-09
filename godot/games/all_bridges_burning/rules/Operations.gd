@@ -30,8 +30,11 @@ func rally(fid: String, sid: String, mode: String = "cell") -> Dictionary:
 	return _ok()
 
 
-## March (§3.2.5): sposta pezzi verso spazio adiacente.
+## March (§3.2.5): sposta pezzi verso spazio adiacente. Phase II only per
+## Reds/Senate; sempre disponibile per Germans/Russians (via flowchart §3.4).
 func march(fid: String, from_sid: String, to_sid: String, piece_type: String = "cell", count: int = 1) -> Dictionary:
+	if fid in ["reds", "senate", "moderates"] and int(state.tracks.get("phase", 1)) < 2:
+		return _err("March disponibile solo in Phase II (§3.2.5)")
 	if not state.spaces.has(from_sid) or not state.spaces.has(to_sid):
 		return _err("spazio non valido")
 	var sd: SpaceDef = state.game_def.space(from_sid)
@@ -50,8 +53,11 @@ func march(fid: String, from_sid: String, to_sid: String, piece_type: String = "
 	return _ok()
 
 
-## Attack (§3.2.4): 1d6 vs Attack Strength.
+## Attack (§3.2.4): 1d6 vs Attack Strength. Phase II only per Reds/Senate;
+## Germans usano l'Attack via flowchart §3.4 in Phase II (gating Bot).
 func attack(fid: String, sid: String, rng_seed: int = -1) -> Dictionary:
+	if fid in ["reds", "senate", "moderates"] and int(state.tracks.get("phase", 1)) < 2:
+		return _err("Attack disponibile solo in Phase II (§3.2.4)")
 	if not state.spaces.has(sid):
 		return _err("spazio sconosciuto")
 	var st: SpaceState = state.space_state(sid)
