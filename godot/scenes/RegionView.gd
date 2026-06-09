@@ -130,9 +130,9 @@ func relayout() -> void:
 	_stack.reset_size()
 	_stack.position = Vector2(a.x - _stack.size.x * 0.5, grid_top - 16.0)
 	# Marcatori Controllo/Supporto nelle caselle.
-	# Per ABB le caselle stampate sono quadrate (~80×80 sulla map 3000×2350 =
-	# 2.7%×3.4%); le texture Vassal Control_Reds.png sono 94×92 ≈ quadrate.
-	var mk_w: float = size.x * 0.027 if GameRegistry.game_id == "all_bridges_burning" else size.x * 0.028
+	# Le caselle "Uncontrol"/"Neutral" stampate misurano ~87×88 px sulla map
+	# 3000×2350 → 0.029 della larghezza, quadrate. Misurato pixel-perfect su Häme.
+	var mk_w: float = size.x * 0.029 if GameRegistry.game_id == "all_bridges_burning" else size.x * 0.028
 	var mk_h: float = mk_w if GameRegistry.game_id == "all_bridges_burning" else mk_w * 0.97
 	if _ctrl_tr != null:
 		_ctrl_tr.size = Vector2(mk_w, mk_h)
