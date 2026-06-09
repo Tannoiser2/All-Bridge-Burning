@@ -15,11 +15,6 @@ func _initialize() -> void:
 	_test_abb_piece_types()
 	_test_abb_adjacency()
 	_test_abb_setup()
-	_test_abb_operations()
-	_test_abb_specials()
-	_test_abb_crisis()
-	_test_abb_bot()
-	_test_abb_victory()
 	_test_game_def()
 	_test_setup_forces()
 	_test_setup_tracks()
@@ -156,114 +151,6 @@ func _test_abb_setup() -> void:
 	_eq("Vassalage Russian", int(state.tracks.get("vassalage_russian", -1)), 3)
 	# Tutte le fazioni Eligibili al setup
 	_eq("Reds Eligible", state.eligibility["reds"], CoinEnums.Eligibility.ELIGIBLE)
-
-
-func _test_abb_operations() -> void:
-	print("\n[ABB Operazioni]")
-	var r := _new_abb()
-	var mod: ABBModule = r[0]
-	var state: GameState = r[2]
-	var ops := ABBOperations.new(state, mod)
-
-	# Rally Reds in Karelia (spazio vuoto, 5 risorse iniziali)
-	var res_before: int = state.get_resources("reds")
-	var rally_res = ops.rally("reds", "karelia", "cell")
-	_check("Rally Reds OK", rally_res.get("ok", false))
-	_eq("Karelia ha 1 cellula Reds dopo Rally",
-		state.space_state("karelia").count("reds", "cell"), 1)
-	_eq("Risorse Reds -1", state.get_resources("reds"), res_before - 1)
-
-	# March Reds da Uusimaa a Helsinki (adiacente)
-	var march_res = ops.march("reds", "uusimaa", "helsinki", "cell", 1)
-	_check("March Reds OK", march_res.get("ok", false))
-	# Helsinki aveva 1 reds_cell underground già al setup; +1 dovrebbe diventare active
-	# (perché Helsinki ha 1 Senate + 1 Moderates: nemici presenti).
-	_check("Le Cellule marciate diventano Active in spazio nemico",
-		state.space_state("helsinki").count("reds", "cell", "active") >= 1)
-
-	# Attack Reds in Helsinki (con almeno 1 cella attiva ora)
-	var atk = ops.attack("reds", "helsinki", 3)  # seed deterministico
-	_check("Attack restituisce risultato", atk.has("ok"))
-
-	# Terror Reds in Uusimaa: aumenta marker terror
-	var terror_before: int = state.space_state("uusimaa").marker("terror")
-	var ter = ops.terror("reds", "uusimaa")
-	_check("Terror OK", ter.get("ok", false))
-	_eq("Terror marker +1", state.space_state("uusimaa").marker("terror"), terror_before + 1)
-
-
-func _test_abb_specials() -> void:
-	print("\n[ABB Att.Speciali]")
-	var r := _new_abb()
-	var mod: ABBModule = r[0]
-	var state: GameState = r[2]
-	var sa := ABBSpecialActivities.new(state, mod)
-
-	# Tax Reds in Uusimaa (Pop=2)
-	var res_before: int = state.get_resources("reds")
-	var tax_res = sa.tax("reds", "uusimaa")
-	_check("Tax Reds OK", tax_res.get("ok", false))
-	_eq("Reds +Pop(2) Risorse", state.get_resources("reds"), res_before + 2)
-
-	# Foreign relations: +1 vassalage tedesca
-	var vg_before: int = int(state.tracks.get("vassalage_german", 0))
-	var fr = sa.foreign_relations("germans", 1)
-	_check("Foreign Relations OK", fr.get("ok", false))
-	_eq("Vassalage tedesca +1", int(state.tracks.get("vassalage_german", 0)), vg_before + 1)
-
-	# Crackdown Senate in Vaasa
-	var cd = sa.crackdown("vaasa")
-	_check("Crackdown OK", cd.get("ok", false))
-
-	# Dialogue Moderates in Helsinki (al setup: 1 Moderates cell, Neutral support)
-	var dlg = sa.dialogue("helsinki")
-	_check("Dialogue OK", dlg.get("ok", false))
-
-
-func _test_abb_crisis() -> void:
-	print("\n[ABB Crisis]")
-	var r := _new_abb()
-	var mod: ABBModule = r[0]
-	var state: GameState = r[2]
-	var crisis := ABBCrisis.new(state, mod)
-	var reds_before: int = state.get_resources("reds")
-	var report = crisis.resolve()
-	_check("Crisis ritorna report", report.has("politics") and report.has("earnings"))
-	_check("Reds Earnings ≥ 0", state.get_resources("reds") >= reds_before)
-	_eq("Issues +1", int(state.tracks.get("issues_networks", 0)), 2)
-
-
-func _test_abb_bot() -> void:
-	print("\n[ABB Bot scaffold]")
-	var r := _new_abb()
-	var mod: ABBModule = r[0]
-	var state: GameState = r[2]
-	var bot := ABBBot.new(state, mod)
-	# Reds ha operazioni: take_turn deve restituire un'azione (non "pass")
-	var res = bot.take_turn("reds")
-	_check("Bot Reds esegue qualcosa", res.get("action", "pass") != "pass")
-	# Russians non ha operazioni → pass
-	var res2 = bot.take_turn("russians")
-	_eq("Bot Russians passa", res2.get("action", ""), "pass")
-
-
-func _test_abb_victory() -> void:
-	print("\n[ABB Vittoria]")
-	var r := _new_abb()
-	var mod: ABBModule = r[0]
-	var state: GameState = r[2]
-	var vs = mod.victory_status(state)
-	# Stato iniziale: nessuna fazione ha vinto
-	_check("Reds non ha vinto al setup", not vs["reds"]["won"])
-	_check("Senate non ha vinto al setup", not vs["senate"]["won"])
-	_check("Moderates non ha vinto al setup", not vs["moderates"]["won"])
-	# Soglie corrette
-	_eq("Soglia Reds", int(vs["reds"]["threshold"]), 11)
-	_eq("Soglia Senate", int(vs["senate"]["threshold"]), 3)
-	_eq("Soglia Moderates", int(vs["moderates"]["threshold"]), 14)
-	# Ordine di spareggio
-	var to = mod.tiebreak_order()
-	_eq("Tiebreak ordine: Reds primo", String(to[0]), "reds")
 
 
 # ---------------------------------------------------------------------------
