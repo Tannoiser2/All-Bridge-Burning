@@ -36,6 +36,8 @@ func setup(sd: SpaceDef, poly: Array, anchor: Vector2, cbox := Vector2(-1, -1),
 	_cbox = cbox
 	_sbox = sbox
 	_circle = circle
+	# Registra l'anchor (normalizzato) per overlay condivisi (es. Sabotage borders).
+	GameController.register_region_anchor(sd.id, anchor)
 	for p in poly:
 		_poly_norm.append(Vector2(p[0], p[1]))
 	# Larghezza normalizzata della zona (per distribuire i pezzi entro lo spazio).
@@ -302,6 +304,7 @@ func _draw() -> void:
 	var line := poly + PackedVector2Array([poly[0]])
 	draw_polyline(line, outline, width + _flash * 4.0)
 	_draw_abb_markers()
+	_draw_abb_sabotaged_borders()
 
 
 ## Disegna i marker Moderates (Personality, News) sopra l'anchor della regione.
@@ -335,6 +338,43 @@ func _draw_abb_markers() -> void:
 					Rect2(Vector2(ax - sz * 0.5 + col * offset, ay + sz * 0.8),
 						Vector2(sz, sz)), false)
 				col += 1
+
+
+## Disegna una X rossa al centroide del polo nei bordi sabotati con un vicino.
+func _draw_abb_sabotaged_borders() -> void:
+	if GameRegistry.game_id != "all_bridges_burning":
+		return
+	var s: GameState = GameController.state
+	if s == null:
+		return
+	var borders: Array = s.tracks.get("sabotaged_borders", [])
+	if borders.is_empty():
+		return
+	# Solo se questo spazio è "primo" in un bordo (per evitare disegno doppio).
+	for key in borders:
+		var parts := String(key).split("↔")
+		if parts.size() != 2:
+			continue
+		if String(parts[0]) != space_id:
+			continue
+		var other_id := String(parts[1])
+		# Centroide poligono other space → endpoint per la X.
+		var other_def: SpaceDef = GameController.game_def.space(other_id)
+		if other_def == null:
+			continue
+		# Anchor di entrambi gli spazi (approssimazione del bordo).
+		var self_anchor := Vector2(_anchor_norm.x * size.x, _anchor_norm.y * size.y)
+		# Recupera anchor dell'altro spazio dai regions.json (preserva tutti i RegionView).
+		var other_rv = GameController.region_anchor(other_id) if GameController.has_method("region_anchor") else null
+		if other_rv == null:
+			continue
+		var other_anchor := Vector2(other_rv.x * size.x, other_rv.y * size.y)
+		# Punto medio fra i due anchor = ~ bordo.
+		var mid := (self_anchor + other_anchor) * 0.5
+		var arm: float = size.x * 0.012
+		var red := Color(0.85, 0.10, 0.10, 0.92)
+		draw_line(mid + Vector2(-arm, -arm), mid + Vector2(arm, arm), red, 4.0)
+		draw_line(mid + Vector2(arm, -arm), mid + Vector2(-arm, arm), red, 4.0)
 
 
 func _gui_input(event: InputEvent) -> void:
