@@ -1,9 +1,9 @@
 {
-  "_note": "47 carte del mazzo ABB: 21 Eventi 1917 (#1-21), 4 Propaganda (#22,23,46,47), 1 Pivotal 'Red Revolt!' (#24), 21 Eventi 1918 (#25-45). Titoli e factionOrder sono placeholder — verranno popolati leggendo le immagini delle carte una a una nei PR successivi. Le immagini sono in assets/cards/NN.jpg.",
+  "_note": "47 carte del mazzo ABB: 21 Eventi 1917 (#1-21), 4 Propaganda (#22,23,46,47), 1 Pivotal 'Red Revolt!' (#24), 21 Eventi 1918 (#25-45). Titoli letti dal playbook ABBLivingPlaybook.pdf (Events Background, pp.29-32). factionOrder è ancora placeholder — va popolato leggendo la riga superiore di ogni carta. Immagini in assets/cards/NN.jpg.",
   "cards": [
     {
       "number": 1,
-      "title": "Event 01",
+      "title": "February Revolution in Russia",
       "factionOrder": [
         "reds",
         "senate",
@@ -18,7 +18,7 @@
     },
     {
       "number": 2,
-      "title": "Event 02",
+      "title": "\"July Days\" in Russia",
       "factionOrder": [
         "senate",
         "moderates",
@@ -33,7 +33,7 @@
     },
     {
       "number": 3,
-      "title": "Event 03",
+      "title": "October Revolution in Russia",
       "factionOrder": [
         "moderates",
         "germans",
@@ -48,7 +48,7 @@
     },
     {
       "number": 4,
-      "title": "Event 04",
+      "title": "Strikes",
       "factionOrder": [
         "germans",
         "reds",
@@ -63,7 +63,7 @@
     },
     {
       "number": 5,
-      "title": "Event 05",
+      "title": "\"Powers Act\"",
       "factionOrder": [
         "reds",
         "senate",
@@ -78,7 +78,7 @@
     },
     {
       "number": 6,
-      "title": "Event 06",
+      "title": "General Election",
       "factionOrder": [
         "senate",
         "moderates",
@@ -93,7 +93,7 @@
     },
     {
       "number": 7,
-      "title": "Event 07",
+      "title": "\"We Demand\" Manifesto",
       "factionOrder": [
         "moderates",
         "germans",
@@ -108,7 +108,7 @@
     },
     {
       "number": 8,
-      "title": "Event 08",
+      "title": "General Strike",
       "factionOrder": [
         "germans",
         "reds",
@@ -123,7 +123,7 @@
     },
     {
       "number": 9,
-      "title": "Event 09",
+      "title": "Declaration of Finnish Independence",
       "factionOrder": [
         "reds",
         "senate",
@@ -138,7 +138,7 @@
     },
     {
       "number": 10,
-      "title": "Event 10",
+      "title": "Weapons and Jaeger from Germany?",
       "factionOrder": [
         "senate",
         "moderates",
@@ -153,7 +153,7 @@
     },
     {
       "number": 11,
-      "title": "Event 11",
+      "title": "Weapons from Lenin?",
       "factionOrder": [
         "moderates",
         "germans",
@@ -168,7 +168,7 @@
     },
     {
       "number": 12,
-      "title": "Event 12",
+      "title": "Food Supply Issues",
       "factionOrder": [
         "germans",
         "reds",
@@ -183,7 +183,7 @@
     },
     {
       "number": 13,
-      "title": "Event 13",
+      "title": "Joblessness",
       "factionOrder": [
         "reds",
         "senate",
@@ -198,7 +198,7 @@
     },
     {
       "number": 14,
-      "title": "Event 14",
+      "title": "Cannons",
       "factionOrder": [
         "senate",
         "moderates",
@@ -213,7 +213,7 @@
     },
     {
       "number": 15,
-      "title": "Event 15",
+      "title": "Trains",
       "factionOrder": [
         "moderates",
         "germans",
@@ -228,7 +228,7 @@
     },
     {
       "number": 16,
-      "title": "Event 16",
+      "title": "Jaeger",
       "factionOrder": [
         "germans",
         "reds",
@@ -243,7 +243,7 @@
     },
     {
       "number": 17,
-      "title": "Event 17",
+      "title": "Trains",
       "factionOrder": [
         "reds",
         "senate",
@@ -258,7 +258,7 @@
     },
     {
       "number": 18,
-      "title": "Event 18",
+      "title": "Mobilization in the Periphery",
       "factionOrder": [
         "senate",
         "moderates",
@@ -273,7 +273,7 @@
     },
     {
       "number": 19,
-      "title": "Event 19",
+      "title": "Political Struggle",
       "factionOrder": [
         "moderates",
         "germans",
@@ -288,7 +288,7 @@
     },
     {
       "number": 20,
-      "title": "Event 20",
+      "title": "The Leg of Tokoi's Chair",
       "factionOrder": [
         "germans",
         "reds",
@@ -303,7 +303,7 @@
     },
     {
       "number": 21,
-      "title": "Event 21",
+      "title": "Workers' Halls",
       "factionOrder": [
         "reds",
         "senate",
@@ -318,7 +318,7 @@
     },
     {
       "number": 22,
-      "title": "Propaganda 22",
+      "title": "Propaganda — 1st",
       "factionOrder": [],
       "propaganda": true,
       "pivotal": false,
@@ -328,7 +328,7 @@
     },
     {
       "number": 23,
-      "title": "Propaganda 23",
+      "title": "Propaganda — 2nd",
       "factionOrder": [],
       "propaganda": true,
       "pivotal": false,
@@ -353,7 +353,7 @@
     },
     {
       "number": 25,
-      "title": "Event 25",
+      "title": "Disarming Russian Garrisons",
       "factionOrder": [
         "reds",
         "senate",
@@ -368,7 +368,7 @@
     },
     {
       "number": 26,
-      "title": "Event 26",
+      "title": "Jaeger Return to Finland",
       "factionOrder": [
         "senate",
         "moderates",
@@ -383,7 +383,7 @@
     },
     {
       "number": 27,
-      "title": "Event 27",
+      "title": "Reds Major Offensive",
       "factionOrder": [
         "moderates",
         "germans",
@@ -398,7 +398,7 @@
     },
     {
       "number": 28,
-      "title": "Event 28",
+      "title": "Hennala",
       "factionOrder": [
         "germans",
         "reds",
@@ -413,7 +413,7 @@
     },
     {
       "number": 29,
-      "title": "Event 29",
+      "title": "War with Many Names",
       "factionOrder": [
         "reds",
         "senate",
@@ -428,7 +428,7 @@
     },
     {
       "number": 30,
-      "title": "Event 30",
+      "title": "Meetings in the Catacombs",
       "factionOrder": [
         "senate",
         "moderates",
@@ -443,7 +443,7 @@
     },
     {
       "number": 31,
-      "title": "Event 31",
+      "title": "German Invasion of Hanko",
       "factionOrder": [
         "moderates",
         "germans",
@@ -458,7 +458,7 @@
     },
     {
       "number": 32,
-      "title": "Event 32",
+      "title": "Armistice Proposal",
       "factionOrder": [
         "germans",
         "reds",
@@ -473,7 +473,7 @@
     },
     {
       "number": 33,
-      "title": "Event 33",
+      "title": "Battle of Helsinki",
       "factionOrder": [
         "reds",
         "senate",
@@ -488,7 +488,7 @@
     },
     {
       "number": 34,
-      "title": "Event 34",
+      "title": "Political Arrests",
       "factionOrder": [
         "senate",
         "moderates",
@@ -503,7 +503,7 @@
     },
     {
       "number": 35,
-      "title": "Event 35",
+      "title": "Home Front",
       "factionOrder": [
         "moderates",
         "germans",
@@ -518,7 +518,7 @@
     },
     {
       "number": 36,
-      "title": "Event 36",
+      "title": "Prisoners",
       "factionOrder": [
         "germans",
         "reds",
@@ -533,7 +533,7 @@
     },
     {
       "number": 37,
-      "title": "Event 37",
+      "title": "VATO",
       "factionOrder": [
         "reds",
         "senate",
@@ -548,7 +548,7 @@
     },
     {
       "number": 38,
-      "title": "Event 38",
+      "title": "Tanner Abroad",
       "factionOrder": [
         "senate",
         "moderates",
@@ -563,7 +563,7 @@
     },
     {
       "number": 39,
-      "title": "Event 39",
+      "title": "First Post-War Parliament",
       "factionOrder": [
         "moderates",
         "germans",
@@ -578,7 +578,7 @@
     },
     {
       "number": 40,
-      "title": "Event 40",
+      "title": "Battle of Tampere",
       "factionOrder": [
         "germans",
         "reds",
@@ -593,7 +593,7 @@
     },
     {
       "number": 41,
-      "title": "Event 41",
+      "title": "Battle of Lahti",
       "factionOrder": [
         "reds",
         "senate",
@@ -608,7 +608,7 @@
     },
     {
       "number": 42,
-      "title": "Event 42",
+      "title": "Battle of Viipuri",
       "factionOrder": [
         "senate",
         "moderates",
@@ -623,7 +623,7 @@
     },
     {
       "number": 43,
-      "title": "Event 43",
+      "title": "Rough Justice",
       "factionOrder": [
         "moderates",
         "germans",
@@ -638,7 +638,7 @@
     },
     {
       "number": 44,
-      "title": "Event 44",
+      "title": "Mannerheim's Victory Parade",
       "factionOrder": [
         "germans",
         "reds",
@@ -653,7 +653,7 @@
     },
     {
       "number": 45,
-      "title": "Event 45",
+      "title": "Fate in the Balance",
       "factionOrder": [
         "reds",
         "senate",
@@ -668,7 +668,7 @@
     },
     {
       "number": 46,
-      "title": "Propaganda 46",
+      "title": "Propaganda — 3rd",
       "factionOrder": [],
       "propaganda": true,
       "pivotal": false,
@@ -678,7 +678,7 @@
     },
     {
       "number": 47,
-      "title": "Propaganda 47",
+      "title": "Propaganda — 4th",
       "factionOrder": [],
       "propaganda": true,
       "pivotal": false,
