@@ -274,10 +274,9 @@ def main():
         cbox = marker(stacks, vname + " Control") or zone_center(zones, vname + " Control")
         if cbox:
             entry["cbox"] = cbox
-            # sbox: posizione marker Sup/Opp — offset 4% sotto cbox (non c'è una
-            # Zone Vassal dedicata, ma è una distanza visivamente coerente sul
-            # board).
-            entry["sbox"] = [cbox[0], round(cbox[1] + 0.04, 4)]
+            # sbox: posizione marker Sup/Opp — affiancato orizzontalmente al cbox
+            # (Control box e Sup/Opp box sono adiacenti sulla mappa stampata).
+            entry["sbox"] = [round(cbox[0] + 0.030, 4), cbox[1]]
         regions[sid] = entry
         spaces_list.append(
             {
@@ -302,7 +301,7 @@ def main():
             # sbox: posizione marker Sup/Opp — offset 4% sotto cbox (non c'è una
             # Zone Vassal dedicata, ma è una distanza visivamente coerente sul
             # board).
-            entry["sbox"] = [cbox[0], round(cbox[1] + 0.04, 4)]
+            entry["sbox"] = [round(cbox[0] + 0.030, 4), cbox[1]]
         regions[sid] = entry
         spaces_list.append(
             {
