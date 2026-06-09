@@ -1,20 +1,217 @@
 {
-  "_note": "Layout grafico per la mappa croppata (3829x3000 → 3000x2350 jpg). Coordinate normalizzate [0..1]x[0..1]. Box ricavati dalle posizioni dei SetupStack Vassal degli stack iniziali nelle aree 'Available Forces'. Tracciati sono stub — verranno popolati nel PR di affinamento UI.",
+  "_note": "Layout grafico mappa croppata 3829×3000 (resized 3000×2350 jpg). track: 31 slot dello scoring track in alto (0..30). polarization_track: 11 slot della Polarization Track (0..10). vassal_*_pos: posizione marker Vassalage (livello mappato in altro contesto). box: rettangoli forze disponibili.",
   "box": {
-    "available_senate":    [0.04, 0.12, 0.20, 0.25],
-    "available_reds":      [0.82, 0.85, 0.94, 0.97],
-    "available_moderates": [0.04, 0.85, 0.20, 0.97],
-    "available_germans":   [0.21, 0.07, 0.37, 0.16],
-    "available_russians":  [0.63, 0.89, 0.79, 0.97]
+    "available_senate": [
+      0.04,
+      0.12,
+      0.2,
+      0.25
+    ],
+    "available_reds": [
+      0.82,
+      0.85,
+      0.94,
+      0.97
+    ],
+    "available_moderates": [
+      0.04,
+      0.85,
+      0.2,
+      0.97
+    ],
+    "available_germans": [
+      0.21,
+      0.07,
+      0.37,
+      0.16
+    ],
+    "available_russians": [
+      0.63,
+      0.89,
+      0.79,
+      0.97
+    ]
   },
   "track": {
-    "polarization": {
-      "_note": "Posizioni di slot 0..10 sulla Polarization Track (rulebook §1.10).",
-      "anchor": [0.6720, 0.4000],
-      "step": [0.0286, 0.0],
-      "slots": 11
-    }
+    "0": [
+      0.0331,
+      0.0423
+    ],
+    "1": [
+      0.0642,
+      0.0423
+    ],
+    "2": [
+      0.0954,
+      0.0423
+    ],
+    "3": [
+      0.1265,
+      0.0423
+    ],
+    "4": [
+      0.1577,
+      0.0423
+    ],
+    "5": [
+      0.1888,
+      0.0423
+    ],
+    "6": [
+      0.2199,
+      0.0423
+    ],
+    "7": [
+      0.2511,
+      0.0423
+    ],
+    "8": [
+      0.2822,
+      0.0423
+    ],
+    "9": [
+      0.3134,
+      0.0423
+    ],
+    "10": [
+      0.3445,
+      0.0423
+    ],
+    "11": [
+      0.3757,
+      0.0423
+    ],
+    "12": [
+      0.4068,
+      0.0423
+    ],
+    "13": [
+      0.438,
+      0.0423
+    ],
+    "14": [
+      0.4691,
+      0.0423
+    ],
+    "15": [
+      0.5003,
+      0.0423
+    ],
+    "16": [
+      0.5314,
+      0.0423
+    ],
+    "17": [
+      0.5626,
+      0.0423
+    ],
+    "18": [
+      0.5937,
+      0.0423
+    ],
+    "19": [
+      0.6248,
+      0.0423
+    ],
+    "20": [
+      0.656,
+      0.0423
+    ],
+    "21": [
+      0.6871,
+      0.0423
+    ],
+    "22": [
+      0.7183,
+      0.0423
+    ],
+    "23": [
+      0.7494,
+      0.0423
+    ],
+    "24": [
+      0.7806,
+      0.0423
+    ],
+    "25": [
+      0.8117,
+      0.0423
+    ],
+    "26": [
+      0.8429,
+      0.0423
+    ],
+    "27": [
+      0.874,
+      0.0423
+    ],
+    "28": [
+      0.9052,
+      0.0423
+    ],
+    "29": [
+      0.9363,
+      0.0423
+    ],
+    "30": [
+      0.9675,
+      0.0423
+    ]
   },
   "avail_circles": {},
-  "avail_loose": {}
+  "avail_loose": {},
+  "polarization_track": {
+    "0": [
+      0.6863,
+      0.3892
+    ],
+    "1": [
+      0.7148,
+      0.3892
+    ],
+    "2": [
+      0.7434,
+      0.3892
+    ],
+    "3": [
+      0.7719,
+      0.3892
+    ],
+    "4": [
+      0.8005,
+      0.3892
+    ],
+    "5": [
+      0.8291,
+      0.3892
+    ],
+    "6": [
+      0.8576,
+      0.3892
+    ],
+    "7": [
+      0.8862,
+      0.3892
+    ],
+    "8": [
+      0.9148,
+      0.3892
+    ],
+    "9": [
+      0.9433,
+      0.3892
+    ],
+    "10": [
+      0.9719,
+      0.3892
+    ]
+  },
+  "vassal_german_pos": [
+    0.155,
+    0.045
+  ],
+  "vassal_russian_pos": [
+    0.155,
+    0.96
+  ]
 }
