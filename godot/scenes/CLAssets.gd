@@ -34,19 +34,37 @@ static func map() -> Texture2D:
 
 
 ## Texture del pezzo (faction, type, state).
+## Convenzione di naming:
+##   troops    → troops.png (Cuba) o troops_<faction>.png (ABB: germans/russians)
+##   police    → police.png (Cuba)
+##   base      → base_<faction>.png (Cuba)
+##   casino    → casino_<open|closed>.png (Cuba)
+##   guerrilla → guerrilla_<faction>_<state>.png (Cuba)
+##   cell      → cell_<faction>_<state>.png (ABB)
+##   admin     → admin_<faction>.png (ABB Reds disc)
+##   network   → network_<faction>.png (ABB Moderates disc)
 static func piece(faction: String, type: String, state: String) -> Texture2D:
 	match type:
-		"troops": return tex("troops.png")
+		"troops":
+			var t: Texture2D = tex("troops_%s.png" % faction)
+			return t if t != null else tex("troops.png")
 		"police": return tex("police.png")
 		"base": return tex("base_%s.png" % faction)
 		"casino": return tex("casino_%s.png" % ("open" if state == "open" else "closed"))
 		"guerrilla":
-			var s := state if state != "" else "underground"
+			var s: String = state if state != "" else "underground"
 			return tex("guerrilla_%s_%s.png" % [faction, s])
+		"cell":
+			var cs: String = state if state != "" else "underground"
+			return tex("cell_%s_%s.png" % [faction, cs])
+		"admin": return tex("admin_%s.png" % faction)
+		"network": return tex("network_%s.png" % faction)
 	return null
 
 
 static func control(faction: String) -> Texture2D:
+	if faction == "":
+		return null
 	return tex("control_%s.png" % faction)
 
 
@@ -59,11 +77,12 @@ static func support(level: int) -> Texture2D:
 	return null
 
 
-## Immagine della carta: number 1..48, oppure 0 = Propaganda.
+## Immagine della carta: number 1..N, oppure 0 = Propaganda.
+## Prova prima JPG (ABB), poi PNG (Cuba) come fallback.
 static func card(number: int) -> Texture2D:
-	if number <= 0:
-		return tex("cards/prop.png")
-	return tex("cards/%02d.png" % number)
+	var base_name: String = "prop" if number <= 0 else "%02d" % number
+	var jpg: Texture2D = tex("cards/%s.jpg" % base_name)
+	return jpg if jpg != null else tex("cards/%s.png" % base_name)
 
 
 static func cash() -> Texture2D: return tex("cash.png")
