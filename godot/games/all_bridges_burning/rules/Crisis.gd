@@ -96,9 +96,38 @@ func _powers_adjustment() -> Dictionary:
 
 
 func _politics_phase() -> Dictionary:
-	var cur: int = int(state.tracks.get("issues_networks", 0))
-	state.tracks["issues_networks"] = cur + 1
-	return {"issues_resolved": 1, "total": state.tracks["issues_networks"]}
+	# §6.2 Politics Phase: usa ABBPoliticalDisplay per la risoluzione.
+	# Personal Leadership check (§6.2.2): se Personality non sulla mappa,
+	# Moderati -3 Risorse e cercano di rimetterla in una Town con Cell Moderati.
+	var pd := ABBPoliticalDisplay.new(state)
+	var result := pd.resolve_politics(-1)
+	_personal_leadership_check(result)
+	return result
+
+
+func _personal_leadership_check(into: Dictionary) -> void:
+	var on_map := false
+	for sid in state.spaces.keys():
+		if state.space_state(sid).marker("personality") > 0:
+			on_map = true
+			break
+	if on_map:
+		into["log"].append("Personal Leadership: Personality sulla mappa, niente penalità.")
+		return
+	# Penalità -3 Risorse Moderati
+	state.resources["moderates"] = maxi(0, int(state.get_resources("moderates")) - 3)
+	into["log"].append("Personal Leadership: Personality OFF map → Moderati Risorse -3.")
+	# Cerca Town con Cellula Moderati per piazzare la Personality.
+	for sid in state.spaces.keys():
+		var sd: SpaceDef = state.game_def.space(sid)
+		if sd.type != CoinEnums.SpaceType.CITY:
+			continue
+		var st: SpaceState = state.space_state(sid)
+		if st.count("moderates", "cell") > 0:
+			st.set_marker("personality", 1)
+			into["log"].append("Personality piazzata a %s." % sid)
+			return
+	into["log"].append("Nessuna Town con Cellula Moderati: Personality fuori dal gioco.")
 
 
 func _earnings_phase() -> Dictionary:

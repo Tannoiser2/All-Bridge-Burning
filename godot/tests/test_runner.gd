@@ -26,6 +26,7 @@ func _initialize() -> void:
 	_test_abb_germans_flowchart()
 	_test_abb_capabilities()
 	_test_abb_pac2()
+	_test_abb_political_display()
 	_test_game_def()
 	_test_setup_forces()
 	_test_setup_tracks()
@@ -362,6 +363,28 @@ func _test_abb_pac2() -> void:
 	var crisis := ABBCrisis.new(state, mod)
 	crisis.resolve()
 	_eq("campaign_count +1", int(state.tracks.get("campaign_count", 0)), c0 + 1)
+
+
+func _test_abb_political_display() -> void:
+	print("\n[ABB Political Display §1.11 + §6.2]")
+	var r := _new_abb()
+	var state: GameState = r[2]
+	var pd := ABBPoliticalDisplay.new(state)
+	_eq("3 Issues registrate", state.tracks["issues"].size(), 3)
+	_eq("Issue corrente: 0", pd.current_unresolved_index(), 0)
+	# Place cubes
+	pd.place_cubes("senate", 3)
+	pd.place_cubes("reds", 1)
+	_eq("3 cubi Senato", int(state.tracks["political_display"]["senate"]), 3)
+	_eq("1 cubo Rossi", int(state.tracks["political_display"]["reds"]), 1)
+	# Resolve con dice_seed forzato per roll <= 4 (resolution)
+	var res = pd.resolve_politics(1)
+	_check("Politics risolto", res.has("resolved"))
+	_eq("Issue 0 risolta da Senato",
+		String(state.tracks["issues"][0]["resolved_by"]), "senate")
+	_eq("Cubi azzerati post-resolve",
+		int(state.tracks["political_display"]["senate"]) + int(state.tracks["political_display"]["reds"]), 0)
+	_eq("Resolved count Senato = 1", pd.resolved_count("senate"), 1)
 
 
 func _test_abb_germans_phase_gate() -> void:
