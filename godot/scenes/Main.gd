@@ -1906,8 +1906,10 @@ func _abb_execute_op_on_space(sid: String) -> void:
 			res = GameController.ops.rally(fid, sid, "cell")
 		"attack":
 			res = GameController.ops.attack(fid, sid)
-		"terror", "activism":
+		"terror":
 			res = GameController.ops.terror(fid, sid)
+		"activism":
+			res = GameController.ops.activism(fid, sid)
 		_:
 			res = {"ok": false, "error": "op ABB non supportata: " + op_id}
 	_abb_log_op(op_id, sid, res)
