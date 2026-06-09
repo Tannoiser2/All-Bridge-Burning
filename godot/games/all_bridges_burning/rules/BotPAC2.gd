@@ -218,10 +218,95 @@ func _exec_action(ops: ABBOperations, specials: ABBSpecialActivities,
 			return _do_crackdown(specials, fid)
 		"activism":
 			return _do_activism(ops, fid)
+		"prepare":
+			return _do_prepare(fid)
+		"dialogue":
+			return _do_dialogue(specials, fid)
+		"publish":
+			return _do_publish(fid)
+		"message":
+			return _do_message(fid)
 		_:
-			# STUB: prepare, message, dialogue, publish
-			trace.append("  %s: STUB (fall-through)" % op_id)
+			trace.append("  %s: handler non riconosciuto (fall-through)" % op_id)
 			return {"ok": false}
+
+
+## §4.2.3 Prepare: piazza un marker Prepared in uno spazio con Cellula amica.
+## In Phase II può anche piazzare/rimuovere Sabotage su un bordo (semplificato).
+func _do_prepare(fid: String) -> Dictionary:
+	if not (fid in ["reds", "senate"]):
+		return {"ok": false}
+	var marker_name := "prepared_" + fid
+	for sid in state.spaces.keys():
+		var st: SpaceState = state.space_state(sid)
+		if st.count(fid, "cell") <= 0:
+			continue
+		if st.marker(marker_name) > 0:
+			continue
+		st.set_marker(marker_name, 1)
+		return {"ok": true, "log": ["Prepared %s a %s" % [fid, sid]]}
+	return {"ok": false}
+
+
+## §3.3.3 / §4.3.2 Dialogue (Moderates): rimuove Opposition o gira nemico Inattivo.
+## Implementazione: shift di un livello verso Neutral in primo spazio con
+## Moderates Cell + supporto/opposizione non-Neutral.
+func _do_dialogue(specials: ABBSpecialActivities, fid: String) -> Dictionary:
+	if fid != "moderates":
+		return {"ok": false}
+	for sid in state.spaces.keys():
+		var res = specials.dialogue(String(sid))
+		if res.get("ok", false):
+			return res
+	return {"ok": false}
+
+
+## §4.3.3 Publish (Moderates Personality SA): aggiunge Risorse in base a
+## Cellule Moderati su Town con News marker o Personality.
+func _do_publish(fid: String) -> Dictionary:
+	if fid != "moderates":
+		return {"ok": false}
+	var gained := 0
+	for sid in state.spaces.keys():
+		var sd: SpaceDef = state.game_def.space(sid)
+		if sd.type != "city":
+			continue
+		var st: SpaceState = state.space_state(sid)
+		if st.count("moderates", "cell") <= 0:
+			continue
+		# 1 Risorsa per Town con Moderates Cell + Personality o News.
+		if st.marker("personality") > 0 or st.marker("news") > 0:
+			gained += 1
+	if gained <= 0:
+		return {"ok": false}
+	state.resources["moderates"] = int(state.get_resources("moderates")) + gained
+	return {"ok": true, "log": ["Publish: Moderates +%d Risorse" % gained]}
+
+
+## §3.3.2 Message (Moderates Cmd): muove fino a 3 Cell amiche fra Town. Qui:
+## sposta 1 Cell Moderates verso una Town adiacente senza Network.
+func _do_message(fid: String) -> Dictionary:
+	if fid != "moderates":
+		return {"ok": false}
+	for sid in state.spaces.keys():
+		var st: SpaceState = state.space_state(sid)
+		if st.count("moderates", "cell") <= 0:
+			continue
+		var sd: SpaceDef = state.game_def.space(sid)
+		for adj_v in sd.adjacent:
+			var adj := String(adj_v)
+			var sd2: SpaceDef = state.game_def.space(adj)
+			if sd2 == null or sd2.type != "city":
+				continue
+			var st2: SpaceState = state.space_state(adj)
+			if st2.count("moderates", "network") > 0:
+				continue
+			st.remove_piece("moderates", "cell", 1, "underground")
+			st2.add_piece("moderates", "cell", 1, "underground")
+			state.recompute_control(sid)
+			state.recompute_control(adj)
+			return {"ok": true, "log": ["Message: Cell moderates %s → %s" % [sid, adj]]}
+	return {"ok": false}
 
 
 func _do_activism(ops: ABBOperations, fid: String) -> Dictionary:
