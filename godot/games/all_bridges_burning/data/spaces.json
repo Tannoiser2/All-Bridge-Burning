@@ -1,5 +1,5 @@
 {
-  "_note": "8 province + 5 città estratte dal Vassal. Adiacenze calcolate dai poligoni (regola §1.2.3); città ↔ provincia di contenimento sempre adiacenti. Popolazione letta dalla mappa stampata (playbook p.8 e regolamento §1.2).",
+  "_note": "8 province + 5 città estratte dal Vassal. Adiacenze calcolate dai poligoni (regola §1.2.3); città legate alla provincia di contenimento. Popolazione (pop) letta dalla mappa stampata.",
   "spaces": [
     {
       "id": "hame",
@@ -7,7 +7,6 @@
       "type": "province",
       "pop": 1,
       "adjacent": [
-        "kuopion_laani",
         "mikkelin_laani",
         "pohjanmaa",
         "tampere",
@@ -33,7 +32,6 @@
       "type": "province",
       "pop": 2,
       "adjacent": [
-        "hame",
         "karelia",
         "mikkelin_laani",
         "oulun_laani",
@@ -98,7 +96,6 @@
       "adjacent": [
         "hame",
         "pohjanmaa",
-        "tampere",
         "turku",
         "uusimaa"
       ]
@@ -118,8 +115,7 @@
       "type": "city",
       "pop": 1,
       "adjacent": [
-        "hame",
-        "varsinais_suomi"
+        "hame"
       ]
     },
     {

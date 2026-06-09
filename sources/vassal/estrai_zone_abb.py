@@ -104,6 +104,26 @@ def marker(stacks: dict, name: str) -> list | None:
     return None
 
 
+def zone_center(zones: dict, name: str) -> list | None:
+    """Centro normalizzato della Zone Vassal `name` (es. 'Häme Control')."""
+    if name not in zones:
+        return None
+    pts = []
+    for pair in zones[name].split(";"):
+        try:
+            x, y = pair.split(",")
+            pts.append((int(x), int(y)))
+        except Exception:
+            pass
+    if not pts:
+        return None
+    xs = [pt[0] for pt in pts]
+    ys = [pt[1] for pt in pts]
+    cx = (min(xs) + max(xs)) / 2
+    cy = (min(ys) + max(ys)) / 2
+    return [round(cx / MAP_W, 4), round(cy / MAP_H, 4)]
+
+
 def main():
     here = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.abspath(os.path.join(here, "..", ".."))
@@ -129,9 +149,13 @@ def main():
             continue
         pts = poly(zones, vname)
         entry: dict = {"polygon": pts, "anchor": centroid(pts)}
-        cbox = marker(stacks, vname + " Control")
+        cbox = marker(stacks, vname + " Control") or zone_center(zones, vname + " Control")
         if cbox:
             entry["cbox"] = cbox
+            # sbox: posizione marker Sup/Opp — offset 4% sotto cbox (non c'è una
+            # Zone Vassal dedicata, ma è una distanza visivamente coerente sul
+            # board).
+            entry["sbox"] = [cbox[0], round(cbox[1] + 0.04, 4)]
         regions[sid] = entry
         spaces_list.append(
             {
@@ -150,9 +174,13 @@ def main():
         pts = poly(zones, vname)
         c = circle_from_pts(pts)
         entry = {"circle": c, "anchor": [c[0], c[1]], "polygon": pts}
-        cbox = marker(stacks, vname + " Control")
+        cbox = marker(stacks, vname + " Control") or zone_center(zones, vname + " Control")
         if cbox:
             entry["cbox"] = cbox
+            # sbox: posizione marker Sup/Opp — offset 4% sotto cbox (non c'è una
+            # Zone Vassal dedicata, ma è una distanza visivamente coerente sul
+            # board).
+            entry["sbox"] = [cbox[0], round(cbox[1] + 0.04, 4)]
         regions[sid] = entry
         spaces_list.append(
             {
@@ -190,9 +218,24 @@ def main():
         repo_root, "godot", "games", "all_bridges_burning", "data"
     )
     os.makedirs(data_dir, exist_ok=True)
+    # Preserva pop e adjacent esistenti in spaces.json (popolati a mano dal
+    # regolamento / calcolati da calcola_adiacenze_abb.py). Se mancano,
+    # restano 0 / [] come default dei nuovi spazi.
+    existing_path = os.path.join(data_dir, "spaces.json")
+    if os.path.exists(existing_path):
+        try:
+            existing = json.load(open(existing_path, encoding="utf-8"))
+            by_id = {s["id"]: s for s in existing.get("spaces", [])}
+            for s in spaces_list:
+                old = by_id.get(s["id"])
+                if old:
+                    s["pop"] = old.get("pop", s["pop"])
+                    s["adjacent"] = old.get("adjacent", s["adjacent"])
+        except Exception as exc:
+            print(f"ATTENZIONE: impossibile fondere spaces.json esistente: {exc}", file=sys.stderr)
     with open(os.path.join(data_dir, "regions.json"), "w", encoding="utf-8") as f:
         json.dump(out_regions, f, ensure_ascii=False, indent=2)
-    with open(os.path.join(data_dir, "spaces.json"), "w", encoding="utf-8") as f:
+    with open(existing_path, "w", encoding="utf-8") as f:
         json.dump(out_spaces, f, ensure_ascii=False, indent=2)
 
     print(f"Scritte {len(regions)} regioni e {len(spaces_list)} spazi.")
