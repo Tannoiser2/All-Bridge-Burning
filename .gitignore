@@ -23,3 +23,6 @@ Materiale ABB/All_Bridges_Burning_*.vmod/
 
 # Build Web locale (generata dalla GitHub Action)
 /web/
+
+# Godot: file UID generati da versioni 4.4+ in locale (CI usa 4.3, non li usa)
+*.uid
