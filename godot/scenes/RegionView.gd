@@ -127,11 +127,17 @@ func relayout() -> void:
 	# Terrore/Sabotaggio appena sopra la griglia.
 	_stack.reset_size()
 	_stack.position = Vector2(a.x - _stack.size.x * 0.5, grid_top - 16.0)
-	# Marcatori Controllo/Supporto nelle caselle (o sull'anchor se non definite)
+	# Marcatori Controllo/Supporto nelle caselle (o sull'anchor se non definite).
+	# Dimensione scalata con la mappa per restare leggibili (ABB su 3000×2350).
+	var mk_size: float = clampf(size.x * 0.028, 24.0, 56.0)
 	if _ctrl_tr != null:
+		_ctrl_tr.size = Vector2(mk_size, mk_size)
+		_ctrl_tr.custom_minimum_size = _ctrl_tr.size
 		var cp := _cbox if _cbox.x >= 0 else Vector2(_anchor_norm.x - 0.012, _anchor_norm.y - 0.03)
 		_ctrl_tr.position = Vector2(cp.x * size.x, cp.y * size.y) - _ctrl_tr.size * 0.5
 	if _sup_tr != null:
+		_sup_tr.size = Vector2(mk_size, mk_size)
+		_sup_tr.custom_minimum_size = _sup_tr.size
 		var sp := _sbox if _sbox.x >= 0 else Vector2(_anchor_norm.x + 0.012, _anchor_norm.y - 0.03)
 		_sup_tr.position = Vector2(sp.x * size.x, sp.y * size.y) - _sup_tr.size * 0.5
 	queue_redraw()
