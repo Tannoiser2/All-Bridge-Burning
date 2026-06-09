@@ -15,6 +15,11 @@ func _initialize() -> void:
 	_test_abb_piece_types()
 	_test_abb_adjacency()
 	_test_abb_setup()
+	_test_abb_operations()
+	_test_abb_specials()
+	_test_abb_crisis()
+	_test_abb_bot()
+	_test_abb_victory()
 	_test_game_def()
 	_test_setup_forces()
 	_test_setup_tracks()
@@ -151,6 +156,91 @@ func _test_abb_setup() -> void:
 	_eq("Vassalage Russian", int(state.tracks.get("vassalage_russian", -1)), 3)
 	# Tutte le fazioni Eligibili al setup
 	_eq("Reds Eligible", state.eligibility["reds"], CoinEnums.Eligibility.ELIGIBLE)
+
+
+func _test_abb_operations() -> void:
+	print("\n[ABB Operazioni]")
+	var r := _new_abb()
+	var mod: ABBModule = r[0]
+	var state: GameState = r[2]
+	var ops := ABBOperations.new(state, mod)
+
+	var res_before: int = state.get_resources("reds")
+	var rally_res = ops.rally("reds", "karelia", "cell")
+	_check("Rally Reds OK", rally_res.get("ok", false))
+	_eq("Karelia +1 cellula Reds", state.space_state("karelia").count("reds", "cell"), 1)
+	_eq("Risorse Reds -1", state.get_resources("reds"), res_before - 1)
+
+	var march_res = ops.march("reds", "uusimaa", "helsinki", "cell", 1)
+	_check("March Reds OK", march_res.get("ok", false))
+	_check("Cellule Active in spazio nemico",
+		state.space_state("helsinki").count("reds", "cell", "active") >= 1)
+
+	var atk = ops.attack("reds", "helsinki", 3)
+	_check("Attack restituisce risultato", atk.has("ok"))
+
+	var terror_before: int = state.space_state("uusimaa").marker("terror")
+	var ter = ops.terror("reds", "uusimaa")
+	_check("Terror OK", ter.get("ok", false))
+	_eq("Terror marker +1", state.space_state("uusimaa").marker("terror"), terror_before + 1)
+
+
+func _test_abb_specials() -> void:
+	print("\n[ABB Att.Speciali]")
+	var r := _new_abb()
+	var mod: ABBModule = r[0]
+	var state: GameState = r[2]
+	var sa := ABBSpecialActivities.new(state, mod)
+
+	var res_before: int = state.get_resources("reds")
+	var tax_res = sa.tax("reds", "uusimaa")
+	_check("Tax Reds OK", tax_res.get("ok", false))
+	_eq("Reds +Pop Risorse", state.get_resources("reds"), res_before + 2)
+
+	var vg_before: int = int(state.tracks.get("vassalage_german", 0))
+	var fr = sa.foreign_relations("germans", 1)
+	_check("Foreign Relations OK", fr.get("ok", false))
+	_eq("Vassalage +1", int(state.tracks.get("vassalage_german", 0)), vg_before + 1)
+
+
+func _test_abb_crisis() -> void:
+	print("\n[ABB Crisis]")
+	var r := _new_abb()
+	var mod: ABBModule = r[0]
+	var state: GameState = r[2]
+	var crisis := ABBCrisis.new(state, mod)
+	var reds_before: int = state.get_resources("reds")
+	var report = crisis.resolve()
+	_check("Crisis ritorna report", report.has("politics") and report.has("earnings"))
+	_check("Reds Earnings ≥ 0", state.get_resources("reds") >= reds_before)
+	_eq("Issues +1", int(state.tracks.get("issues_networks", 0)), 2)
+
+
+func _test_abb_bot() -> void:
+	print("\n[ABB Bot]")
+	var r := _new_abb()
+	var mod: ABBModule = r[0]
+	var state: GameState = r[2]
+	var bot := ABBBot.new(state, mod)
+	var res = bot.take_turn("reds")
+	_check("Bot Reds esegue azione", res.get("action", "pass") != "pass")
+	var res2 = bot.take_turn("russians")
+	_eq("Bot Russians passa", res2.get("action", ""), "pass")
+
+
+func _test_abb_victory() -> void:
+	print("\n[ABB Vittoria]")
+	var r := _new_abb()
+	var mod: ABBModule = r[0]
+	var state: GameState = r[2]
+	var vs = mod.victory_status(state)
+	_check("Reds non vinto", not vs["reds"]["won"])
+	_check("Senate non vinto", not vs["senate"]["won"])
+	_eq("Soglia Reds", int(vs["reds"]["threshold"]), 11)
+	_eq("Soglia Senate", int(vs["senate"]["threshold"]), 3)
+	_eq("Soglia Moderates", int(vs["moderates"]["threshold"]), 14)
+	var to = mod.tiebreak_order()
+	_eq("Tiebreak: Reds primo", String(to[0]), "reds")
 
 
 # ---------------------------------------------------------------------------
