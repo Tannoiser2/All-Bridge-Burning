@@ -56,6 +56,8 @@ func build_game_def() -> GameDef:
 		"oppose_admins":     {"min": 0, "max": 30},
 		"cells_on_map":      {"min": 0, "max": 50},
 		"issues_networks":   {"min": 0, "max": 30},
+		# Phase I = pre-Red Revolt!; Phase II = Germans giocano via flowchart (§3.4).
+		"phase":             {"min": 1, "max": 2, "default": 1},
 	}
 	return gd
 
@@ -101,7 +103,9 @@ func apply_setup(state: GameState, scenario_id: String = "standard") -> void:
 	for fid in res.keys():
 		state.resources[fid] = int(res[fid])
 
-	# Tracciati globali
+	# Tracciati globali (default Phase I se non specificato).
+	if not state.tracks.has("phase"):
+		state.tracks["phase"] = 1
 	var tracks: Dictionary = setup.get("tracks", {})
 	for tk in tracks.keys():
 		state.tracks[tk] = int(tracks[tk])

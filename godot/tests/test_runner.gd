@@ -20,6 +20,7 @@ func _initialize() -> void:
 	_test_abb_crisis()
 	_test_abb_bot()
 	_test_abb_victory()
+	_test_abb_red_revolt()
 	_test_game_def()
 	_test_setup_forces()
 	_test_setup_tracks()
@@ -241,6 +242,25 @@ func _test_abb_victory() -> void:
 	_eq("Soglia Moderates", int(vs["moderates"]["threshold"]), 14)
 	var to = mod.tiebreak_order()
 	_eq("Tiebreak: Reds primo", String(to[0]), "reds")
+
+
+func _test_abb_red_revolt() -> void:
+	print("\n[ABB Red Revolt! → Phase II]")
+	var r := _new_abb()
+	var mod: ABBModule = r[0]
+	var state: GameState = r[2]
+	_eq("Phase iniziale = I", int(state.tracks.get("phase", 0)), 1)
+	var card: CardDef = state.game_def.card(24)
+	_check("Carta #24 pivotal", card != null and card.is_pivotal)
+	_eq("Titolo #24", card.title if card != null else "", "Red Revolt!")
+	var ev := ABBEvents.new(state, mod)
+	var res = ev.apply(24, "unshaded", "reds")
+	_check("Apply Red Revolt! ok", bool(res.get("ok", false)))
+	_eq("Phase dopo Red Revolt!", int(state.tracks.get("phase", 0)), 2)
+	# Idempotente: una seconda chiamata non cambia nulla.
+	var res2 = ev.apply(24, "unshaded", "reds")
+	_check("Apply secondario ok", bool(res2.get("ok", false)))
+	_eq("Phase resta II", int(state.tracks.get("phase", 0)), 2)
 
 
 # ---------------------------------------------------------------------------
