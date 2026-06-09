@@ -213,7 +213,11 @@ func _execute_step(ops: ABBOperations, fid: String, step: Dictionary) -> Diction
 			if placed <= 0:
 				return {"ok": false, "error": "nessuna truppa Available"}
 			state.recompute_control(String(step["target"]))
-			return {"ok": true, "log": ["Landing %s × %d a %s" % [fid, placed, step["target"]]]}
+			# §3.4 Landing piazza anche un News marker (per Moderates Personality SA).
+			if fid == "germans":
+				var st_land: SpaceState = state.space_state(String(step["target"]))
+				st_land.set_marker("news", st_land.marker("news") + 1)
+			return {"ok": true, "log": ["Landing %s × %d a %s (+News)" % [fid, placed, step["target"]]]}
 		_:
 			return {"ok": false, "error": "op non supportata: " + op_id}
 
