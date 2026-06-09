@@ -417,21 +417,139 @@ func _abb_draw_sop(s: GameState) -> void:
 			draw_string(font, Vector2(bx + 8, by + badge_h - 4), "PHASE II",
 				HORIZONTAL_ALIGNMENT_LEFT, badge_w - 12, 12, Color.WHITE)
 	var seq = GameController.seq
-	for fid in rows.keys():
-		var col_key := _sop_col_for(s, seq, String(fid))
-		if not cols.has(col_key):
+	# Slot esatti dal Vassal estratti in board_layout.sop_slots.
+	var slots: Dictionary = _sop_slots_load_once()
+	for fid in ["reds", "senate", "moderates", "germans"]:
+		var pos: Vector2 = _sop_slot_for(s, seq, fid, slots)
+		if pos == Vector2.ZERO:
 			continue
-		var cx: float = float(cols[col_key]) * size.x
-		var cy: float = float(rows[fid]) * size.y
-		# Cilindro = pallino faction-color + bordo nero; sotto il nome breve.
-		var color: Color = GameController.faction_color(String(fid))
+		var color: Color = GameController.faction_color(fid)
 		var radius: float = SOP_CYL * 0.5
-		draw_circle(Vector2(cx, cy), radius, color)
-		draw_arc(Vector2(cx, cy), radius, 0, TAU, 24, Color.BLACK, 1.5)
-		# Etichetta della fazione (prima lettera maiuscola).
-		var lbl: String = String(fid).substr(0, 1).to_upper()
-		draw_string(font, Vector2(cx - 4, cy + 4), lbl,
+		draw_circle(pos, radius, color)
+		draw_arc(pos, radius, 0, TAU, 24, Color.BLACK, 1.5)
+		var lbl: String = fid.substr(0, 1).to_upper()
+		draw_string(font, Vector2(pos.x - 4, pos.y + 4), lbl,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color.WHITE)
+
+
+var _sop_slots_cache: Dictionary = {}
+
+
+func _sop_slots_load_once() -> Dictionary:
+	if _sop_slots_cache.is_empty():
+		var f := FileAccess.open(GameRegistry.data_path("board_layout.json"), FileAccess.READ)
+		if f != null:
+			var d = JSON.parse_string(f.get_as_text())
+			if d is Dictionary:
+				_sop_slots_cache = d.get("sop_slots", {})
+	return _sop_slots_cache
+
+
+## Restituisce la posizione (pixel) dove disegnare il cilindro di fid, sulla
+## base di Phase + action_box + eligibility + ordine di pass/eligible.
+func _sop_slot_for(s: GameState, seq, fid: String, slots: Dictionary) -> Vector2:
+	var ph: int = int(s.tracks.get("phase", 1))
+	# Germans hanno propri slot
+	if fid == "germans":
+		if ph < 2:
+			# Phase I: sempre Germany Ineligible
+			return _slot_pos(slots, "germany_ineligible")
+		var roll: int = int(s.tracks.get("german_eligibility_roll", 0))
+		if roll == 0:
+			# Roll non ancora fatto: Germany Eligible (first slot row di Eligibile)
+			return _slot_pos(slots, "germany_first")
+		if roll <= 3:
+			return _slot_pos(slots, "germany_first")
+		return _slot_pos(slots, "germany_last")
+	# Player factions (reds/senate/moderates)
+	if seq != null and seq.action_box.has(fid):
+		var k := String(seq.action_box[fid])
+		if k == "pass":
+			var pass_idx := _passers_index(seq, fid)
+			var pass_slot := ["pass_a", "pass_b", "pass_c"][min(pass_idx, 2)]
+			return _slot_pos(slots, pass_slot)
+		# Agito: scegli slot in base all'azione + ordine
+		var actor_idx := _actor_index(seq, fid)
+		return _action_slot(k, actor_idx, slots)
+	# Non ha ancora agito → Eligible 1st/2nd/3rd o Ineligible
+	if int(s.eligibility.get(fid, CoinEnums.Eligibility.ELIGIBLE)) == CoinEnums.Eligibility.INELIGIBLE:
+		var ineligible_slots := ["ineligible_1", "ineligible_2", "ineligible_3"]
+		var idx := ["reds", "senate", "moderates"].find(fid)
+		return _slot_pos(slots, ineligible_slots[max(0, idx)])
+	# Eligible nella propria riga (1st/2nd/3rd basato su rank)
+	var rank := _eligible_rank(s, seq, fid)
+	var elig_slots := ["eligible_1st", "eligible_2nd", "eligible_3rd"]
+	return _slot_pos(slots, elig_slots[clampi(rank, 0, 2)])
+
+
+func _slot_pos(slots: Dictionary, key: String) -> Vector2:
+	if not slots.has(key):
+		return Vector2.ZERO
+	var p: Array = slots[key]
+	return Vector2(float(p[0]) * size.x, float(p[1]) * size.y)
+
+
+## Mappa l'azione (action_box value) al slot Vassal corretto.
+## actor_idx 0 = 1° player ad agire (colonna X=3107),
+## actor_idx 1+ = 2°/3° player (colonna X=3315).
+func _action_slot(action_key: String, actor_idx: int, slots: Dictionary) -> Vector2:
+	if actor_idx == 0:
+		match action_key:
+			"1st_op_only", "1st_op_sa", "2nd_op_sa": return _slot_pos(slots, "cmd_3107")
+			"1st_event", "2nd_limop_or_event": return _slot_pos(slots, "event_d")
+			"2nd_limop": return _slot_pos(slots, "lim_cmd_d")
+		return _slot_pos(slots, "cmd_3107")
+	# 2°/3° player (X=3315 column, 6 slot varianti)
+	match action_key:
+		"2nd_limop": return _slot_pos(slots, "lim_cmd_c_top")
+		"2nd_limop_or_event": return _slot_pos(slots, "event_c")
+		"2nd_op_sa", "1st_op_sa": return _slot_pos(slots, "cmd_3315_mid")
+		"1st_op_only": return _slot_pos(slots, "cmd_3315_top")
+		"1st_event": return _slot_pos(slots, "event_c")
+	return _slot_pos(slots, "cmd_3315_mid")
+
+
+## Indice 0-based della fazione tra chi ha passato (usa action_box).
+func _passers_index(seq, fid: String) -> int:
+	if seq == null:
+		return 0
+	var i := 0
+	for ff in seq.action_box.keys():
+		if String(seq.action_box[ff]) == "pass":
+			if String(ff) == fid:
+				return i
+			i += 1
+	return i
+
+
+## Indice della fazione fra gli attori (chi ha già agito, escluso pass).
+func _actor_index(seq, fid: String) -> int:
+	if seq == null:
+		return 0
+	var i := 0
+	for ff in seq.action_box.keys():
+		var k := String(seq.action_box[ff])
+		if k != "pass":
+			if String(ff) == fid:
+				return i
+			i += 1
+	return i
+
+
+## Rank della fazione nella lista di eligibili (0 = 1st, 1 = 2nd, 2 = 3rd).
+func _eligible_rank(s: GameState, seq, fid: String) -> int:
+	var order := ["reds", "senate", "moderates"]
+	if seq != null:
+		# Idea: per ABB il rank Eligible deriva da SeqRank (computed) ma noi
+		# usiamo un'approssimazione: i NON-attori restano in ordine reds<senate<moderates.
+		var elig := []
+		for f in order:
+			if not seq.action_box.has(f):
+				if int(s.eligibility.get(f, CoinEnums.Eligibility.ELIGIBLE)) == CoinEnums.Eligibility.ELIGIBLE:
+					elig.append(f)
+		var idx := elig.find(fid)
+		return idx if idx >= 0 else 0
+	return order.find(fid)
 
 
 ## Capacità attive ABB: chip nel box "capabilities" (estratto dalla Zone Vassal).
