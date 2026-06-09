@@ -11,6 +11,7 @@ const STACK := 20.0    # scostamento per segnalini sulla stessa cella
 
 var _track: Dictionary = {}    # "0".."49" -> [x,y] normalizzati
 var _polarization_track: Dictionary = {}  # ABB: slot 0..10 del tracciato Polarization
+var _sop: Dictionary = {}      # ABB: posizione cilindri Sequence of Play
 var _box: Dictionary = {}      # nome -> [x0,y0,x1,y1] normalizzati
 var _circles: Dictionary = {}  # fazione -> [[x,y],...] centri dei cerchietti basi/casinò (Vassal)
 var _loose: Dictionary = {}    # fazione -> tipo -> [x0,y0,x1,y1] area dei pezzi sciolti
@@ -25,6 +26,7 @@ func _ready() -> void:
 		if d is Dictionary:
 			_track = d.get("track", {})
 			_polarization_track = d.get("polarization_track", {})
+			_sop = d.get("sop", {})
 			_box = d.get("box", {})
 			_circles = d.get("avail_circles", {})
 			_loose = d.get("avail_loose", {})
@@ -83,7 +85,10 @@ func _draw() -> void:
 		_blit(CLAssets.alliance_marker(), _box_rect(abox).get_center())
 
 	_draw_available(s)
-	_draw_eligibility(s)
+	if GameRegistry.game_id == "all_bridges_burning":
+		_abb_draw_sop(s)
+	else:
+		_draw_eligibility(s)
 	# Capabilities è Cuba-specifico (nomi carte Cuba).
 	if GameRegistry.game_id == "cuba_libre":
 		_draw_capabilities(s)
@@ -314,3 +319,51 @@ func _abb_draw_available(s: GameState, tok: float) -> void:
 			var sub_rect := Rect2(r.position.x, y, r.size.x, sub_h)
 			_fill_pieces(sub_rect, n_e, tex, tok)
 			y += sub_h
+
+
+const SOP_CYL := 22.0
+
+
+## Disegna i cilindri Eligibility nella Sequence of Play (rulebook §2.3, box laterale).
+## Russians non hanno cilindro (non è una "sequence faction" in ABB).
+func _abb_draw_sop(s: GameState) -> void:
+	if _sop.is_empty():
+		return
+	var cols: Dictionary = _sop.get("cols", {})
+	var rows: Dictionary = _sop.get("rows", {})
+	if cols.is_empty() or rows.is_empty():
+		return
+	var frame: Array = _sop.get("frame", [])
+	if frame.size() == 4:
+		var fr := Rect2(frame[0] * size.x, frame[1] * size.y,
+			(frame[2] - frame[0]) * size.x, (frame[3] - frame[1]) * size.y)
+		draw_rect(fr, Color(0, 0, 0, 0.20), false, 1.5)
+	var seq = GameController.seq
+	var font := ThemeDB.fallback_font
+	for fid in rows.keys():
+		var col_key := _sop_col_for(s, seq, String(fid))
+		if not cols.has(col_key):
+			continue
+		var cx: float = float(cols[col_key]) * size.x
+		var cy: float = float(rows[fid]) * size.y
+		# Cilindro = pallino faction-color + bordo nero; sotto il nome breve.
+		var color: Color = GameController.faction_color(String(fid))
+		var radius: float = SOP_CYL * 0.5
+		draw_circle(Vector2(cx, cy), radius, color)
+		draw_arc(Vector2(cx, cy), radius, 0, TAU, 24, Color.BLACK, 1.5)
+		# Etichetta della fazione (prima lettera maiuscola).
+		var lbl: String = String(fid).substr(0, 1).to_upper()
+		draw_string(font, Vector2(cx - 4, cy + 4), lbl,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color.WHITE)
+
+
+## Mappa lo stato Sequence/Eligibility della fazione a una colonna del SoP.
+func _sop_col_for(s: GameState, seq, fid: String) -> String:
+	if seq != null and seq.action_box.has(fid):
+		var k := String(seq.action_box[fid])
+		if k == "pass":
+			return "pass"
+		return "acted"
+	if int(s.eligibility.get(fid, CoinEnums.Eligibility.ELIGIBLE)) == CoinEnums.Eligibility.INELIGIBLE:
+		return "ineligible"
+	return "eligible"
