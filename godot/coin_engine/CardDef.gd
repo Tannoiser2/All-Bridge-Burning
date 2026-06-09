@@ -13,6 +13,7 @@ var faction_order: PackedStringArray = PackedStringArray()
 var is_propaganda: bool = false     ## carta Propaganda / Coup (round periodico)
 var is_capability: bool = false     ## Evento con Capacità Insorgenti (effetto duraturo)
 var is_momentum: bool = false       ## Evento Momentum (effetto fino al round successivo)
+var is_pivotal: bool = false        ## Carta Pivotal (in ABB: Red Revolt! trigger Phase II)
 
 var unshaded: String = ""           ## testo non-ombreggiato dell'Evento
 var shaded: String = ""             ## testo ombreggiato dell'Evento
@@ -31,6 +32,7 @@ static func from_dict(d: Dictionary) -> CardDef:
 	c.is_propaganda = bool(d.get("propaganda", d.get("is_propaganda", false)))
 	c.is_capability = bool(d.get("capability", d.get("is_capability", false)))
 	c.is_momentum = bool(d.get("momentum", d.get("is_momentum", false)))
+	c.is_pivotal = bool(d.get("pivotal", d.get("is_pivotal", false)))
 	c.unshaded = String(d.get("unshaded", ""))
 	c.shaded = String(d.get("shaded", ""))
 	c.translation = String(d.get("it", d.get("translation", "")))
