@@ -34,41 +34,19 @@ static func map() -> Texture2D:
 
 
 ## Texture del pezzo (faction, type, state).
-##
-## Convenzione di naming sugli asset:
-##   troops      → troops.png (Cuba) o troops_<faction>.png (ABB: germans/russians)
-##   police      → police.png (Cuba)
-##   base        → base_<faction>.png (Cuba)
-##   casino      → casino_<open|closed>.png (Cuba, Syndicate)
-##   guerrilla   → guerrilla_<faction>_<state>.png (Cuba)
-##   cell        → cell_<faction>_<state>.png (ABB: reds/senate/moderates, active/underground)
-##   admin       → admin_<faction>.png (ABB Reds disc)
-##   network     → network_<faction>.png (ABB Moderates disc)
 static func piece(faction: String, type: String, state: String) -> Texture2D:
 	match type:
-		"troops":
-			# Prima prova faction-aware (ABB), poi cade su nome generico (Cuba).
-			var faction_tex: Texture2D = tex("troops_%s.png" % faction)
-			return faction_tex if faction_tex != null else tex("troops.png")
+		"troops": return tex("troops.png")
 		"police": return tex("police.png")
 		"base": return tex("base_%s.png" % faction)
 		"casino": return tex("casino_%s.png" % ("open" if state == "open" else "closed"))
 		"guerrilla":
-			var gs: String = state if state != "" else "underground"
-			return tex("guerrilla_%s_%s.png" % [faction, gs])
-		"cell":
-			var cs: String = state if state != "" else "underground"
-			return tex("cell_%s_%s.png" % [faction, cs])
-		"admin": return tex("admin_%s.png" % faction)
-		"network": return tex("network_%s.png" % faction)
+			var s := state if state != "" else "underground"
+			return tex("guerrilla_%s_%s.png" % [faction, s])
 	return null
 
 
 static func control(faction: String) -> Texture2D:
-	# Per ABB: control_reds.png / control_senate.png. Per Cuba: control_government.png ecc.
-	# Senza fazione (controllo "none"), si può ritornare una "Uncontrol" — TODO.
-	if faction == "":
-		return null
 	return tex("control_%s.png" % faction)
 
 
@@ -81,12 +59,11 @@ static func support(level: int) -> Texture2D:
 	return null
 
 
-## Immagine della carta: number 1..N, oppure 0 = Propaganda.
-## Prova prima JPG (ABB), poi PNG (Cuba Libre) come fallback.
+## Immagine della carta: number 1..48, oppure 0 = Propaganda.
 static func card(number: int) -> Texture2D:
-	var name_base: String = "prop" if number <= 0 else "%02d" % number
-	var jpg: Texture2D = tex("cards/%s.jpg" % name_base)
-	return jpg if jpg != null else tex("cards/%s.png" % name_base)
+	if number <= 0:
+		return tex("cards/prop.png")
+	return tex("cards/%02d.png" % number)
 
 
 static func cash() -> Texture2D: return tex("cash.png")

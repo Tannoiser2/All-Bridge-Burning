@@ -195,75 +195,8 @@ func _roll_pick(rng: RandomNumberGenerator, rule: String, n_options: int) -> int
 # Vittoria (TODO: PR Propaganda / Round periodico)
 # ---------------------------------------------------------------------------
 
-## Stato di vittoria ABB (rulebook §7.2 — propaganda round) e §7.3 (final).
-##
-## Per ogni fazione restituisce: {"value", "threshold", "margin", "won"}.
-##
-## - Reds: Total Opposition + Reds Admins ≥ 11, e Russian Vassalage + Polarization ≤ 5.
-## - Senate: Senate-controlled Town Population ≥ 3, e German Vass + Pol ≤ 6.
-## - Moderates: min(Moderates Resources, Issues+Networks+1−Pol) ≥ 14.
-## - Germans / Russians: Powers; vittoria solo by-tie a fine partita (semplificato).
-func victory_status(state: GameState) -> Dictionary:
-	var pol: int = int(state.tracks.get("polarization", 0))
-	var vass_g: int = int(state.tracks.get("vassalage_german", 0))
-	var vass_r: int = int(state.tracks.get("vassalage_russian", 0))
-
-	# Reds
-	var reds_value: int = state.total_opposition() + state.count_on_map("reds", "admin")
-	if vass_r + pol > 5:
-		reds_value = 0
-	var reds_threshold: int = 11
-
-	# Senate
-	var senate_value: int = _senate_town_pop(state)
-	if vass_g + pol > 5:
-		senate_value = 0
-	var senate_threshold: int = 3
-
-	# Moderates: lower of (Mod Risorse) o (Issues+Networks+1 − Polarization + 14)
-	var mod_res: int = state.get_resources("moderates")
-	var mod_inw: int = int(state.tracks.get("issues_networks", 0)) + 1
-	var mod_alt: int = mod_inw - pol + 14   # rinormalizzato alla soglia 14
-	var mod_value: int = min(mod_res, mod_alt)
-	var mod_threshold: int = 14
-
-	# Germans / Russians: Powers
-	var germ_value: int = vass_g
-	var russ_value: int = vass_r
-	var power_threshold: int = 6
-
-	return {
-		"reds":      _vstat(reds_value, reds_threshold),
-		"senate":    _vstat(senate_value, senate_threshold),
-		"moderates": _vstat(mod_value, mod_threshold),
-		"germans":   _vstat(germ_value, power_threshold),
-		"russians":  _vstat(russ_value, power_threshold),
-	}
-
-
-func _vstat(value: int, threshold: int) -> Dictionary:
-	return {
-		"value": value,
-		"threshold": threshold,
-		"margin": value - threshold,
-		"won": value > threshold,
-	}
-
-
-func _senate_town_pop(state: GameState) -> int:
-	var total: int = 0
-	for sid in state.spaces.keys():
-		var sd: SpaceDef = state.game_def.space(sid)
-		if sd == null or sd.type != CoinEnums.SpaceType.CITY:
-			continue
-		if state.space_state(sid).control == "senate":
-			total += sd.pop
-	return total
-
-
-## Ordine di spareggio (rulebook §7.1): Reds → Moderates → Senate; Powers per ultimi.
-func tiebreak_order() -> PackedStringArray:
-	return PackedStringArray(["reds", "moderates", "senate", "germans", "russians"])
+func victory_status(_state: GameState) -> Dictionary:
+	return {}
 
 
 # ---------------------------------------------------------------------------
