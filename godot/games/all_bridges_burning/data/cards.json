@@ -16,7 +16,7 @@
       "shaded": "Mobilization in the ranks:\nFlip up to 2 non-Senate Cells.",
       "it": "Chiaro: Senato prende un marker Jaeger; in Fase II lo piazza a Vaasa.\nOmbr.: Capovolgi fino a 2 Cellule non-Senato.",
       "history": "1917 was a tumultuous year in Russia, with successive revolutions overthrowing governments. Events #1 to #3 represent a number of effects Russian disintegration had in Finland. On one hand, the so-called activists—who for years had been secretly channeling Finnish men to Germany to receive military training (the so-called jaegers)—got new...",
-      "capability": false
+      "capability": true
     },
     {
       "number": 2,
@@ -169,7 +169,7 @@
       "shaded": "Distrust mobilizes the left: S\n\nPlace two Available Moderates or Reds\n\nCells anywhere without Active Support.\n:\n\nYee 10 wen\n\nGl ae Ss a",
       "it": "Chiaro: Vassallaggio Tedesco +1. Senato prende un marker Jaeger; in Fase II lo piazza per 2.4.1.\nOmbr.: Piazza 2 Cellule Moderati o Rossi Disponibili ovunque senza Supporto Attivo.",
       "history": "Jaeger were Finnish volunteers who, since 1914, had been receiving military training in Germany. The return of the jaeger, starting in October 1917, greatly strengthened the Senate forces, affording them much-needed trained and disciplined soldiers and leaders. The historian Alapuro (1988: 157-158) wrote: A group of 'Activists' had worked for...",
-      "capability": false
+      "capability": true
     },
     {
       "number": 11,
@@ -271,7 +271,7 @@
       "shaded": "Russian officers help Reds:\nReds take one Commander marker. In\nPhase II, place it with any Reds Cell.\n\nYor 16\naN a",
       "it": "Chiaro: Senato prende un marker Jaeger; in Fase II lo piazza per 2.4.1.\nOmbr.: Rossi prendono un marker Commander; in Fase II lo piazzano per 2.4.1.",
       "history": "See Event #10 above. The shaded Event-text refers to the historical role of the few Russian military advisers that worked on the Reds' side. One of them was Colonel Mihail Svetsnikov (1882-1938), the former chief of staff of the Russian 106th Army Division. He advised the Reds, among others, in the battle of Tampere (Event #40).",
-      "capability": false
+      "capability": true
     },
     {
       "number": 17,
@@ -431,7 +431,7 @@
       "shaded": "Jaeger arrive in Vaasa:\n'The Senate place a Jaeger\nmarker (2.4.1).\n\nRumors of jaeger:\nModerates or Reds conduct a free\nRally in any one space.",
       "it": "Chiaro: Senato piazza un marker Jaeger (2.4.1).\nOmbr.: Moderati o Rossi conducono un Rally gratis in uno spazio.",
       "history": "The card image shows a contingent of jaeger being received by the commander-in-chief Mannerheim, in the marketplace in the town of Vaasa. See also #10 above.",
-      "capability": false
+      "capability": true
     },
     {
       "number": 27,
