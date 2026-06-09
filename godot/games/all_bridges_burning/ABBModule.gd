@@ -122,6 +122,10 @@ func apply_setup(state: GameState, scenario_id: String = "standard") -> void:
 		var sup: String = String(entry.get("support", ""))
 		if sup != "" and SUPPORT_KEY_MAP.has(sup):
 			state.spaces[sid].support = SUPPORT_KEY_MAP[sup]
+		# Marker (Personality, News, Prepared) piazzati da setup.
+		var markers: Dictionary = entry.get("markers", {})
+		for mk in markers.keys():
+			state.spaces[sid].set_marker(String(mk), int(markers[mk]))
 
 	# Piazzamenti casuali (Senate Cell in Viipuri/Turku, Moderates Cell in Viipuri/Turku/Tampere).
 	_apply_random_placements(state, setup.get("random_placements", []))

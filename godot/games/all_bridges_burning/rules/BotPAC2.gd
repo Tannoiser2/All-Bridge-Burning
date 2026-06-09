@@ -143,7 +143,9 @@ func _eval_atom(atom: String, fid: String) -> bool:
 	if atom == "germans_on_map > 0":
 		return state.count_on_map("germans", "troops") > 0
 	if atom == "personality_on_map":
-		# Personality non modellata: stub falso (sarà aggiunta in un PR successivo).
+		for sid in state.spaces.keys():
+			if state.space_state(sid).marker("personality") > 0:
+				return true
 		return false
 	if atom == "last_campaign":
 		# Conteggio Crisis Round risolti (incrementato in ABBCrisis.resolve).
