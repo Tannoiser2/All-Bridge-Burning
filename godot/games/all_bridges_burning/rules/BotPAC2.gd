@@ -146,8 +146,9 @@ func _eval_atom(atom: String, fid: String) -> bool:
 		# Personality non modellata: stub falso (sarà aggiunta in un PR successivo).
 		return false
 	if atom == "last_campaign":
-		# Conteggio carte Propaganda giocate: stub falso, vera Crisis Round si occupa.
-		return false
+		# Conteggio Crisis Round risolti (incrementato in ABBCrisis.resolve).
+		# In ABB ci sono 4 Round di Propaganda: l'ultimo è il 4°.
+		return int(state.tracks.get("campaign_count", 0)) >= 3
 	# fallback: ignora atomi non riconosciuti (registra ma considera "vero" per
 	# non bloccare le carte sui dettagli non implementati).
 	return true
@@ -213,10 +214,24 @@ func _exec_action(ops: ABBOperations, specials: ABBSpecialActivities,
 			return _do_terror(ops, fid, act.get("params", {}))
 		"crackdown":
 			return _do_crackdown(specials, fid)
+		"activism":
+			return _do_activism(ops, fid)
 		_:
-			# STUB: activism, prepare, message, dialogue, publish
+			# STUB: prepare, message, dialogue, publish
 			trace.append("  %s: STUB (fall-through)" % op_id)
 			return {"ok": false}
+
+
+func _do_activism(ops: ABBOperations, fid: String) -> Dictionary:
+	# Cerca uno spazio con Cellula amica + nemico Attivo da capovolgere.
+	for sid in state.spaces.keys():
+		var st: SpaceState = state.space_state(sid)
+		if st.count(fid, "cell") <= 0:
+			continue
+		var res = ops.activism(fid, String(sid))
+		if res.get("ok", false):
+			return res
+	return {"ok": false}
 
 
 func _do_foreign_relations(specials: ABBSpecialActivities, fid: String, params: Dictionary) -> Dictionary:

@@ -19,6 +19,9 @@ func resolve() -> Dictionary:
 	# §6.5.3 Powers adjustment: solo in Phase II.
 	if int(state.tracks.get("phase", 1)) >= 2:
 		out["powers"] = _powers_adjustment()
+	# Conteggio Campaign per il bot (PAC2 last_campaign condition).
+	state.tracks["campaign_count"] = int(state.tracks.get("campaign_count", 0)) + 1
+	out["campaign"] = state.tracks["campaign_count"]
 	return out
 
 

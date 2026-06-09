@@ -77,6 +77,40 @@ func attack(fid: String, sid: String, rng_seed: int = -1) -> Dictionary:
 	return _ok({"roll": roll, "strength": strength, "hit": true, "removed": 0})
 
 
+## Activism (§3.2.2): in uno spazio con una Cellula amica, capovolge una Cellula
+## nemica Attiva (→ Inattiva) oppure attiva una propria Cellula Inattiva; in
+## entrambi i casi riduce Polarization di 1. Implementazione semplificata:
+## preferisce la prima Cellula nemica Attiva trovata; se nessuna, attiva una
+## propria Inattiva.
+func activism(fid: String, sid: String) -> Dictionary:
+	if not state.spaces.has(sid):
+		return _err("spazio sconosciuto")
+	var st: SpaceState = state.space_state(sid)
+	if st.count(fid, "cell") <= 0:
+		return _err("serve una Cellula amica in %s" % sid)
+	# Cerca una Cellula nemica Attiva da capovolgere.
+	for f in state.game_def.factions:
+		if f.id == fid:
+			continue
+		if st.count(f.id, "cell", "active") > 0:
+			st.remove_piece(f.id, "cell", 1, "active")
+			st.add_piece(f.id, "cell", 1, "underground")
+			_polarize(-1)
+			return _ok({"flipped": f.id})
+	# Altrimenti attiva una propria Inattiva.
+	if st.count(fid, "cell", "underground") > 0:
+		st.remove_piece(fid, "cell", 1, "underground")
+		st.add_piece(fid, "cell", 1, "active")
+		_polarize(-1)
+		return _ok({"activated": fid})
+	return _err("nessuna Cellula da capovolgere o attivare")
+
+
+func _polarize(delta: int) -> void:
+	var cur: int = int(state.tracks.get("polarization", 0))
+	state.tracks["polarization"] = clampi(cur + delta, 0, 10)
+
+
 ## Terror (§3.2.3): poni Terror marker; sposta Supporto/Opposizione.
 func terror(fid: String, sid: String) -> Dictionary:
 	if not state.spaces.has(sid):

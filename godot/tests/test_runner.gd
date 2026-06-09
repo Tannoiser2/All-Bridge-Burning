@@ -336,6 +336,24 @@ func _test_abb_pac2() -> void:
 	# Russians/Germans non sono nel PAC2: take_turn ritorna empty.
 	var t2 = pac2.take_turn("germans")
 	_check("PAC2 non gestisce Germans", t2.is_empty())
+	# Activism: a Helsinki Reds e Senate hanno entrambi Cell Underground; forziamo
+	# una Cellula nemica Attiva e verifichiamo che Activism la giri Inattiva.
+	var st: SpaceState = state.space_state("helsinki")
+	st.remove_piece("senate", "cell", 1, "underground")
+	st.add_piece("senate", "cell", 1, "active")
+	var ops := ABBOperations.new(state, mod)
+	var pol_before: int = int(state.tracks.get("polarization", 0))
+	var ra = ops.activism("reds", "helsinki")
+	_check("Reds Activism a Helsinki ok", ra.get("ok", false))
+	_eq("Senate Cell Attiva → Inattiva",
+		state.space_state("helsinki").count("senate", "cell", "active"), 0)
+	_check("Polarization -1",
+		int(state.tracks.get("polarization", 0)) == pol_before - 1)
+	# campaign_count incrementato da Crisis.resolve.
+	var c0: int = int(state.tracks.get("campaign_count", 0))
+	var crisis := ABBCrisis.new(state, mod)
+	crisis.resolve()
+	_eq("campaign_count +1", int(state.tracks.get("campaign_count", 0)), c0 + 1)
 
 
 func _test_abb_germans_phase_gate() -> void:
