@@ -1002,6 +1002,15 @@ func _on_space_clicked(sid: String) -> void:
 	if _is_abb() and _mode == "abb_march_to":
 		_abb_execute_march_to(sid)
 		return
+	if _is_abb() and _mode == "abb_sa_pick":
+		_abb_execute_sa_on_space(sid)
+		return
+	if _is_abb() and _mode == "abb_sa_coord_from":
+		_abb_set_sa_coord_from(sid)
+		return
+	if _is_abb() and _mode == "abb_sa_coord_to":
+		_abb_execute_sa_coord_to(sid)
+		return
 	# Bersaglio Attività Speciale
 	if _mode == "sa_point":
 		if not _sa_valid.has(sid):
@@ -1404,6 +1413,10 @@ func _on_execute() -> void:
 func _do_special(sa: String) -> void:
 	if _limited:
 		_instr.text = "Operazione Limitata: niente Attività Speciale"
+		return
+	# Dispatcher ABB: le Att. Speciali ABB chiamano GameController.specials.
+	if _is_abb() and sa in _ABB_SAS:
+		_abb_start_special(sa)
 		return
 	var sa_name: String = _sa_label(sa)
 	var sa_desc: String = SA_DESC.get(_sa_base(sa), "")
@@ -1923,5 +1936,147 @@ func _abb_log_op(op_id: String, target: String, res: Dictionary) -> void:
 func _abb_end_op() -> void:
 	_mode = "idle"
 	_cur_action = ""
+	_clear_highlights()
+	_refresh_turn_banner()
+
+
+# ---------------------------------------------------------------------------
+# All Bridges Burning: dispatcher Attività Speciali
+# ---------------------------------------------------------------------------
+
+var _ABB_SAS: Array = [
+	"agitate", "ambush", "subvert", "crackdown", "dialogue", "tax",
+	"negotiate", "coordinate", "foreign_relations",
+]
+
+## SA che chiedono di cliccare uno spazio bersaglio. Le altre si eseguono
+## immediatamente (negotiate, foreign_relations) o richiedono 2 click
+## (coordinate: from→to).
+var _ABB_SAS_SINGLE_SPACE: Array = [
+	"agitate", "ambush", "subvert", "crackdown", "dialogue", "tax",
+]
+
+
+func _abb_start_special(sa: String) -> void:
+	# SA senza target: esegui subito.
+	if sa == "negotiate":
+		var res: Dictionary = GameController.specials.negotiate(_cur_faction)
+		_abb_log_sa(sa, "", res)
+		return
+	if sa == "foreign_relations":
+		# Placeholder: +1 Vassalage Tedesca. Future PR: UI per scelta power+delta.
+		var fr_res: Dictionary = GameController.specials.foreign_relations("germans", 1)
+		_abb_log_sa(sa, "germans +1", fr_res)
+		return
+	# Coordinate: 2-step from→to.
+	if sa == "coordinate":
+		_pending_sa = sa
+		_mode = "abb_sa_coord_from"
+		_clear_highlights()
+		for sid in _abb_sa_coord_origins():
+			_space_views[sid].set_highlight(true)
+		_instr.text = "%s — clicca uno spazio con Truppa Russa/Tedesca." % SA_NAMES.get(sa, sa)
+		return
+	# SA su 1 spazio: highlight e attendi click.
+	if sa in _ABB_SAS_SINGLE_SPACE:
+		_pending_sa = sa
+		_mode = "abb_sa_pick"
+		_clear_highlights()
+		for sid in _abb_sa_targets(sa, _cur_faction):
+			_space_views[sid].set_highlight(true)
+		_instr.text = "%s — clicca lo spazio bersaglio (evidenziato)." % SA_NAMES.get(sa, sa)
+		return
+	_instr.text = "SA ABB non gestita: " + sa
+
+
+func _abb_sa_targets(sa: String, fid: String) -> Array:
+	var out: Array = []
+	for sid in GameController.state.spaces.keys():
+		var st: SpaceState = GameController.state.space_state(sid)
+		match sa:
+			"agitate", "tax", "dialogue":
+				if st.count(fid, "cell") > 0:
+					out.append(sid)
+			"ambush", "subvert":
+				if st.count("reds", "cell", "underground") > 0:
+					out.append(sid)
+			"crackdown":
+				if st.count("senate", "cell") > 0:
+					out.append(sid)
+	return out
+
+
+func _abb_sa_coord_origins() -> Array:
+	var out: Array = []
+	for sid in GameController.state.spaces.keys():
+		var st: SpaceState = GameController.state.space_state(sid)
+		if st.count("russians", "troops") > 0 or st.count("germans", "troops") > 0:
+			out.append(sid)
+	return out
+
+
+var _abb_sa_coord_from := ""
+
+
+func _abb_execute_sa_on_space(sid: String) -> void:
+	var sa: String = _pending_sa
+	var fid: String = _cur_faction
+	var res: Dictionary = {}
+	match sa:
+		"agitate":
+			res = GameController.specials.agitate(sid)
+		"tax":
+			res = GameController.specials.tax(fid, sid)
+		"dialogue":
+			res = GameController.specials.dialogue(sid)
+		"ambush":
+			res = GameController.specials.ambush(sid)
+		"subvert":
+			res = GameController.specials.subvert(sid)
+		"crackdown":
+			res = GameController.specials.crackdown(sid)
+		_:
+			res = {"ok": false, "error": "SA ABB sconosciuta: " + sa}
+	_abb_log_sa(sa, sid, res)
+	_abb_end_sa()
+
+
+func _abb_set_sa_coord_from(sid: String) -> void:
+	_abb_sa_coord_from = sid
+	_mode = "abb_sa_coord_to"
+	_clear_highlights()
+	_space_views[sid].set_highlight(true)
+	var sd: SpaceDef = GameController.game_def.space(sid)
+	for to_sid in sd.adjacent:
+		_space_views[String(to_sid)].set_highlight(true)
+	_instr.text = "Coordinamento — clicca lo spazio adiacente di destinazione."
+
+
+func _abb_execute_sa_coord_to(to_sid: String) -> void:
+	var sd: SpaceDef = GameController.game_def.space(_abb_sa_coord_from)
+	if not (to_sid in sd.adjacent):
+		_instr.text = "Destinazione non adiacente — scegline una evidenziata."
+		return
+	var res: Dictionary = GameController.specials.coordinate(_abb_sa_coord_from, to_sid)
+	_abb_log_sa("coordinate", "%s→%s" % [_abb_sa_coord_from, to_sid], res)
+	_abb_sa_coord_from = ""
+	_abb_end_sa()
+
+
+func _abb_log_sa(sa: String, target: String, res: Dictionary) -> void:
+	var ok: bool = bool(res.get("ok", false))
+	var prefix: String = "✓" if ok else "✗"
+	var label: String = SA_NAMES.get(sa, sa)
+	var msg: String = "%s %s @ %s" % [prefix, label, target]
+	if not ok:
+		msg += " — " + String(res.get("error", ""))
+	GameController.emit_signal("action_logged", msg, _cur_faction)
+	_instr.text = msg
+	GameController.emit_signal("state_changed")
+
+
+func _abb_end_sa() -> void:
+	_mode = "idle"
+	_pending_sa = ""
 	_clear_highlights()
 	_refresh_turn_banner()
