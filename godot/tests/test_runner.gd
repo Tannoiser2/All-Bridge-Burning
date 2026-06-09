@@ -185,8 +185,10 @@ func _test_abb_operations() -> void:
 	_eq("Karelia +1 cellula Reds", state.space_state("karelia").count("reds", "cell"), 1)
 	_eq("Risorse Reds -1", state.get_resources("reds"), res_before - 1)
 
+	# March e Attack richiedono Phase II (§3.2.4 / §3.2.5).
+	state.tracks["phase"] = 2
 	var march_res = ops.march("reds", "uusimaa", "helsinki", "cell", 1)
-	_check("March Reds OK", march_res.get("ok", false))
+	_check("March Reds OK in Phase II", march_res.get("ok", false))
 	_check("Cellule Active in spazio nemico",
 		state.space_state("helsinki").count("reds", "cell", "active") >= 1)
 
