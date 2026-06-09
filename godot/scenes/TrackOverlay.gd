@@ -94,21 +94,18 @@ func _cuba_chips(s: GameState) -> Array:
 
 ## Chip per All Bridges Burning (rulebook §1.5-§1.12, §7.0).
 ## Tutti i marker stanno sull'edge track 0..30 in alto.
-## Le texture sono i res_token delle 4 fazioni player (se mancano,
-## _blit() salta — niente crash).
 func _abb_chips(s: GameState) -> Array:
 	var out: Array = []
 	for fid in ["reds", "senate", "moderates", "germans"]:
 		out.append(["res_%s" % fid, s.get_resources(fid), CLAssets.res_token(fid)])
-	# Marker VP / tracciati (texture placeholder, _blit() salta su null).
-	var any_tok: Texture2D = CLAssets.res_token("reds")
-	out.append(["abb_senate_town_pop", int(s.tracks.get("senate_town_pop", 0)), any_tok])
-	out.append(["abb_oppose_admins", int(s.tracks.get("oppose_admins", 0)), any_tok])
-	out.append(["abb_cells_on_map", int(s.tracks.get("cells_on_map", 0)), any_tok])
-	out.append(["abb_issues_networks", int(s.tracks.get("issues_networks", 0)), any_tok])
-	out.append(["abb_vassal_german", int(s.tracks.get("vassalage_german", 0)), any_tok])
-	out.append(["abb_vassal_russian", int(s.tracks.get("vassalage_russian", 0)), any_tok])
-	out.append(["abb_polarization", int(s.tracks.get("polarization", 0)), any_tok])
+	out.append(["abb_senate_town_pop", int(s.tracks.get("senate_town_pop", 0)), CLAssets.abb_senate_town_pop()])
+	out.append(["abb_oppose_admins",   int(s.tracks.get("oppose_admins", 0)),   CLAssets.abb_oppose_admins()])
+	out.append(["abb_cells_on_map",    int(s.tracks.get("cells_on_map", 0)),    CLAssets.abb_cells_on_map()])
+	out.append(["abb_issues_networks", int(s.tracks.get("issues_networks", 0)), CLAssets.abb_networks_issues()])
+	out.append(["abb_vassal_german",   int(s.tracks.get("vassalage_german", 0)), CLAssets.abb_vassalage_german()])
+	out.append(["abb_vassal_russian",  int(s.tracks.get("vassalage_russian", 0)), CLAssets.abb_vassalage_russian()])
+	# Polarization vive su tracciato dedicato; per ora sull'edge track.
+	out.append(["abb_polarization",    int(s.tracks.get("polarization", 0)),    CLAssets.abb_polarization()])
 	return out
 
 
