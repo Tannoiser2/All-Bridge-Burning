@@ -62,26 +62,32 @@ esatti del Vassal, e le Cell occupano i loro slot dedicati.
 | Red Revolt! (Pivotal #24) | ✅ flip `tracks.phase` → II; Germans bot gated; badge UI |
 | Activism (§3.2.2) | ✅ capovolge nemico Attivo o attiva Inattiva amica; Polarization -1 |
 | Germans flowchart (§3.4) | ✅ Landing → Reinforce → Attack → March + 1d6 Eligibility roll + Coordinate hook |
-| Capabilities Insorgenti | ✅ #14 Cannons / #15 #17 Trains → `active_capabilities`; chip colorato Senato |
-| Personality / News markers | ✅ asset Vassal + render sui poligoni; Personality a Helsinki al setup |
+| Capabilities Insorgenti | ✅ #1/#10/#14/#15/#16/#17/#26: Jaeger/Commander/Cannons/Trains markers on-map |
+| Personality / News markers | ✅ asset Vassal + render sui poligoni; Personality a Helsinki al setup; transfer su rimozione; News piazzati da Landing/Terror Phase II/Attack-to-Prison |
+| **Political Display §1.11** | ✅ 3 Issues × cubi per fazione; cubi colorati in UI |
+| **Politics Command §3.3.4** | ✅ Moderati piazzano cubo; costo 1-3 da Polarization; gated Pol ≤ 5 |
+| **Politics Phase §6.2** | ✅ 1d6 vs cubi; resolution majority (ties → Moderates); cubi azzerati |
+| **Personal Leadership §6.2.2** | ✅ Personality OFF map → Moderati -3 + replacement |
+| **Reset Phase §6.5.4** | ✅ Clear Terror/Sabotage/News/borders end-round |
+| **Prisoners of War §6.5** | ✅ Track count via Attack-to-Prison; +1 Polarization per 2 prigionieri |
+| **Sabotage su bordo §3.2.5** | ✅ Border markers bloccano March; Reset Phase pulisce |
+| **Phase II gating §3.2.4/§3.2.5** | ✅ Attack/March solo in Phase II per player factions |
+| **Polarization effects** | ✅ Moderati Rally cost 3 se Pol ≥ 6 (§3.3.1) |
+| **Powers Germans/Russians** | ✅ sempre Bot, no UI toggle |
 | Testi carte | ✅ Unshaded/Shaded da OCR + cleanup; 47/47 traduzioni IT (Chiaro/Ombr.) |
 
 ## Cosa rimane da fare
 
-- **PAC2 fidelity**: le sub-priorità interne alle carte (es. "Rally preferendo
-  Town con Active Support e maggior Population") sono ancora pick greedy
-  semplificati. Il framework esiste e gli handler `rally / march / attack /
-  terror / activism / prepare / dialogue / publish / message / crackdown /
-  foreign_relations` sono concreti.
-- **Refining OCR**: alcune carte hanno residui visivi (#22, #33, #35, #40,
-  #45) — refusi su titoli decorativi (citazioni, header "German Action
-  Phase"). Non bloccanti perché l'UI usa la traduzione italiana.
-- **News markers via gioco**: l'asset c'è, lo state c'è, ma manca un
-  meccanismo che li piazzi durante eventi (German Landings, Terror in Phase
-  II, Attacks-to-Prison).
-- **Senate-decides-Germans**: il bit `coordinate_marker` è esposto ma non
-  c'è ancora un flow UI che permetta al giocatore Senate di sovrascrivere
-  la scelta del bot Germans.
+- **PAC2 fidelity**: le sub-priorità interne alle carte sono ancora pick greedy
+  semplificati. Framework + 10 handler concreti.
+- **Sabotage UI**: rendering visivo della linea rossa sul bordo (data model
+  + meccanica già implementate).
+- **Capability effects on Attack Strength**: i marker sono piazzati ma il
+  bonus +2 non è ancora applicato nell'algoritmo `attack`.
+- **Senate-decides-Germans UI**: bit `coordinate_marker` esposto, manca
+  flow UI override.
+- **Eventi non-Pivotal non-Capability**: 40 carte hanno OCR text ma nessun
+  effetto programmato. Necessario implementazione per-carta.
 - Crisis Round Phase II adjustment (Vassalage shift per i Powers).
 
 ## Struttura
