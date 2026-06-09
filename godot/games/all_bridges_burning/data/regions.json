@@ -612,6 +612,13 @@
         0.2784,
         0.6182
       ],
+      "mask": "regions/hame_mask.png",
+      "mask_rect": [
+        0.187,
+        0.4447,
+        0.3912,
+        0.7467
+      ],
       "cbox": [
         0.3334,
         0.5352
@@ -1116,6 +1123,13 @@
         0.5257,
         0.6465
       ],
+      "mask": "regions/karelia_mask.png",
+      "mask_rect": [
+        0.3996,
+        0.414,
+        0.7668,
+        0.83
+      ],
       "cbox": [
         0.5625,
         0.6225
@@ -1467,6 +1481,13 @@
       "anchor": [
         0.48,
         0.4046
+      ],
+      "mask": "regions/kuopion_laani_mask.png",
+      "mask_rect": [
+        0.3633,
+        0.2013,
+        0.6772,
+        0.552
       ],
       "cbox": [
         0.5268,
@@ -1964,6 +1985,13 @@
         0.4442,
         0.5519
       ],
+      "mask": "regions/mikkelin_laani_mask.png",
+      "mask_rect": [
+        0.3638,
+        0.41,
+        0.5868,
+        0.6447
+      ],
       "cbox": [
         0.5064,
         0.5198
@@ -2119,6 +2147,13 @@
       "anchor": [
         0.4045,
         0.2236
+      ],
+      "mask": "regions/oulun_laani_mask.png",
+      "mask_rect": [
+        0.2189,
+        0.083,
+        0.6487,
+        0.307
       ],
       "cbox": [
         0.3296,
@@ -2419,6 +2454,13 @@
       "anchor": [
         0.2709,
         0.3909
+      ],
+      "mask": "regions/pohjanmaa_mask.png",
+      "mask_rect": [
+        0.093,
+        0.18,
+        0.3876,
+        0.518
       ],
       "cbox": [
         0.2998,
@@ -2860,6 +2902,13 @@
         0.2982,
         0.7556
       ],
+      "mask": "regions/uusimaa_mask.png",
+      "mask_rect": [
+        0.1546,
+        0.6213,
+        0.4236,
+        0.8873
+      ],
       "cbox": [
         0.2636,
         0.8238
@@ -3087,6 +3136,13 @@
       "anchor": [
         0.156,
         0.6369
+      ],
+      "mask": "regions/varsinais_suomi_mask.png",
+      "mask_rect": [
+        0.082,
+        0.4623,
+        0.2335,
+        0.813
       ],
       "cbox": [
         0.1371,

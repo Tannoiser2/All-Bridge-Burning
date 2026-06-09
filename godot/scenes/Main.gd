@@ -236,6 +236,12 @@ func _build_ui() -> void:
 		if r.has("circle"):
 			circle = Vector3(r["circle"][0], r["circle"][1], r["circle"][2])
 		rv.setup(sd, r.get("polygon", []), Vector2(r["anchor"][0], r["anchor"][1]), cbox, sbox, circle)
+		# Vassal mask (pixel-perfect): se presente, ne fa il tint del Controllo.
+		if r.has("mask") and r.has("mask_rect"):
+			var mr: Array = r["mask_rect"]
+			var mtex: Texture2D = CLAssets.tex(String(r["mask"]))
+			if mtex != null:
+				rv.set_mask(mtex, Rect2(mr[0], mr[1], mr[2] - mr[0], mr[3] - mr[1]))
 		rv.space_clicked.connect(_on_space_clicked)
 		rv.piece_dropped.connect(_on_piece_dropped)
 		_map.add_child(rv)
