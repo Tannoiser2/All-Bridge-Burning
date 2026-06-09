@@ -749,7 +749,7 @@
         "germans"
       ],
       "propaganda": false,
-      "pivotal": false,
+      "pivotal": true,
       "unshaded": "Fortunes in World War I:\nDecrease either Vassalage by up to two.",
       "shaded": "The kingmakers:\nRemove a Resolved Issue marker.",
       "it": "Chiaro: Riduci uno dei due Vassallaggi fino a 2.\nOmbr.: Rimuovi un marker Resolved Issue.",
