@@ -12,6 +12,7 @@ const STACK := 20.0    # scostamento per segnalini sulla stessa cella
 var _track: Dictionary = {}    # "0".."49" -> [x,y] normalizzati
 var _polarization_track: Dictionary = {}  # ABB: slot 0..10 del tracciato Polarization
 var _sop: Dictionary = {}      # ABB: posizione cilindri Sequence of Play
+var _cell_slots: Dictionary = {}  # ABB: "<fid>_cell" -> [[x,y],...] slot Vassal
 var _box: Dictionary = {}      # nome -> [x0,y0,x1,y1] normalizzati
 var _circles: Dictionary = {}  # fazione -> [[x,y],...] centri dei cerchietti basi/casinò (Vassal)
 var _loose: Dictionary = {}    # fazione -> tipo -> [x0,y0,x1,y1] area dei pezzi sciolti
@@ -27,6 +28,7 @@ func _ready() -> void:
 			_track = d.get("track", {})
 			_polarization_track = d.get("polarization_track", {})
 			_sop = d.get("sop", {})
+			_cell_slots = d.get("cell_slots", {})
 			_box = d.get("box", {})
 			_circles = d.get("avail_circles", {})
 			_loose = d.get("avail_loose", {})
@@ -316,9 +318,27 @@ func _abb_draw_available(s: GameState, tok: float) -> void:
 			if tex == null:
 				y += sub_h
 				continue
-			var sub_rect := Rect2(r.position.x, y, r.size.x, sub_h)
-			_fill_pieces(sub_rect, n_e, tex, tok)
+			# Se Vassal fornisce slot dedicati per questo tipo, usali (un pezzo per
+			# slot, partendo dal primo). Altrimenti fallback al riempimento a griglia.
+			var slot_key: String = "%s_%s" % [fid, ptid_e]
+			var slots: Array = _cell_slots.get(slot_key, [])
+			if not slots.is_empty():
+				_draw_slotted(slots, n_e, tex, tok)
+			else:
+				var sub_rect := Rect2(r.position.x, y, r.size.x, sub_h)
+				_fill_pieces(sub_rect, n_e, tex, tok)
 			y += sub_h
+
+
+## Disegna fino a `n` copie di `tex` posizionate sui primi `n` slot Vassal.
+func _draw_slotted(slots: Array, n: int, tex: Texture2D, tok: float) -> void:
+	var lim := mini(n, slots.size())
+	for i in lim:
+		var p: Array = slots[i]
+		var cx: float = float(p[0]) * size.x
+		var cy: float = float(p[1]) * size.y
+		draw_texture_rect(tex, Rect2(Vector2(cx - tok * 0.5, cy - tok * 0.5),
+			Vector2(tok, tok)), false)
 
 
 const SOP_CYL := 22.0

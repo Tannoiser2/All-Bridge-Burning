@@ -124,6 +124,56 @@ def zone_center(zones: dict, name: str) -> list | None:
     return [round(cx / MAP_W, 4), round(cy / MAP_H, 4)]
 
 
+# Mappa nome Zone Vassal -> chiave board_layout "available_<fid>" per i pool
+# delle Available Forces.
+AVAIL_ZONES = {
+    "Available Forces Senate":    "senate",
+    "Available Forces Reds":      "reds",
+    "Available Forces Moderates": "moderates",
+    "Russian Forces":             "russians",
+    "German Forces":              "germans",
+}
+
+
+def avail_box(zones: dict, vname: str) -> list | None:
+    """Bounding box normalizzato della Zone delle Available Forces."""
+    if vname not in zones:
+        return None
+    pts = []
+    for pair in zones[vname].split(";"):
+        try:
+            x, y = pair.split(",")
+            pts.append((int(x), int(y)))
+        except Exception:
+            pass
+    if not pts:
+        return None
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+    return [
+        round(min(xs) / MAP_W, 4), round(min(ys) / MAP_H, 4),
+        round(max(xs) / MAP_W, 4), round(max(ys) / MAP_H, 4),
+    ]
+
+
+def cell_slots(build_file: str) -> dict:
+    """Posizioni normalizzate degli slot 'Senate/Moderates/Reds Cell N'."""
+    raw = open(build_file, encoding="latin-1").read()
+    pat = re.compile(
+        r'SetupStack[^>]*name="((?:Senate|Moderates|Reds) Cell) ([0-9]+)"'
+        r'[^>]*x="(-?\d+)"[^>]*y="(-?\d+)"'
+    )
+    out: dict = {}
+    for m in pat.finditer(raw):
+        fid = m.group(1).split()[0].lower()
+        n = int(m.group(2))
+        x, y = int(m.group(3)), int(m.group(4))
+        out.setdefault(fid + "_cell", {})[n] = [
+            round(x / MAP_W, 4), round(y / MAP_H, 4)
+        ]
+    return {k: [d[i] for i in sorted(d.keys())] for k, d in out.items()}
+
+
 def main():
     here = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.abspath(os.path.join(here, "..", ".."))
@@ -231,12 +281,37 @@ def main():
                 if old:
                     s["pop"] = old.get("pop", s["pop"])
                     s["adjacent"] = old.get("adjacent", s["adjacent"])
+            # Preserva _note esistente: a mano si è aggiunto un commento più ricco
+            # (riferimento al regolamento, calcolo adiacenze) che non vogliamo
+            # sovrascrivere ad ogni rilancio dell'extractor.
+            if "_note" in existing:
+                out_spaces["_note"] = existing["_note"]
         except Exception as exc:
             print(f"ATTENZIONE: impossibile fondere spaces.json esistente: {exc}", file=sys.stderr)
     with open(os.path.join(data_dir, "regions.json"), "w", encoding="utf-8") as f:
         json.dump(out_regions, f, ensure_ascii=False, indent=2)
     with open(existing_path, "w", encoding="utf-8") as f:
         json.dump(out_spaces, f, ensure_ascii=False, indent=2)
+
+    # Merge boxes Available Forces + slot Cell dentro board_layout.json (preserva
+    # gli altri campi: track, polarization_track, sop, ecc.).
+    bl_path = os.path.join(data_dir, "board_layout.json")
+    if os.path.exists(bl_path):
+        bl: dict = json.load(open(bl_path, encoding="utf-8"))
+        bl.setdefault("box", {})
+        for vname, fid in AVAIL_ZONES.items():
+            box = avail_box(zones, vname)
+            if box is not None:
+                bl["box"]["available_" + fid] = box
+        slots = cell_slots(build_file)
+        if slots:
+            bl["cell_slots"] = slots
+        with open(bl_path, "w", encoding="utf-8") as f:
+            json.dump(bl, f, ensure_ascii=False, indent=2)
+        print(
+            f"  board_layout: boxes={list(AVAIL_ZONES.values())} "
+            f"cell_slots={ {k: len(v) for k,v in slots.items()} }"
+        )
 
     print(f"Scritte {len(regions)} regioni e {len(spaces_list)} spazi.")
     for sid in regions:
