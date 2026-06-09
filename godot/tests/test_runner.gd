@@ -23,6 +23,7 @@ func _initialize() -> void:
 	_test_abb_red_revolt()
 	_test_abb_germans_phase_gate()
 	_test_abb_crisis_powers_phase_ii()
+	_test_abb_germans_flowchart()
 	_test_game_def()
 	_test_setup_forces()
 	_test_setup_tracks()
@@ -263,6 +264,22 @@ func _test_abb_red_revolt() -> void:
 	var res2 = ev.apply(24, "unshaded", "reds")
 	_check("Apply secondario ok", bool(res2.get("ok", false)))
 	_eq("Phase resta II", int(state.tracks.get("phase", 0)), 2)
+
+
+func _test_abb_germans_flowchart() -> void:
+	print("\n[ABB Germans flowchart §3.4]")
+	var r := _new_abb()
+	var mod: ABBModule = r[0]
+	var state: GameState = r[2]
+	state.tracks["phase"] = 2
+	var bot := ABBBot.new(state, mod)
+	# Setup standard: 0 German Troops on map, 3 Available → primo step = Landing.
+	_eq("Germans on map = 0 al setup", state.count_on_map("germans", "troops"), 0)
+	_check("Germans Available > 0", state.available("germans", "troops") > 0)
+	var t1 = bot.take_turn("germans")
+	_eq("Bot Germans azione: land", String(t1.get("action", "")), "land")
+	_check("Germans atterrati sulla mappa",
+		state.count_on_map("germans", "troops") >= 1)
 
 
 func _test_abb_crisis_powers_phase_ii() -> void:

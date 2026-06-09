@@ -20,9 +20,9 @@ func take_turn(faction_id: String, _allow_special: bool = true, _limited: bool =
 	var plan: Array = _plan(faction_id)
 	for step in plan:
 		var op_id: String = String(step["op"])
-		var target = step.get("target")
-		var result: Dictionary = _execute(ops, faction_id, op_id, target)
-		trace.append("%s @ %s: %s" % [op_id, target, "OK" if result.get("ok", false) else result.get("error", "?")])
+		var result: Dictionary = _execute_step(ops, faction_id, step)
+		var lbl: String = "%s @ %s" % [op_id, step.get("target", step.get("to", "?"))]
+		trace.append("%s: %s" % [lbl, "OK" if result.get("ok", false) else result.get("error", "?")])
 		if result.get("ok", false):
 			return {"action": op_id, "result": result, "trace": trace}
 	return {"action": "pass", "trace": trace}
@@ -89,27 +89,96 @@ func _plan_moderates() -> Array:
 	return plan
 
 
+## Landing Sites: Town su cui i Germans possono atterrare (rulebook playbook).
+## Vassal map: Helsinki, Turku, Vaasa.
+const GERMAN_LANDING_SITES := ["helsinki", "turku", "vaasa"]
+
+
 func _plan_germans() -> Array:
 	# §3.4: i Germans agiscono SOLO in Phase II (dopo Red Revolt!).
 	if int(state.tracks.get("phase", 1)) < 2:
 		return []
-	var plan: Array = []
+	# Flowchart §3.4 (PAC2):
+	# 1. Se nessuna Truppa Tedesca (mappa + Available) -> No Action
+	# 2. Se Available > 0 e nessuna sulla mappa -> Landing (Available → primo Landing Site)
+	# 3. Se Available > 0 e già sulla mappa -> Reinforce (Available → spazio con Germans)
+	# 4. Altrimenti, Germans + nemico (Reds/Russians) nello stesso spazio -> Attack
+	# 5. Altrimenti, March: gruppo Germans → adiacente con Reds Cells
+	var avail_g: int = state.available("germans", "troops")
+	var on_map_g: int = state.count_on_map("germans", "troops")
+	if avail_g + on_map_g == 0:
+		return []
+	# Step 2: Landing
+	if avail_g > 0 and on_map_g == 0:
+		var site: String = _first_present(GERMAN_LANDING_SITES)
+		if site != "":
+			return [{"op": "land", "target": site, "count": avail_g}]
+	# Step 3: Reinforce
+	if avail_g > 0 and on_map_g > 0:
+		var target: String = _first_with_germans()
+		if target != "":
+			return [{"op": "land", "target": target, "count": avail_g}]
+	# Step 4: Attack su spazio con Reds o Russians
 	for sid in state.spaces.keys():
 		var st: SpaceState = state.space_state(sid)
-		if st.count("germans", "troops") > 0 and st.count("reds", "cell") > 0:
-			plan.append({"op": "attack", "target": sid})
-	return plan
+		if st.count("germans", "troops") <= 0:
+			continue
+		if st.count("reds", "cell") > 0 or st.count("russians", "troops") > 0:
+			return [{"op": "attack", "target": sid}]
+	# Step 5: March verso Reds Cells più vicine
+	for sid in state.spaces.keys():
+		var st2: SpaceState = state.space_state(sid)
+		if st2.count("germans", "troops") <= 0:
+			continue
+		var sd: SpaceDef = state.game_def.space(sid)
+		for adj in sd.adjacent:
+			if not state.spaces.has(String(adj)):
+				continue
+			if state.space_state(String(adj)).count("reds", "cell") > 0:
+				return [{"op": "march", "from": sid, "to": String(adj),
+					"count": st2.count("germans", "troops")}]
+	return []
+
+
+func _first_present(sids: Array) -> String:
+	for sid in sids:
+		if state.spaces.has(String(sid)):
+			return String(sid)
+	return ""
+
+
+func _first_with_germans() -> String:
+	for sid in state.spaces.keys():
+		if state.space_state(sid).count("germans", "troops") > 0:
+			return String(sid)
+	return ""
 
 
 # Helpers
-func _execute(ops: ABBOperations, fid: String, op_id: String, target) -> Dictionary:
+func _execute_step(ops: ABBOperations, fid: String, step: Dictionary) -> Dictionary:
+	var op_id: String = String(step["op"])
 	match op_id:
 		"rally":
-			return ops.rally(fid, String(target), "cell")
+			return ops.rally(fid, String(step["target"]), "cell")
 		"terror":
-			return ops.terror(fid, String(target))
+			return ops.terror(fid, String(step["target"]))
 		"attack":
-			return ops.attack(fid, String(target))
+			return ops.attack(fid, String(step["target"]))
+		"march":
+			# Germans flowchart: muove troops da `from` a `to`.
+			var pt: String = String(step.get("piece_type", "troops" if fid == "germans" or fid == "russians" else "cell"))
+			return ops.march(fid, String(step["from"]), String(step["to"]), pt, int(step.get("count", 1)))
+		"land":
+			# Germans flowchart §3.4 step 1: piazza tutte le Truppe Available a `target`.
+			# Niente Resources, niente Vassalage shift — è già stato fatto in §6.5.3.
+			if not state.spaces.has(String(step["target"])):
+				return {"ok": false, "error": "Landing Site non valido"}
+			var count: int = int(step.get("count", state.available(fid, "troops")))
+			var placed: int = state.place_from_available(fid, "troops", String(step["target"]), count, "")
+			if placed <= 0:
+				return {"ok": false, "error": "nessuna truppa Available"}
+			state.recompute_control(String(step["target"]))
+			return {"ok": true, "log": ["Landing %s × %d a %s" % [fid, placed, step["target"]]]}
 		_:
 			return {"ok": false, "error": "op non supportata: " + op_id}
 
