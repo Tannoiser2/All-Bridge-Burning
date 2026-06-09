@@ -1,0 +1,175 @@
+{
+  "_note": "PAC2 Solo Bot deck (17 cards) per Reds/Senate/Moderates, derivato da ABB_CardEdits-download.pdf. Le condizioni sono espressioni minimali interpretabili da ABBBotPAC2; le azioni sono nomi di handler più, opzionalmente, dettagli (priorità di scelta spazio). Implementazione incrementale: molte azioni sono ancora STUB e cadono indietro al priority planner di ABBBot.",
+  "cards": [
+    {
+      "number": 49,
+      "faction": "reds",
+      "title": "Reds Activism / Foreign Relations",
+      "condition": "phase==1 AND d6 > active_reds_on_map AND no_admin_without_reds",
+      "actions": [
+        {"op": "activism", "params": {"flip_priority": ["enemy_player_cells", "active_senate"]}},
+        {"op": "foreign_relations", "params": {"faction": "russians", "if_vassal_lt": 2, "delta": 1}},
+        {"op": "prepare", "params": {"place_sabotage_at": "senate_train_town_border", "place_prepared_in": "town_near_helsinki"}}
+      ]
+    },
+    {
+      "number": 50,
+      "faction": "reds",
+      "title": "Reds Phase II / No Admin",
+      "condition": "phase>=2 AND no_admin_without_reds",
+      "actions": [
+        {"op": "activism", "params": {}},
+        {"op": "prepare", "params": {}}
+      ]
+    },
+    {
+      "number": 51,
+      "faction": "senate",
+      "title": "Senate Phase I / Cells Available",
+      "condition": "phase==1 AND available_senate_cells > 0",
+      "actions": [
+        {"op": "rally", "params": {"max_spaces": 3, "priority": ["sup_with_senate_lt_3", "where_senate", "random"]}},
+        {"op": "foreign_relations", "params": {"faction": "germans", "if_vassal_ge": 3, "delta": -1}},
+        {"op": "prepare", "params": {}}
+      ]
+    },
+    {
+      "number": 52,
+      "faction": "senate",
+      "title": "Senate Phase II / Cells Available",
+      "condition": "phase>=2 AND available_senate_cells > 0",
+      "actions": [
+        {"op": "rally", "params": {"max_spaces": 3, "priority": ["control_at_pop_town", "senate_capability_space", "largest_senate_groups", "random_with_pop"]}},
+        {"op": "prepare", "params": {}}
+      ]
+    },
+    {
+      "number": 53,
+      "faction": "reds",
+      "title": "Reds Phase II / No Admin",
+      "condition": "phase>=2 AND no_admin_without_reds",
+      "actions": [
+        {"op": "prepare", "params": {}}
+      ]
+    },
+    {
+      "number": 54,
+      "faction": "reds",
+      "title": "Reds Activism / Agitate",
+      "condition": "phase==1 AND last_campaign AND oppose_plus_admins >= 12 AND polarization < 8",
+      "actions": [
+        {"op": "activism", "params": {"agitate_priority": ["admin_town", "least_opp"]}},
+        {"op": "prepare", "params": {}}
+      ]
+    },
+    {
+      "number": 55,
+      "faction": "moderates",
+      "title": "Moderates Message + Dialogue + Publish",
+      "condition": "always",
+      "actions": [
+        {"op": "message", "params": {"max_cells": 3, "target_priority": ["personality_3_mods", "network_2_mods", "town_without_network_most_mods"]}},
+        {"op": "dialogue", "params": {"if_opp_plus_admins_ge": 10, "remove": "opp_or_control"}},
+        {"op": "publish", "params": {"earn_max_resources": true}}
+      ]
+    },
+    {
+      "number": 56,
+      "faction": "senate",
+      "title": "Senate Rally (alt)",
+      "condition": "(phase==1 AND d6 > active_senate_on_map) OR (phase>=2 AND senate_town_pop >= 4)",
+      "actions": [
+        {"op": "rally", "params": {"max_spaces": 3, "priority": ["space_with_senate_and_enemy", "control_at_pop_where_sup", "control_at_zero_pop_mikkeli"]}},
+        {"op": "foreign_relations", "params": {"faction": "germans", "if_vassal_ge": 3, "delta": -1}},
+        {"op": "prepare", "params": {}}
+      ]
+    },
+    {
+      "number": 57,
+      "faction": "senate",
+      "title": "Senate Activism + Crackdown",
+      "condition": "phase==1 OR phase>=2",
+      "actions": [
+        {"op": "activism", "params": {"flip_priority": ["enemy_player", "active_reds"], "activate_priority": ["lone_senate", "at_sup_last"]}},
+        {"op": "crackdown", "params": {"remove": "most_opp_able"}},
+        {"op": "foreign_relations", "params": {"faction": "germans", "if_vassal_ge": 3, "delta": -1}}
+      ]
+    },
+    {
+      "number": 58,
+      "faction": "senate",
+      "title": "Senate March + Prepare",
+      "condition": "phase>=2 AND (no_3plus_senate_with_enemy OR no_4plus_senate_train_adj_enemy)",
+      "actions": [
+        {"op": "march", "params": {"group_size": [3, 5], "leave": 1, "no_lose_control": true,
+            "priority": ["3plus_with_capability", "3plus_largest_group", "to_control_town_most_pop", "to_town_without_senate"]}},
+        {"op": "prepare", "params": {"remove_sabotage_near_senate_train": true}}
+      ]
+    },
+    {
+      "number": 59,
+      "faction": "senate",
+      "title": "Senate Foreign Relations",
+      "condition": "german_vassal >= 3",
+      "actions": [
+        {"op": "foreign_relations", "params": {"faction": "germans", "if_vassal_ge": 4, "delta": -1}}
+      ]
+    },
+    {
+      "number": 60,
+      "faction": "moderates",
+      "title": "Moderates Rally",
+      "condition": "phase==1",
+      "actions": [
+        {"op": "rally", "params": {"max_spaces": 3, "priority": ["town_no_personality", "active_support"]}}
+      ]
+    },
+    {
+      "number": 61,
+      "faction": "moderates",
+      "title": "Moderates Activism",
+      "condition": "phase>=2",
+      "actions": [
+        {"op": "activism", "params": {"depolarize_priority": ["most_polarized"]}}
+      ]
+    },
+    {
+      "number": 62,
+      "faction": "reds",
+      "title": "Reds March",
+      "condition": "phase==1 AND (moderates_on_map >= 5 OR personality_on_map)",
+      "actions": [
+        {"op": "march", "params": {"from": "provinces_only", "leave": 1, "active_first": true,
+            "priority": ["2plus_germans_no_admin", "sup_no_active_reds_no_admin", "add_reds_control_pop_most", "remove_senate_town_pop_control"]}},
+        {"op": "prepare", "params": {}}
+      ]
+    },
+    {
+      "number": 63,
+      "faction": "reds",
+      "title": "Reds Attack",
+      "condition": "phase>=2 AND germans_on_map > 0",
+      "actions": [
+        {"op": "attack", "params": {"target_priority": ["space_with_germans_and_reds_majority"]}}
+      ]
+    },
+    {
+      "number": 64,
+      "faction": "reds",
+      "title": "Reds Terror",
+      "condition": "phase>=2 AND opp_plus_admins < 10",
+      "actions": [
+        {"op": "terror", "params": {"target_priority": ["active_senate_support_space"]}}
+      ]
+    },
+    {
+      "number": 65,
+      "faction": "reds",
+      "title": "Reds Rally fallback",
+      "condition": "always",
+      "actions": [
+        {"op": "rally", "params": {"priority": ["uncontrolled", "active_opp"]}}
+      ]
+    }
+  ]
+}
