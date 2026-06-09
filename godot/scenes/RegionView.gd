@@ -127,16 +127,18 @@ func relayout() -> void:
 	# Terrore/Sabotaggio appena sopra la griglia.
 	_stack.reset_size()
 	_stack.position = Vector2(a.x - _stack.size.x * 0.5, grid_top - 16.0)
-	# Marcatori Controllo/Supporto nelle caselle (o sull'anchor se non definite).
-	# Dimensione scalata con la mappa per restare leggibili (ABB su 3000×2350).
-	var mk_size: float = clampf(size.x * 0.028, 24.0, 56.0)
+	# Marcatori Controllo/Supporto nelle caselle.
+	# Dimensione native Vassal: ~94×92 px su mappa 3829×3000 → ~3.1% larghezza
+	# rispettiamo il rapporto sulla mappa ABB renderizzata.
+	var mk_w: float = size.x * 0.031 if GameRegistry.game_id == "all_bridges_burning" else size.x * 0.028
+	var mk_h: float = mk_w * 0.97  # rapporto Vassal 94×92
 	if _ctrl_tr != null:
-		_ctrl_tr.size = Vector2(mk_size, mk_size)
+		_ctrl_tr.size = Vector2(mk_w, mk_h)
 		_ctrl_tr.custom_minimum_size = _ctrl_tr.size
 		var cp := _cbox if _cbox.x >= 0 else Vector2(_anchor_norm.x - 0.012, _anchor_norm.y - 0.03)
 		_ctrl_tr.position = Vector2(cp.x * size.x, cp.y * size.y) - _ctrl_tr.size * 0.5
 	if _sup_tr != null:
-		_sup_tr.size = Vector2(mk_size, mk_size)
+		_sup_tr.size = Vector2(mk_w, mk_h)
 		_sup_tr.custom_minimum_size = _sup_tr.size
 		var sp := _sbox if _sbox.x >= 0 else Vector2(_anchor_norm.x + 0.012, _anchor_norm.y - 0.03)
 		_sup_tr.position = Vector2(sp.x * size.x, sp.y * size.y) - _sup_tr.size * 0.5
@@ -149,19 +151,12 @@ func refresh(state: GameState) -> void:
 	for c in _stack.get_children():
 		c.queue_free()
 
-	# Controllo/Supporto: per ABB li dipingiamo in _draw() come dischi puliti
-	# (le texture Vassal contengono già il testo "Control"/"Active Support x2"
-	# stampato sull'immagine — sovrapposte alla mappa creano confusione).
-	if GameRegistry.game_id == "all_bridges_burning":
-		_ctrl_tr.texture = null
-		_sup_tr.texture = null
-		queue_redraw()
+	# Controllo/Supporto nelle rispettive caselle (cbox/sbox da Vassal).
+	_ctrl_tr.texture = CLAssets.control(st.control) if st.control != "" and st.control != "russians" and st.control != "germans" else null
+	if space_def.has_population() and st.support != 0:
+		_sup_tr.texture = CLAssets.support(st.support)
 	else:
-		_ctrl_tr.texture = CLAssets.control(st.control) if st.control != "" else null
-		if space_def.has_population() and st.support != 0:
-			_sup_tr.texture = CLAssets.support(st.support)
-		else:
-			_sup_tr.texture = null
+		_sup_tr.texture = null
 
 	# Terrore/Sabotaggio restano vicino allo spazio (con i pezzi)
 	var mrow := HBoxContainer.new()
@@ -309,9 +304,8 @@ func _draw() -> void:
 	_draw_abb_markers()
 
 
-## Disegna i marker ABB (Controllo, Supporto, Personality, News) sullo spazio.
-## Controllo e Supporto sono dipinti come dischi puliti faction-colored sopra
-## le caselle stampate; Personality / News sono blittati come icone Vassal.
+## Disegna i marker Moderates (Personality, News) sopra l'anchor della regione.
+## Controllo/Supporto sono renderizzati come TextureRect figli (cbox/sbox).
 func _draw_abb_markers() -> void:
 	if GameRegistry.game_id != "all_bridges_burning":
 		return
@@ -319,36 +313,6 @@ func _draw_abb_markers() -> void:
 	if s == null or not s.spaces.has(space_id):
 		return
 	var st: SpaceState = s.space_state(space_id)
-
-	# Controllo (cbox): cerchio pieno faction-colored con bordo nero.
-	if _control != "" and _control != "russians" and _control != "germans":
-		var cp := _cbox if _cbox.x >= 0 else Vector2(_anchor_norm.x - 0.012, _anchor_norm.y - 0.03)
-		var cc := Vector2(cp.x * size.x, cp.y * size.y)
-		var cr: float = clampf(size.x * 0.013, 10.0, 22.0)
-		var ccol: Color = GameController.faction_color(_control)
-		ccol.a = 0.92
-		draw_circle(cc, cr, ccol)
-		draw_arc(cc, cr, 0, TAU, 32, Color(0, 0, 0, 0.85), 2.0)
-
-	# Supporto/Opposizione (sbox): rettangolo arrotondato — colore Senato per
-	# Supporto, Rossi per Opposizione; +/- segna Attivo (doppio bordo) vs
-	# Passivo (singolo).
-	if space_def.has_population() and st.support != 0:
-		var sp := _sbox if _sbox.x >= 0 else Vector2(_anchor_norm.x + 0.012, _anchor_norm.y - 0.03)
-		var sc := Vector2(sp.x * size.x, sp.y * size.y)
-		var sw: float = clampf(size.x * 0.024, 18.0, 38.0)
-		var sh: float = sw * 0.65
-		var rect := Rect2(sc - Vector2(sw, sh) * 0.5, Vector2(sw, sh))
-		var scol: Color = GameController.faction_color("senate") if st.support > 0 else GameController.faction_color("reds")
-		scol.a = 0.85
-		draw_rect(rect, scol, true)
-		draw_rect(rect, Color.BLACK, false, 1.5)
-		# Bordo interno extra per Active Support / Active Opposition (±2).
-		if abs(st.support) >= 2:
-			var inner := rect.grow(-3.0)
-			draw_rect(inner, Color(0, 0, 0, 0.85), false, 1.2)
-
-	# Personality + News (markers Moderates).
 	var ax := _anchor_norm.x * size.x
 	var ay := _anchor_norm.y * size.y
 	var sz := size.x * 0.022
