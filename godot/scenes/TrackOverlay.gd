@@ -43,18 +43,9 @@ func _draw() -> void:
 	var s: GameState = GameController.state
 	if s == null or _track.is_empty():
 		return
-	var mod: CubaLibreModule = GameController.module
-	var chips := [
-		["res_government", s.get_resources("government"), CLAssets.res_token("government")],
-		["res_m26", s.get_resources("m26"), CLAssets.res_token("m26")],
-		["res_directorio", s.get_resources("directorio"), CLAssets.res_token("directorio")],
-		["res_syndicate", s.get_resources("syndicate"), CLAssets.res_token("syndicate")],
-		["aid", int(s.tracks.get("aid", 0)), CLAssets.aid_marker()],
-		["vic_support", s.total_support(), CLAssets.vic_support()],
-		["vic_opp", mod.opposition_plus_bases(s), CLAssets.vic_opp_bases()],
-		["vic_dr", mod.dr_pop_plus_bases(s), CLAssets.vic_dr()],
-		["vic_casinos", mod.open_casinos(s), CLAssets.vic_casinos()],
-	]
+	# Chip per gioco attivo: Cuba ha aid/US Alliance/vittoria; ABB ha
+	# polarization/vassalage/town pop/networks ecc. Selezione su game_id.
+	var chips: Array = _abb_chips(s) if GameRegistry.game_id == "all_bridges_burning" else _cuba_chips(s)
 	var counts := {}
 	for ch in chips:
 		var key: String = ch[0]
@@ -72,14 +63,53 @@ func _draw() -> void:
 			c.x -= idx * STACK
 		_blit(ch[2], c)
 
-	# Alleanza USA nella casella attiva
-	var ai := int(s.tracks.get("us_alliance", 0))
-	var abox: String = ["us_alliance_firm", "us_alliance_reluctant", "us_alliance_embargoed"][ai]
-	_blit(CLAssets.alliance_marker(), _box_rect(abox).get_center())
+	# Alleanza USA nella casella attiva (solo Cuba Libre).
+	if GameRegistry.game_id == "cuba_libre":
+		var ai := int(s.tracks.get("us_alliance", 0))
+		var abox: String = ["us_alliance_firm", "us_alliance_reluctant", "us_alliance_embargoed"][ai]
+		_blit(CLAssets.alliance_marker(), _box_rect(abox).get_center())
 
 	_draw_available(s)
 	_draw_eligibility(s)
-	_draw_capabilities(s)
+	# Capabilities è Cuba-specifico (nomi carte Cuba).
+	if GameRegistry.game_id == "cuba_libre":
+		_draw_capabilities(s)
+
+
+## Chip per Cuba Libre (logica originale, isolata).
+func _cuba_chips(s: GameState) -> Array:
+	var mod = GameController.module
+	return [
+		["res_government", s.get_resources("government"), CLAssets.res_token("government")],
+		["res_m26", s.get_resources("m26"), CLAssets.res_token("m26")],
+		["res_directorio", s.get_resources("directorio"), CLAssets.res_token("directorio")],
+		["res_syndicate", s.get_resources("syndicate"), CLAssets.res_token("syndicate")],
+		["aid", int(s.tracks.get("aid", 0)), CLAssets.aid_marker()],
+		["vic_support", s.total_support(), CLAssets.vic_support()],
+		["vic_opp", mod.opposition_plus_bases(s) if mod else 0, CLAssets.vic_opp_bases()],
+		["vic_dr", mod.dr_pop_plus_bases(s) if mod else 0, CLAssets.vic_dr()],
+		["vic_casinos", mod.open_casinos(s) if mod else 0, CLAssets.vic_casinos()],
+	]
+
+
+## Chip per All Bridges Burning (rulebook §1.5-§1.12, §7.0).
+## Tutti i marker stanno sull'edge track 0..30 in alto.
+## Le texture sono i res_token delle 4 fazioni player (se mancano,
+## _blit() salta — niente crash).
+func _abb_chips(s: GameState) -> Array:
+	var out: Array = []
+	for fid in ["reds", "senate", "moderates", "germans"]:
+		out.append(["res_%s" % fid, s.get_resources(fid), CLAssets.res_token(fid)])
+	# Marker VP / tracciati (texture placeholder, _blit() salta su null).
+	var any_tok: Texture2D = CLAssets.res_token("reds")
+	out.append(["abb_senate_town_pop", int(s.tracks.get("senate_town_pop", 0)), any_tok])
+	out.append(["abb_oppose_admins", int(s.tracks.get("oppose_admins", 0)), any_tok])
+	out.append(["abb_cells_on_map", int(s.tracks.get("cells_on_map", 0)), any_tok])
+	out.append(["abb_issues_networks", int(s.tracks.get("issues_networks", 0)), any_tok])
+	out.append(["abb_vassal_german", int(s.tracks.get("vassalage_german", 0)), any_tok])
+	out.append(["abb_vassal_russian", int(s.tracks.get("vassalage_russian", 0)), any_tok])
+	out.append(["abb_polarization", int(s.tracks.get("polarization", 0)), any_tok])
+	return out
 
 
 ## Posizione (schermo) interpolata tra le celle per un valore frazionario lungo il tracciato.
@@ -119,6 +149,10 @@ const BASE_TRACK := {
 
 func _draw_available(s: GameState) -> void:
 	var tok := size.x * 0.028
+	# ABB: per ogni fazione disegna i pezzi disponibili nel box "available_<fid>".
+	if GameRegistry.game_id == "all_bridges_burning":
+		_abb_draw_available(s, tok)
+		return
 	# 1) Pezzi sciolti (cubi/guerriglie): ognuno disegnato singolarmente nell'area aperta del box.
 	for fac in _loose:
 		for t in _loose[fac]:
@@ -227,3 +261,46 @@ func _draw_eligibility(s: GameState) -> void:
 		var pos := Vector2(r.position.x + r.size.x * 0.5 - ELIG_SZ * 0.5,
 			r.position.y + 8.0 + idx * (ELIG_SZ + 4.0))
 		draw_texture_rect(t, Rect2(pos, Vector2(ELIG_SZ, ELIG_SZ)), false)
+
+
+## Disegna i pezzi disponibili (force_pool - on_map) nei box ABB.
+func _abb_draw_available(s: GameState, tok: float) -> void:
+	# (faction_id, [piece_types]) — ordini consistenti con l'apparizione storica.
+	var faction_types: Array = [
+		["reds", ["cell", "admin"]],
+		["senate", ["cell"]],
+		["moderates", ["cell", "network"]],
+		["germans", ["troops"]],
+		["russians", ["troops"]],
+	]
+	for ft in faction_types:
+		var fid: String = ft[0]
+		var fdef: FactionDef = s.game_def.faction(fid)
+		if fdef == null:
+			continue
+		var box_name: String = "available_%s" % fid
+		var r := _box_rect(box_name)
+		if r.size == Vector2.ZERO:
+			continue
+		# Numero totale di pezzi disponibili per la fazione (somma sui suoi tipi).
+		var available_counts: Array = []
+		for pt in ft[1]:
+			var ptid: String = pt
+			var avail: int = s.available(fid, ptid)
+			if avail > 0:
+				available_counts.append({"type": ptid, "count": avail})
+		if available_counts.is_empty():
+			continue
+		# Suddivido il box verticalmente fra i tipi di pezzo della fazione.
+		var sub_h: float = r.size.y / float(max(1, available_counts.size()))
+		var y: float = r.position.y
+		for entry in available_counts:
+			var ptid_e: String = entry["type"]
+			var n_e: int = entry["count"]
+			var tex: Texture2D = CLAssets.piece(fid, ptid_e, "underground" if ptid_e == "cell" else "")
+			if tex == null:
+				y += sub_h
+				continue
+			var sub_rect := Rect2(r.position.x, y, r.size.x, sub_h)
+			_fill_pieces(sub_rect, n_e, tex, tok)
+			y += sub_h
