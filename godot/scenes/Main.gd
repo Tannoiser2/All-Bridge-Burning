@@ -114,7 +114,6 @@ var _btn_auto: Button
 var _auto_bot := false                 # se true, i Bot giocano da soli; altrimenti aspettano il consenso
 var _role_btns: Dictionary = {}        # fid -> Button (toggle Giocatore/Bot)
 var _btn_coordinate: Button = null      # ABB: Senato Coordina Germans (§4.2.4)
-var _version_label: Label = null        # indicatore di build in basso a destra
 var _btn_ev_u: Button
 var _btn_ev_s: Button
 
@@ -161,84 +160,8 @@ var _resume_mode := "idle"            # modalità Operazione da riprendere dopo 
 var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Speciale corrente
 
 
-## Numero di build incrementato a ogni fix UI. Mostrato in basso a destra così
-## puoi dirmi ESATTAMENTE quale versione stai vedendo (cache-busting diagnostico).
-const BUILD_VERSION := "build 99 — fix TrackOverlay"
-
-
-## Etichetta diagnostica in ALTO A SINISTRA (niente la copre). Mostra il numero
-## di build + un auto-test delle texture: per ogni asset chiave indica se
-## CLAssets riesce a caricarlo a runtime (OK) o no (NULL). Così la causa del
-## "pedine sparite" è leggibile direttamente sullo schermo.
-func _add_version_label() -> void:
-	_version_label = Label.new()
-	_version_label.text = BUILD_VERSION
-	_version_label.add_theme_font_size_override("font_size", 16)
-	_version_label.add_theme_color_override("font_color", Color(1, 1, 0, 1))
-	_version_label.add_theme_color_override("font_outline_color", Color.BLACK)
-	_version_label.add_theme_constant_override("outline_size", 5)
-	_version_label.position = Vector2(8, 4)
-	_version_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_version_label.z_index = 4096
-	add_child(_version_label)
-
-
-func _update_version_label() -> void:
-	if _version_label != null:
-		_version_label.text = "%s  %s" % [BUILD_VERSION, _data_selftest()]
-
-
-func _data_selftest() -> String:
-	# Dati di gioco + dimensione overlay: distingue bug-dato da bug-disegno.
-	var s = GameController.state
-	if s == null:
-		return "state:NULL"
-	var ov_sz := "NULL"
-	var ov_vis := "?"
-	if _track_overlay != null:
-		ov_sz = "%dx%d" % [int(_track_overlay.size.x), int(_track_overlay.size.y)]
-		ov_vis = "vis" if _track_overlay.visible else "hid"
-	# Ispezione albero: figli di _map + un campione pedina.
-	var map_children := _map.get_child_count() if _map != null else -1
-	var sample := "noPiece"
-	for sid in _space_views.keys():
-		var rv := _space_views[sid] as RegionView
-		if rv._pieces.size() > 0:
-			var p0 = rv._pieces[0]
-			sample = "pos(%d,%d) sz(%d,%d) %s" % [
-				int(p0.position.x), int(p0.position.y),
-				int(p0.size.x), int(p0.size.y),
-				"vis" if p0.visible else "hid"]
-			break
-	var n_pieces := 0
-	for sid in _space_views.keys():
-		n_pieces += (_space_views[sid] as RegionView)._pieces.size()
-	return "res:%d availC:%d onmapC:%d ovl:%s/%s mapChildren:%d mapPieces:%d P0:%s" % [
-		int(s.get_resources("reds")),
-		int(s.available("reds", "cell")),
-		int(s.count_on_map("reds", "cell")),
-		ov_sz, ov_vis, map_children,
-		n_pieces, sample,
-	]
-
-
-func _texture_selftest() -> String:
-	# Prova a caricare gli asset chiave; riporta OK/NULL per ciascuno.
-	var checks := {
-		"map": CLAssets.map(),
-		"token_reds": CLAssets.res_token("reds"),
-		"cell": CLAssets.piece("reds", "cell", "underground"),
-		"vp": CLAssets.abb_senate_town_pop(),
-	}
-	var parts: Array = []
-	for k in checks:
-		parts.append("%s:%s" % [k, "OK" if checks[k] != null else "NULL"])
-	return " | ".join(parts)
-
-
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	_add_version_label()
 	# La fazione "corrente" di default è la prima del gioco attivo (era hardcoded
 	# a "government" per Cuba Libre; per altri moduli leggiamo dal GameDef).
 	if GameController.game_def != null and not GameController.game_def.factions.is_empty():
@@ -251,7 +174,6 @@ func _ready() -> void:
 	_rebuild_action_buttons(_cur_faction)
 	# Aggiorna l'etichetta con build + auto-test texture (deferred così
 	# l'autoload GameRegistry e gli asset sono sicuramente pronti).
-	call_deferred("_update_version_label")
 	# Driver automatico delle Fazioni Bot (gioca da sole al loro turno).
 	var bot_timer := Timer.new()
 	bot_timer.wait_time = 1.0
