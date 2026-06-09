@@ -335,13 +335,102 @@ func _do_foreign_relations(specials: ABBSpecialActivities, fid: String, params: 
 	return specials.foreign_relations(target_faction, delta)
 
 
-func _do_rally(ops: ABBOperations, fid: String, _params: Dictionary) -> Dictionary:
-	# Scelta semplice: primo spazio dove possiamo piazzare una Cell del fid.
-	for sid in state.spaces.keys():
-		var res = ops.rally(fid, String(sid), "cell")
-		if res.get("ok", false):
-			return res
+## Rally PAC2: itera le priority della carta in ordine. Per ciascuna, applica
+## il filtro corrispondente e prova la prima rally riuscita. Onora "max_spaces"
+## per limitare il numero di Rally consecutive.
+func _do_rally(ops: ABBOperations, fid: String, params: Dictionary) -> Dictionary:
+	var max_spaces: int = int(params.get("max_spaces", 1))
+	var priority: Array = params.get("priority", [])
+	if priority.is_empty():
+		priority = ["random_with_pop"]   # fallback minimale, non greedy
+	var placed: int = 0
+	var log: Array[String] = []
+	for prio in priority:
+		if placed >= max_spaces:
+			break
+		var candidates: Array = _rally_filter(fid, String(prio))
+		for sid in candidates:
+			if placed >= max_spaces:
+				break
+			var res = ops.rally(fid, String(sid), "cell")
+			if res.get("ok", false):
+				placed += 1
+				log.append("Rally %s @ %s (prio:%s)" % [fid, sid, prio])
+	if placed > 0:
+		return {"ok": true, "log": log}
 	return {"ok": false}
+
+
+## Filtri di priorità Rally PAC2 (rulebook §8.4.1, §8.4.2, §8.5.3).
+## Ognuno restituisce la lista di spazi candidati ordinati per quel criterio.
+func _rally_filter(fid: String, priority: String) -> Array:
+	var out: Array = []
+	match priority:
+		# §8.4.1: Town con Senato presente + Supporto, dove Senate < 3
+		"sup_with_senate_lt_3":
+			for sid in state.spaces.keys():
+				var st: SpaceState = state.space_state(sid)
+				if st.support > 0 and st.count(fid, "cell") < 3:
+					out.append(String(sid))
+		"where_senate":
+			for sid in state.spaces.keys():
+				if state.space_state(sid).count("senate", "cell") > 0:
+					out.append(String(sid))
+		# §8.4.2: aggiungi Controllo in Town con Pop ≥ 1
+		"control_at_pop_town":
+			for sid in state.spaces.keys():
+				var sd: SpaceDef = state.game_def.space(sid)
+				if sd.type == CoinEnums.SpaceType.CITY and sd.pop >= 1:
+					var st: SpaceState = state.space_state(sid)
+					if st.control != fid:
+						out.append(String(sid))
+		"senate_capability_space":
+			for sid in state.spaces.keys():
+				var st: SpaceState = state.space_state(sid)
+				if st.marker("jaeger_senate") > 0:
+					out.append(String(sid))
+		"largest_senate_groups":
+			var groups: Array = []
+			for sid in state.spaces.keys():
+				var n: int = state.space_state(sid).count("senate", "cell")
+				if n > 0:
+					groups.append({"sid": String(sid), "n": n})
+			groups.sort_custom(func(a, b): return int(a["n"]) > int(b["n"]))
+			for g in groups:
+				out.append(g["sid"])
+		# §8.5.3 Moderates Rally: Town senza Personality
+		"town_no_personality":
+			for sid in state.spaces.keys():
+				var sd: SpaceDef = state.game_def.space(sid)
+				if sd.type != CoinEnums.SpaceType.CITY:
+					continue
+				if state.space_state(sid).marker("personality") <= 0:
+					out.append(String(sid))
+		"active_support":
+			for sid in state.spaces.keys():
+				if state.space_state(sid).support >= 2:
+					out.append(String(sid))
+		"uncontrolled":
+			for sid in state.spaces.keys():
+				if state.space_state(sid).control == "":
+					out.append(String(sid))
+		"active_opp":
+			for sid in state.spaces.keys():
+				if state.space_state(sid).support <= -2:
+					out.append(String(sid))
+		# Pop ordinata desc (anti-piling via fallback)
+		"random_with_pop", "random":
+			var by_pop: Array = []
+			for sid in state.spaces.keys():
+				var sd: SpaceDef = state.game_def.space(sid)
+				if sd.pop > 0:
+					by_pop.append({"sid": String(sid), "pop": sd.pop})
+			by_pop.sort_custom(func(a, b): return int(a["pop"]) > int(b["pop"]))
+			for e in by_pop:
+				out.append(e["sid"])
+		_:
+			pass
+	return out
 
 
 func _do_march(ops: ABBOperations, fid: String, _params: Dictionary) -> Dictionary:
