@@ -349,16 +349,16 @@ func _abb_draw_moderates_extra(s: GameState, box: Rect2, _tok: float) -> void:
 	# Disponibili: 2 News - su mappa, 1 Personality - su mappa.
 	var news_avail: int = maxi(0, 2 - news_on_map)
 	var pers_avail: int = 0 if pers_on_map else 1
-	# Calibrato sulla map.jpg ABB: i 3 cerchi sono al 35% verticale, centri X
-	# a ~10%, 25%, 40% del box.
-	var cy: float = box.position.y + box.size.y * 0.35
-	var slot_size: float = box.size.x * 0.13
+	# Calibrato sulla map.jpg ABB misurando i 3 grandi cerchi stampati
+	# News News Personality del box Moderates Available Forces.
+	var cy: float = box.position.y + box.size.y * 0.48
+	var slot_size: float = box.size.x * 0.16
 	var nt := CLAssets.news()
 	var pt := CLAssets.personality()
 	var centers_x: Array = [
-		box.position.x + box.size.x * 0.10,
-		box.position.x + box.size.x * 0.25,
+		box.position.x + box.size.x * 0.23,
 		box.position.x + box.size.x * 0.40,
+		box.position.x + box.size.x * 0.58,
 	]
 	for i in range(news_avail):
 		if nt != null:
