@@ -334,12 +334,23 @@ func _abb_draw_sop(s: GameState) -> void:
 	if cols.is_empty() or rows.is_empty():
 		return
 	var frame: Array = _sop.get("frame", [])
+	var font := ThemeDB.fallback_font
 	if frame.size() == 4:
 		var fr := Rect2(frame[0] * size.x, frame[1] * size.y,
 			(frame[2] - frame[0]) * size.x, (frame[3] - frame[1]) * size.y)
 		draw_rect(fr, Color(0, 0, 0, 0.20), false, 1.5)
+		# Badge "PHASE II" in alto a destra del riquadro quando attiva (post Red Revolt!).
+		if int(s.tracks.get("phase", 1)) >= 2:
+			var pad := 4.0
+			var badge_w := 78.0
+			var badge_h := 18.0
+			var bx := fr.position.x + fr.size.x - badge_w - pad
+			var by := fr.position.y + pad
+			draw_rect(Rect2(bx, by, badge_w, badge_h), Color(0.65, 0.10, 0.10, 0.85), true)
+			draw_rect(Rect2(bx, by, badge_w, badge_h), Color.BLACK, false, 1.0)
+			draw_string(font, Vector2(bx + 8, by + badge_h - 4), "PHASE II",
+				HORIZONTAL_ALIGNMENT_LEFT, badge_w - 12, 12, Color.WHITE)
 	var seq = GameController.seq
-	var font := ThemeDB.fallback_font
 	for fid in rows.keys():
 		var col_key := _sop_col_for(s, seq, String(fid))
 		if not cols.has(col_key):
