@@ -3,62 +3,134 @@
 Versione digitale di **All Bridges Burning** (Serie COIN Vol. IX, GMT 2020),
 costruita riusando il motore COIN generico sviluppato per Cuba Libre.
 
-Stato: **scheletro iniziale**. Il motore e il guscio UI sono importati e
-funzionanti (modulo Cuba Libre come riferimento); il modulo ABB è registrato
-nel `GameRegistry` e attende l'implementazione incrementale di mappa,
-operazioni, attività speciali, eventi, round Crisis e Bot non-giocatore.
+🌐 **Sito live**: <https://tannoiser2.github.io/All-Bridge-Burning/>
+
+📥 **Build desktop** (Windows / Linux / macOS): vedi
+[Releases → `desktop-latest`](https://github.com/Tannoiser2/All-Bridge-Burning/releases/tag/desktop-latest).
+
+## Stato
+
+**Giocabile a livello di interazione**: la mappa Finlandia croppata dal Vassal,
+i 13 spazi (8 province + 5 città) con popolazione e adiacenze, le 5 fazioni
+(Reds, Senate, Moderates, Germans, Russians) con le loro forze e i marker dei
+tracciati sono tutti renderizzati. Il setup standard viene applicato e i pezzi
+del posizionamento iniziale compaiono sui poligoni della mappa.
+
+I bottoni Operazione (Rally / Marcia / Attacco / Terrorismo / Messaggio /
+Attivismo) e Attività Speciale (Agitazione / Imboscata / Sovversione /
+Repressione / Coordinamento / Negoziato / Dialogo / Relazioni Estere /
+Tassazione) sono cliccabili: aprono un flusso di selezione spazio e chiamano la
+libreria di regole `ABBOperations` / `ABBSpecialActivities`. Il Bot priority
+planner sceglie l'azione per le fazioni non-giocatore. Quando il mazzo pesca
+una carta Propaganda, parte il Crisis Round (Politics + Earnings).
+
+**286 test passati, 0 falliti** in headless (Cuba Libre + ABB combinati).
+
+| Componente | Stato |
+| --- | --- |
+| Motore COIN multi-gioco | ✅ `GameRegistry` + `GameManifest` per swap dei moduli |
+| Mappa Finlandia | ✅ JPG croppata 3000×2350 + 13 poligoni interattivi |
+| 13 spazi (province + città) | ✅ pop, adiacenze (da poligoni), controllo iniziale |
+| 5 fazioni | ✅ Reds, Senate, Moderates, Germans, Russians con `force_pool` |
+| 4 tipi di pezzo | ✅ troops, cell (×stato), admin, network |
+| Asset pezzi su mappa | ✅ texture dedicate, marker piazzati al setup |
+| Setup standard | ✅ apply_setup runnable da `data/setup_standard.json` |
+| 47 carte Evento | ✅ titoli dal playbook + immagini dal Vassal |
+| Operazioni | ✅ Rally / March / Attack / Terror — logica core |
+| Attività Speciali | ✅ Agitate, Ambush, Subvert, Crackdown, Coordinate, Dialogue, Foreign Relations, Tax, Negotiate |
+| UI: click → ABBOperations / ABBSpecialActivities | ✅ dispatcher con highlight degli spazi candidati |
+| Crisis Round (§6.0) | ✅ Politics + Earnings (Phase II adjustment TODO) |
+| Bot non-giocatore | ✅ priority planner per fazione (PAC2 completo TODO) |
+| Vittoria (§7.2 / §7.3) | ✅ margine per fazione + tiebreak order |
+| TrackOverlay sulla mappa | ✅ Resources, Polarization (tracciato dedicato), Vassalage, Town Pop, Cells on Map, Issues+Networks, Oppose+Admins |
+| Box Available Forces | ✅ pezzi disponibili (force_pool − on_map) sulle riserve di ogni fazione |
+
+## Cosa rimane da fare
+
+- Carta Pivotal "Red Revolt!" (#24): trigger della Phase II + flowchart Germans.
+- Testi unshaded/shaded delle 47 carte (vanno trascritti dal regolamento o
+  dall'`ABB_CardEdits-download.pdf`).
+- PAC2 completo per il Bot: 17 carte solitaire + flowchart per le decisioni
+  nidificate (Cmd vs Cmd+SA vs Limited Cmd, scelta Special Activity, ecc.).
+- Visualizzazione Sequence of Play (cilindri Eligibility nei box azione).
+- Marker Control / Support sui poligoni: le texture (`control_reds.png`,
+  `control_senate.png`) ci sono, ma le posizioni `cbox` non vengono
+  estratte dal Vassal — vanno aggiunte a mano o calcolate dal poligono.
+- Capabilities panel + News / Personality markers (specifici dei Moderates).
 
 ## Struttura
 
 ```
 godot/
-  coin_engine/                 # Motore COIN generico (game-agnostico)
-    GameRegistry.gd            # Autoload: carica il modulo del game_id attivo
-    GameManifest.gd            # Contratto factory per ogni gioco
+  coin_engine/                    # Motore COIN generico (game-agnostico)
+    GameRegistry.gd               # Autoload: carica il modulo del game_id attivo
+    GameManifest.gd               # Contratto factory per ogni gioco
     …
-  scenes/                      # Guscio UI (mappa, pannelli, controlli)
+  scenes/                         # Guscio UI (mappa, pannelli, controlli)
   games/
-    cuba_libre/                # Modulo Cuba Libre (riferimento + test)
-    all_bridges_burning/       # Modulo ABB (scheletro, in costruzione)
-  tests/                       # Test headless (GDScript nativo)
+    cuba_libre/                   # Modulo Cuba Libre (riferimento + test)
+    all_bridges_burning/          # Modulo ABB
+      Manifest.gd                 # Factory dei sottosistemi
+      ABBModule.gd                # GameDef + apply_setup + victory_status
+      data/                       # JSON: spaces, factions, cards, setup, regions, board_layout
+      assets/                     # PNG/JPG mappa, pezzi, carte, VP markers
+      rules/                      # Operations, SpecialActivities, Crisis, Bot, Events
+  tests/                          # Test headless (40+ Cuba + 13 ABB)
 
-sources/                       # Tool di estrazione dal Vassal, OCR, rules
-Materiale ABB/                 # Rulebook, playbook, .vmod, tabelle Bot
-.github/workflows/             # CI: deploy-web (Pages) + build-desktop
+sources/                          # Tool estrazione Vassal, OCR, rules
+Materiale ABB/                    # Rulebook, playbook, .vmod, tabelle Bot
+.github/workflows/                # CI: deploy-web (Pages) + build-desktop
 ```
 
 ## Multi-gioco
 
 Il motore seleziona il modulo via `GameRegistry.game_id`. Ordine di risoluzione:
 
-1. CLI: `godot --path godot -- --game=all_bridges_burning`
+1. CLI: `godot --path godot -- --game=cuba_libre`
 2. ProjectSettings: `application/config/game_id`
-3. Default: `cuba_libre`
+3. Default: `all_bridges_burning`
 
 Ogni gioco espone un `games/<id>/Manifest.gd` che estende `GameManifest` e
 fornisce le factory di `RulesModule`, Operazioni, Attività Speciali, Eventi,
-round periodico e Bot.
+round periodico, Bot e i ruoli default per fazione.
 
 ## Sviluppo
 
-```
+```bash
 # Test headless
 godot --headless --path godot -s res://tests/test_runner.gd
 
-# Run UI (default: cuba_libre)
+# Run UI ABB (default)
 godot --path godot
 
-# Run UI con ABB
-godot --path godot -- --game=all_bridges_burning
+# Run UI Cuba Libre
+godot --path godot -- --game=cuba_libre
 ```
 
-## Roadmap
+Per estrarre/aggiornare le mappe e i pezzi dal modulo Vassal:
 
-1. Mappa + spazi + setup ABB
-2. Operazioni
-3. Attività Speciali
-4. Eventi
-5. Round periodico (Crisis)
-6. Bot NP (PAC2 + carte Bot)
+```bash
+mkdir -p tmp_vmod && cd tmp_vmod
+unzip ../"Materiale ABB"/All_Bridges_Burning_1.2.vmod.zip
+cd ..
+python3 sources/vassal/estrai_zone_abb.py
+python3 sources/vassal/calcola_adiacenze_abb.py --apply
+```
 
-PR su `main` per ogni passo, con test che restano verdi.
+## Note tecniche
+
+- **Godot 4.3 web export e `const`**: il parser GDScript del runtime web
+  rifiuta `const X = [...]` o `const X := [...]` con array letterali
+  ("Assigned value isn't a constant expression"). Usa `var X: Array = [...]`.
+  Questo gotcha ha causato un crash WASM ricorrente prima di essere isolato.
+- **Subsystem refs in `GameController.gd`**: i campi `ops`, `specials`,
+  `propaganda`, `events`, `bot` sono Variant (perché ogni modulo gioco
+  fornisce le proprie classi via `Manifest`). Per assegnamenti tipo
+  `var res = subsystem.method()` usa `=` (non `:=`) o annota
+  esplicitamente `var res: Dictionary = ...`.
+
+## Crediti
+
+- All Bridges Burning © 2020 GMT Games, LLC — design: VPJ Arponen.
+- Engine COIN generico evoluto da `cuba-libre-gmt`.
+- Materiale Vassal: ABB module 1.2.
