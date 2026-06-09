@@ -269,7 +269,7 @@ func _do_publish(fid: String) -> Dictionary:
 	var gained := 0
 	for sid in state.spaces.keys():
 		var sd: SpaceDef = state.game_def.space(sid)
-		if sd.type != "city":
+		if sd.type != CoinEnums.SpaceType.CITY:
 			continue
 		var st: SpaceState = state.space_state(sid)
 		if st.count("moderates", "cell") <= 0:
@@ -296,7 +296,7 @@ func _do_message(fid: String) -> Dictionary:
 		for adj_v in sd.adjacent:
 			var adj := String(adj_v)
 			var sd2: SpaceDef = state.game_def.space(adj)
-			if sd2 == null or sd2.type != "city":
+			if sd2 == null or sd2.type != CoinEnums.SpaceType.CITY:
 				continue
 			var st2: SpaceState = state.space_state(adj)
 			if st2.count("moderates", "network") > 0:
