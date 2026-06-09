@@ -66,7 +66,7 @@ func _powers_adjustment() -> Dictionary:
 		var candidates: Array = []
 		for sid in state.spaces.keys():
 			var sd: SpaceDef = state.game_def.space(sid)
-			if sd.type != "city":
+			if sd.type != CoinEnums.SpaceType.CITY:
 				continue
 			var st2: SpaceState = state.space_state(sid)
 			if st2.count("reds", "cell") > 0 or st2.count("reds", "admin") > 0:
