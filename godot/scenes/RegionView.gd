@@ -162,7 +162,9 @@ func refresh(state: GameState) -> void:
 	for p in _pieces:
 		p.queue_free()
 	_pieces = []
-	for fid in ["government", "m26", "directorio", "syndicate"]:
+	# Itera sulle fazioni del gioco attivo (no più hardcoded a Cuba Libre).
+	for f in GameController.game_def.factions:
+		var fid: String = f.id
 		for g in _piece_groups(st, fid):
 			for k in range(g.count):
 				var tok := PieceToken.new()
@@ -196,15 +198,25 @@ func _add_marker(parent: Node, t: Texture2D) -> void:
 
 func _piece_groups(st: SpaceState, fid: String) -> Array:
 	var groups: Array = []
-	var defs := [
-		["troops", ""], ["police", ""], ["base", ""],
-		["guerrilla", "underground"], ["guerrilla", "active"],
-		["casino", "open"], ["casino", "closed"],
-	]
-	for d in defs:
-		var n := st.count(fid, d[0], d[1] if d[1] != "" else null)
-		if n > 0:
-			groups.append({"type": d[0], "state": d[1], "count": n})
+	# (piece_type_id, optional_state). I tipi vengono dal GameDef del gioco
+	# attivo; aggiungiamo gli "stati" noti per quei tipi che li usano
+	# (guerrilla/cell con underground/active, casino con open/closed).
+	for pt in GameController.game_def.piece_types:
+		var ptid: String = pt.id
+		var states: Array = []
+		match ptid:
+			"guerrilla":
+				states = ["underground", "active"]
+			"cell":
+				states = ["underground", "active"]
+			"casino":
+				states = ["open", "closed"]
+			_:
+				states = [""]
+		for s in states:
+			var n := st.count(fid, ptid, s if s != "" else null)
+			if n > 0:
+				groups.append({"type": ptid, "state": s, "count": n})
 	return groups
 
 
