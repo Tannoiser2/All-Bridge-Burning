@@ -21,13 +21,16 @@ const LAYOUT := {
 	"santiago_de_cuba": Vector2(0.875, 0.74),
 }
 
-const OP_NAMES := {
+## Etichette UI: popolate da _ready() dal Manifest del gioco attivo.
+## I default qui sotto sono fallback (Cuba Libre) per compatibilità storica
+## quando il Manifest non li espone (es. test runner senza autoload).
+var OP_NAMES: Dictionary = {
 	"train": "Addestramento", "garrison": "Guarnigione", "sweep": "Perlustrazione",
 	"assault": "Assalto", "rally": "Riorganizzazione", "march": "Marcia",
 	"attack": "Attacco", "terror": "Terrorismo", "build": "Costruzione",
 }
 # Cosa permette di fare ogni Operazione (sintesi mostrata nel banner).
-const OP_DESC := {
+var OP_DESC: Dictionary = {
 	"train": "Clicca uno spazio per piazzare cubi (riclicca per +1, fino a 4); un altro click cicla a Base (da 2 cubi) o Azione Civica (1 sola Att. speciale per Addestramento).",
 	"garrison": "Sposta cubi verso Città/EC (trascina); attiva le Guerriglie negli EC. Clicca un EC per un Assalto gratuito lì.",
 	"sweep": "Sposta Truppe negli spazi adiacenti e attiva 1 Guerriglia clandestina nemica per ogni Truppa/Polizia.",
@@ -39,7 +42,7 @@ const OP_DESC := {
 	"build": "Sindacato (5 Risorse/spazio): clicca per un nuovo Casinò chiuso; riclicca per aprirne uno già chiuso, dove possibile.",
 }
 # Cosa permette di fare ogni Attività Speciale (sintesi mostrata nel banner).
-const SA_DESC := {
+var SA_DESC: Dictionary = {
 	"transport": "Sposta fino a 3 Truppe da una Città o da una Base verso un qualsiasi spazio.",
 	"air_strike": "Rimuovi 1 Guerriglia Attiva (o, se assente, 1 Base) in una Provincia/EC. Vietato durante l'Embargo.",
 	"reprisal": "In uno spazio a Controllo Govt: poni Terrore, riduci l'Opposizione e sposta 1 Guerriglia in uno spazio adiacente.",
@@ -53,7 +56,7 @@ const SA_DESC := {
 	"bribe": "Spendi 3 Risorse del Sindacato per rimuovere fino a 2 cubi/Guerriglie nemici (o 1 Base) in uno spazio.",
 }
 # Att.Speciali con scelte multiple: ogni variante è un tasto distinto col suo bersaglio valido.
-const SA_VARIANTS := {
+var SA_VARIANTS: Dictionary = {
 	"kidnap": [
 		{"id": "kidnap:government", "label": "Sequestro (Governo)", "p": {"target": "government"}},
 		{"id": "kidnap:syndicate", "label": "Sequestro (Sindacato)", "p": {"target": "syndicate"}},
@@ -70,7 +73,7 @@ const SA_VARIANTS := {
 	],
 }
 # Tipo di flusso per ogni Operazione.
-const OP_KIND := {
+var OP_KIND: Dictionary = {
 	"train": "space_list", "assault": "space_list", "rally": "space_list",
 	"attack": "space_list", "terror": "space_list", "build": "space_list",
 	"sweep": "moves", "garrison": "moves", "march": "moves",
@@ -106,11 +109,11 @@ var _limited := false                 # turno limitato a 1 spazio, niente Att.Sp
 var _op_btns: HBoxContainer
 var _sa_btns: HBoxContainer
 
-const PIECE_NAMES := {
+var PIECE_NAMES: Dictionary = {
 	"troops": "Truppa", "police": "Polizia", "guerrilla": "Guerriglia",
 	"base": "Base", "casino": "Casinò",
 }
-const SA_NAMES := {
+var SA_NAMES: Dictionary = {
 	"transport": "Trasporto", "air_strike": "Attacco Aereo", "reprisal": "Rappresaglia",
 	"infiltrate": "Infiltrazione", "ambush": "Imboscata", "kidnap": "Sequestro",
 	"subvert": "Sovversione", "assassinate": "Assassinio",
@@ -142,7 +145,34 @@ func _ready() -> void:
 	# a "government" per Cuba Libre; per altri moduli leggiamo dal GameDef).
 	if GameController.game_def != null and not GameController.game_def.factions.is_empty():
 		_cur_faction = GameController.game_def.factions[0].id
+	_load_ui_labels_from_manifest()
 	_build_ui()
+
+
+## Popola OP_NAMES/OP_DESC/SA_*/PIECE_NAMES dal Manifest del gioco attivo.
+## I default già impostati sopra restano come fallback (Cuba Libre).
+func _load_ui_labels_from_manifest() -> void:
+	var m_on: Dictionary = GameRegistry.op_names()
+	if not m_on.is_empty():
+		OP_NAMES = m_on
+	var m_od: Dictionary = GameRegistry.op_descriptions()
+	if not m_od.is_empty():
+		OP_DESC = m_od
+	var m_ok: Dictionary = GameRegistry.op_kinds()
+	if not m_ok.is_empty():
+		OP_KIND = m_ok
+	var m_sn: Dictionary = GameRegistry.sa_names()
+	if not m_sn.is_empty():
+		SA_NAMES = m_sn
+	var m_sd: Dictionary = GameRegistry.sa_descriptions()
+	if not m_sd.is_empty():
+		SA_DESC = m_sd
+	var m_sv: Dictionary = GameRegistry.sa_variants()
+	if not m_sv.is_empty():
+		SA_VARIANTS = m_sv
+	var m_pn: Dictionary = GameRegistry.piece_names()
+	if not m_pn.is_empty():
+		PIECE_NAMES = m_pn
 	GameController.state_changed.connect(_refresh)
 	GameController.action_logged.connect(_on_log)
 	GameController.bot_decision.connect(_on_bot_decision)

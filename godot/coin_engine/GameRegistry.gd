@@ -84,3 +84,29 @@ func create_bot(state, module):
 
 func default_roles(game_def: GameDef) -> Dictionary:
 	return manifest.default_roles(game_def) if manifest else {}
+
+
+# ---------------------------------------------------------------------------
+# Etichette UI (delegano al manifest del gioco attivo)
+# ---------------------------------------------------------------------------
+
+func op_names() -> Dictionary:
+	return manifest.op_names() if manifest else {}
+
+func op_descriptions() -> Dictionary:
+	return manifest.op_descriptions() if manifest else {}
+
+func op_kinds() -> Dictionary:
+	return manifest.op_kinds() if manifest else {}
+
+func sa_names() -> Dictionary:
+	return manifest.sa_names() if manifest else {}
+
+func sa_descriptions() -> Dictionary:
+	return manifest.sa_descriptions() if manifest else {}
+
+func sa_variants() -> Dictionary:
+	return manifest.sa_variants() if manifest else {}
+
+func piece_names() -> Dictionary:
+	return manifest.piece_names() if manifest else {}

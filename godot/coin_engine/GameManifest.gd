@@ -36,6 +36,39 @@ func create_events(_state, _module):
 func create_bot(_state, _module):
 	return null
 
+## ---------------------------------------------------------------------------
+## Etichette per la UI (override per modulo). Restituiscono dict id → testo.
+## ---------------------------------------------------------------------------
+
+## Nomi human-readable delle Operazioni (id → "Nome").
+func op_names() -> Dictionary:
+	return {}
+
+## Descrizioni delle Operazioni (id → testo lungo).
+func op_descriptions() -> Dictionary:
+	return {}
+
+## "Kind" di ogni Operazione: "space_list" o "moves".
+func op_kinds() -> Dictionary:
+	return {}
+
+## Nomi human-readable delle Attività Speciali (id → "Nome").
+func sa_names() -> Dictionary:
+	return {}
+
+## Descrizioni delle Attività Speciali (id → testo lungo).
+func sa_descriptions() -> Dictionary:
+	return {}
+
+## Varianti delle Att.Speciali con scelte multiple (id → [{id,label,p}, ...]).
+func sa_variants() -> Dictionary:
+	return {}
+
+## Nomi human-readable dei tipi di pezzo (id → "Nome").
+func piece_names() -> Dictionary:
+	return {}
+
+
 ## Ruoli default (player/bot) per fazione. Override per scenari iniziali differenti.
 ## Default: la prima fazione di game_def è il giocatore umano, le altre sono bot.
 func default_roles(game_def: GameDef) -> Dictionary:
