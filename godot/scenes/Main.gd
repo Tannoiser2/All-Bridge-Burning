@@ -22,9 +22,12 @@ const LAYOUT := {
 }
 
 const OP_NAMES := {
+	# Cuba Libre
 	"train": "Addestramento", "garrison": "Guarnigione", "sweep": "Perlustrazione",
-	"assault": "Assalto", "rally": "Riorganizzazione", "march": "Marcia",
+	"assault": "Assalto", "rally": "Rally", "march": "Marcia",
 	"attack": "Attacco", "terror": "Terrorismo", "build": "Costruzione",
+	# All Bridges Burning (rally/march/attack/terror condivisi)
+	"message": "Messaggio", "activism": "Attivismo",
 }
 # Cosa permette di fare ogni Operazione (sintesi mostrata nel banner).
 const OP_DESC := {
@@ -37,6 +40,9 @@ const OP_DESC := {
 	"attack": "Tira per rimuovere pezzi nemici (1 ogni 2 Guerriglie); con l'Imboscata colpisci senza tiro.",
 	"terror": "Con una Guerriglia clandestina: poni Terrore e sposta il Supporto verso l'Opposizione (o Sabotaggio su LoC/EC).",
 	"build": "Sindacato (5 Risorse/spazio): clicca per un nuovo Casinò chiuso; riclicca per aprirne uno già chiuso, dove possibile.",
+	# ABB
+	"message": "Moderates: sposta News markers e gira Cellule.",
+	"activism": "Moderates: sposta Supporto/Opposizione verso Neutral; aumenta Polarization.",
 }
 # Cosa permette di fare ogni Attività Speciale (sintesi mostrata nel banner).
 const SA_DESC := {
@@ -51,6 +57,14 @@ const SA_DESC := {
 	"profit": "Accumula 1 Denaro in 1-2 spazi con un Casinò aperto.",
 	"muscle": "Sposta 1-2 Polizia (verso Città) o Truppe (verso Provincia/EC) in uno spazio con Casinò aperto o EC.",
 	"bribe": "Spendi 3 Risorse del Sindacato per rimuovere fino a 2 cubi/Guerriglie nemici (o 1 Base) in uno spazio.",
+	# ABB
+	"agitate": "Reds: spendi 1 Risorsa per spostare Supporto verso Opposition (serve Cellula).",
+	"crackdown": "Senate: rimuovi 1 Terror marker, sposta Supporto verso Senate.",
+	"coordinate": "Senate: muovi 1 Truppa Russa/Tedesca verso spazio adiacente.",
+	"negotiate": "Senate/Moderates: +1 Vassalage Tedesca.",
+	"dialogue": "Moderates: sposta Supporto/Opposizione verso Neutral.",
+	"foreign_relations": "Moderates: cambia Vassalage Tedesca o Russa.",
+	"tax": "Incassa Risorse pari alla Popolazione dello spazio con tua Cellula.",
 }
 # Att.Speciali con scelte multiple: ogni variante è un tasto distinto col suo bersaglio valido.
 const SA_VARIANTS := {
@@ -74,6 +88,8 @@ const OP_KIND := {
 	"train": "space_list", "assault": "space_list", "rally": "space_list",
 	"attack": "space_list", "terror": "space_list", "build": "space_list",
 	"sweep": "moves", "garrison": "moves", "march": "moves",
+	# ABB
+	"message": "moves", "activism": "space_list",
 }
 
 var _space_views: Dictionary = {}     # space_id -> SpaceView
@@ -109,12 +125,19 @@ var _sa_btns: HBoxContainer
 const PIECE_NAMES := {
 	"troops": "Truppa", "police": "Polizia", "guerrilla": "Guerriglia",
 	"base": "Base", "casino": "Casinò",
+	# ABB
+	"cell": "Cellula", "admin": "Amministrazione", "network": "Network",
 }
 const SA_NAMES := {
 	"transport": "Trasporto", "air_strike": "Attacco Aereo", "reprisal": "Rappresaglia",
 	"infiltrate": "Infiltrazione", "ambush": "Imboscata", "kidnap": "Sequestro",
 	"subvert": "Sovversione", "assassinate": "Assassinio",
 	"profit": "Profitto", "muscle": "Muscle", "bribe": "Corruzione",
+	# ABB
+	"agitate": "Agitazione", "crackdown": "Repressione",
+	"coordinate": "Coordinamento", "negotiate": "Negoziato",
+	"dialogue": "Dialogo", "foreign_relations": "Relazioni Estere",
+	"tax": "Tassazione",
 }
 var _cur_faction := "government"
 var _cur_action := ""
