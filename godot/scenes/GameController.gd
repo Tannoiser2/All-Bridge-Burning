@@ -82,12 +82,18 @@ func set_role(fid: String, role: String) -> void:
 	roles[fid] = role
 	emit_signal("state_changed")
 
-## Costruisce il mazzo: 48 Eventi divisi in 4 pile, 1 Propaganda mescolata in ciascuna.
-## La Propaganda è rappresentata dal valore 0.
+## Costruisce il mazzo: Eventi divisi in 4 pile + 1 Propaganda mescolata in ciascuna.
+## La Propaganda è rappresentata dal valore 0 (sentinel). Per moduli che marcano
+## già le proprie Propaganda nel game_def (ABB), il pool si limita alle carte
+## non-Propaganda; in fallback Cuba si usa 1..48.
 func build_deck(short: bool = false) -> void:
 	var events_list: Array = []
-	for i in range(1, 49):
-		events_list.append(i)
+	for c in game_def.cards:
+		if not c.is_propaganda:
+			events_list.append(c.number)
+	if events_list.is_empty():
+		for i in range(1, 49):
+			events_list.append(i)
 	events_list.shuffle()
 	if short:
 		events_list = events_list.slice(0, 40)  # opzione gioco breve: 8 carte da parte
@@ -671,6 +677,17 @@ func resolve_propaganda() -> Dictionary:
 	propaganda_played += 1
 	var is_final := propaganda_played >= 4
 	emit_signal("action_logged", " Round Propaganda %d/4" % propaganda_played, "")
+	# All Bridges Burning: il "round periodico" è il Crisis Round (§6.0),
+	# strutturalmente diverso da Cuba Libre. Chiamiamo direttamente il modulo.
+	if GameRegistry.game_id == "all_bridges_burning":
+		var crisis_report: Dictionary = propaganda.resolve()
+		emit_signal("action_logged", " Crisis: politics=%s, earnings=%s" %
+			[crisis_report.get("politics", {}), crisis_report.get("earnings", {})], "")
+		if is_final:
+			game_over = true
+			_emit_final_report("")
+		emit_signal("state_changed")
+		return {"propaganda": true, "crisis": crisis_report}
 	# Fase Vittoria (l'umano vince solo all'ultima Propaganda)
 	var vp = propaganda.victory_phase(is_final)
 	if vp.get("winner", "") != "":
@@ -701,7 +718,10 @@ func resolve_propaganda() -> Dictionary:
 ## maggiore rispetto alla propria soglia di vittoria (parità -> ordine di spareggio).
 func _emit_final_report(forced_winner: String) -> void:
 	var vs := module.victory_status(state)
-	var order := ["government", "m26", "directorio", "syndicate"]
+	# Ordine fazioni: dal game_def del gioco attivo (no più hardcoded a Cuba).
+	var order: Array = []
+	for f in game_def.factions:
+		order.append(f.id)
 	var win := forced_winner
 	if win == "":
 		var tb := Array(module.tiebreak_order())
