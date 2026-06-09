@@ -130,10 +130,10 @@ func relayout() -> void:
 	_stack.reset_size()
 	_stack.position = Vector2(a.x - _stack.size.x * 0.5, grid_top - 16.0)
 	# Marcatori Controllo/Supporto nelle caselle.
-	# Dimensione native Vassal: ~94×92 px su mappa 3829×3000 → ~3.1% larghezza
-	# rispettiamo il rapporto sulla mappa ABB renderizzata.
-	var mk_w: float = size.x * 0.031 if GameRegistry.game_id == "all_bridges_burning" else size.x * 0.028
-	var mk_h: float = mk_w * 0.97  # rapporto Vassal 94×92
+	# Le caselle stampate sui poligoni ABB sono piccole: ~80×40 px sulla map.jpg
+	# 3000×2350 = 2.7% × 1.7%. Misurato visivamente.
+	var mk_w: float = size.x * 0.027 if GameRegistry.game_id == "all_bridges_burning" else size.x * 0.028
+	var mk_h: float = mk_w * 0.5 if GameRegistry.game_id == "all_bridges_burning" else mk_w * 0.97
 	if _ctrl_tr != null:
 		_ctrl_tr.size = Vector2(mk_w, mk_h)
 		_ctrl_tr.custom_minimum_size = _ctrl_tr.size
