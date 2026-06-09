@@ -546,7 +546,8 @@ func _layout_board() -> void:
 	var top: float = _bar.get_combined_minimum_size().y + 16.0
 	var avail_h := maxf(200.0, size.y - top - 8.0)
 	# La mappa (landscape) si adatta all'area disponibile lasciando spazio al pannello.
-	var aspect := 2040.0 / 2640.0
+	# Aspect dipende dal modulo attivo: Cuba 2640×2040, ABB 3000×2350.
+	var aspect := 2350.0 / 3000.0 if GameRegistry.game_id == "all_bridges_burning" else 2040.0 / 2640.0
 	var max_map_w := maxf(300.0, size.x - 16.0 - min_side - 8.0)
 	var mw0 := max_map_w
 	var mh0 := mw0 * aspect
