@@ -163,7 +163,7 @@ var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Specia
 
 ## Numero di build incrementato a ogni fix UI. Mostrato in basso a destra così
 ## puoi dirmi ESATTAMENTE quale versione stai vedendo (cache-busting diagnostico).
-const BUILD_VERSION := "build 94 — markers pixel-perfect"
+const BUILD_VERSION := "build 95 — fix texture null cache"
 
 
 func _add_version_label() -> void:
