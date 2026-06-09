@@ -19,6 +19,14 @@ func resolve() -> Dictionary:
 	# §6.5.3 Powers adjustment: solo in Phase II.
 	if int(state.tracks.get("phase", 1)) >= 2:
 		out["powers"] = _powers_adjustment()
+	# §6.5: Prisoners of War effect — +1 Polarization per ogni 2 Cellule in prigione.
+	var prisoners: Dictionary = state.tracks.get("prisoners", {"senate": 0, "reds": 0})
+	var total_prisoners: int = int(prisoners.get("senate", 0)) + int(prisoners.get("reds", 0))
+	if total_prisoners >= 2:
+		var pol_bump := int(total_prisoners / 2)
+		var prev_pol := int(state.tracks.get("polarization", 0))
+		state.tracks["polarization"] = clampi(prev_pol + pol_bump, 0, 10)
+		out["prisoners_polarization"] = pol_bump
 	# §6.5.4 Old News: rimuovi tutti i Terror, Sabotage, News dalla mappa.
 	out["reset"] = _reset_phase()
 	# Conteggio Campaign per il bot (PAC2 last_campaign condition).
