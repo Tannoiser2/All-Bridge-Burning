@@ -163,7 +163,7 @@ var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Specia
 
 ## Numero di build incrementato a ogni fix UI. Mostrato in basso a destra così
 ## puoi dirmi ESATTAMENTE quale versione stai vedendo (cache-busting diagnostico).
-const BUILD_VERSION := "build 96"
+const BUILD_VERSION := "build 97"
 
 
 ## Etichetta diagnostica in ALTO A SINISTRA (niente la copre). Mostra il numero
@@ -185,7 +185,26 @@ func _add_version_label() -> void:
 
 func _update_version_label() -> void:
 	if _version_label != null:
-		_version_label.text = "%s  [%s]" % [BUILD_VERSION, _texture_selftest()]
+		_version_label.text = "%s  %s" % [BUILD_VERSION, _data_selftest()]
+
+
+func _data_selftest() -> String:
+	# Dati di gioco + dimensione overlay: distingue bug-dato da bug-disegno.
+	var s = GameController.state
+	if s == null:
+		return "state:NULL"
+	var ov_sz := "?"
+	if _track_overlay != null:
+		ov_sz = "%dx%d" % [int(_track_overlay.size.x), int(_track_overlay.size.y)]
+	var n_pieces := 0
+	for sid in _space_views.keys():
+		n_pieces += (_space_views[sid] as RegionView)._pieces.size()
+	return "res:%d availC:%d onmapC:%d ovl:%s mapPieces:%d" % [
+		int(s.get_resources("reds")),
+		int(s.available("reds", "cell")),
+		int(s.count_on_map("reds", "cell")),
+		ov_sz, n_pieces,
+	]
 
 
 func _texture_selftest() -> String:
