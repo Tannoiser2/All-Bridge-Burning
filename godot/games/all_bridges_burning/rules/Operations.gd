@@ -73,8 +73,36 @@ func attack(fid: String, sid: String, rng_seed: int = -1) -> Dictionary:
 		if st.count(enemy_fid, pair[0], pair[1]) > 0:
 			st.remove_piece(enemy_fid, pair[0], 1, pair[1])
 			state.recompute_control(sid)
-			return _ok({"roll": roll, "strength": strength, "hit": true, "removed": 1, "target": enemy_fid, "piece": pair[0]})
+			# Personality transfer (§4.3.1): se rimuovi l'ultima Cellula
+			# Moderati e c'è Personality, Moderati -3 Risorse alla Fazione attaccante.
+			var transferred := _maybe_transfer_personality(sid, enemy_fid, fid)
+			# Attack-to-Prison: ogni Cellula Senato/Reds rimossa → News marker
+			# (sostituto semplificato della meccanica Prisoners of War).
+			if pair[0] == "cell" and enemy_fid in ["senate", "reds"]:
+				st.set_marker("news", st.marker("news") + 1)
+			return _ok({"roll": roll, "strength": strength, "hit": true, "removed": 1,
+				"target": enemy_fid, "piece": pair[0],
+				"personality_transferred": transferred})
 	return _ok({"roll": roll, "strength": strength, "hit": true, "removed": 0})
+
+
+## §4.3.1 / §3.2.4: rimossa l'ultima Cellula Moderati con Personality →
+## Personality va Available, Moderati Risorse -3 → Fazione esecutrice +3.
+func _maybe_transfer_personality(sid: String, enemy_fid: String, exec_fid: String) -> bool:
+	if enemy_fid != "moderates":
+		return false
+	var st: SpaceState = state.space_state(sid)
+	if st.count("moderates", "cell") > 0:
+		return false  # Moderati hanno ancora Cellule
+	if st.marker("personality") <= 0:
+		return false
+	# Rimuovi Personality
+	st.set_marker("personality", 0)
+	# Trasferisci 3 Risorse da Moderati a Fazione esecutrice
+	var delta := mini(3, int(state.get_resources("moderates")))
+	state.resources["moderates"] = int(state.get_resources("moderates")) - delta
+	state.resources[exec_fid] = int(state.get_resources(exec_fid)) + delta
+	return true
 
 
 ## Activism (§3.2.2): in uno spazio con una Cellula amica, capovolge una Cellula
@@ -137,18 +165,28 @@ func politics(fid: String, cube_color: String) -> Dictionary:
 
 
 ## Terror (§3.2.3): poni Terror marker; sposta Supporto/Opposizione.
+## In Phase II, se il marker piazzato è il 2°, viene piazzato anche un News.
+## Massimo 2 Terror per spazio (rulebook §1.4.3).
 func terror(fid: String, sid: String) -> Dictionary:
 	if not state.spaces.has(sid):
 		return _err("spazio sconosciuto")
 	var st: SpaceState = state.space_state(sid)
 	if st.count(fid, "cell") <= 0:
 		return _err("serve una Cellula in %s" % sid)
-	st.set_marker("terror", st.marker("terror") + 1)
+	if st.marker("terror") >= 2:
+		return _err("massimo 2 Terror per spazio (§1.4.3)")
+	var prev := st.marker("terror")
+	st.set_marker("terror", prev + 1)
+	# News marker §3.2.3: il 2° Terror in Phase II piazza un News.
+	if prev == 1 and int(state.tracks.get("phase", 1)) >= 2:
+		st.set_marker("news", st.marker("news") + 1)
 	if fid == "reds":
 		_shift_support(sid, -1)
 	elif fid == "senate":
 		_shift_support(sid, +1)
-	return _ok()
+	# Polarization +1 per ogni Terror piazzato.
+	_polarize(1)
+	return _ok({"news_placed": prev == 1 and int(state.tracks.get("phase", 1)) >= 2})
 
 
 # ---------------------------------------------------------------------------
