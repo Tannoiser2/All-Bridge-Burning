@@ -51,25 +51,37 @@ esatti del Vassal, e le Cell occupano i loro slot dedicati.
 | Operazioni | ✅ Rally / March / Attack / Terror — logica core |
 | Attività Speciali | ✅ Agitate, Ambush, Subvert, Crackdown, Coordinate, Dialogue, Foreign Relations, Tax, Negotiate |
 | UI: click → ABBOperations / ABBSpecialActivities | ✅ dispatcher con highlight degli spazi candidati |
-| Crisis Round (§6.0) | ✅ Politics + Earnings + §6.5.3 Powers adjustment in Phase II |
+| Crisis Round (§6.0) | ✅ Politics + Earnings + §6.5.3 Powers adjustment in Phase II + campaign_count |
 | Province highlighting | ✅ Mask Vassal pixel-perfect per il tint del Controllo |
-| Bot non-giocatore | ✅ priority planner per fazione (PAC2 completo TODO) |
+| Bot non-giocatore | ✅ PAC2 framework (17 carte 49-65) + priority planner fallback |
 | Vittoria (§7.2 / §7.3) | ✅ margine per fazione + tiebreak order |
 | TrackOverlay sulla mappa | ✅ Resources, Polarization (tracciato dedicato), Vassalage, Town Pop, Cells on Map, Issues+Networks, Oppose+Admins |
 | Box Available Forces | ✅ box dal Vassal, Cell sui 46 slot dedicati (senate/reds/moderates) |
 | Marker Control / Support | ✅ posizioni `cbox`/`sbox` estratte dalla Zone Vassal Control |
 | Sequence of Play | ✅ cilindri Eligibility (Pass/Eligible/Acted/Ineligible) per Reds/Senate/Moderates/Germans |
 | Red Revolt! (Pivotal #24) | ✅ flip `tracks.phase` → II; Germans bot gated; badge UI |
+| Activism (§3.2.2) | ✅ capovolge nemico Attivo o attiva Inattiva amica; Polarization -1 |
+| Germans flowchart (§3.4) | ✅ Landing → Reinforce → Attack → March + 1d6 Eligibility roll + Coordinate hook |
+| Capabilities Insorgenti | ✅ #14 Cannons / #15 #17 Trains → `active_capabilities`; chip colorato Senato |
+| Personality / News markers | ✅ asset Vassal + render sui poligoni; Personality a Helsinki al setup |
+| Testi carte | ✅ Unshaded/Shaded da OCR + cleanup; 47/47 traduzioni IT (Chiaro/Ombr.) |
 
 ## Cosa rimane da fare
 
-- Flowchart completo Germans in Phase II (§3.4) — il bot ora attacca i Reds ma
-  non segue il diagramma di decisione del playbook.
-- Testi unshaded/shaded delle 47 carte (vanno trascritti dal regolamento o
-  dall'`ABB_CardEdits-download.pdf`).
-- PAC2 completo per il Bot: 17 carte solitaire + flowchart per le decisioni
-  nidificate (Cmd vs Cmd+SA vs Limited Cmd, scelta Special Activity, ecc.).
-- Capabilities panel + News / Personality markers (specifici dei Moderates).
+- **PAC2 fidelity**: le sub-priorità interne alle carte (es. "Rally preferendo
+  Town con Active Support e maggior Population") sono ancora pick greedy
+  semplificati. Il framework esiste e gli handler `rally / march / attack /
+  terror / activism / prepare / dialogue / publish / message / crackdown /
+  foreign_relations` sono concreti.
+- **Refining OCR**: alcune carte hanno residui visivi (#22, #33, #35, #40,
+  #45) — refusi su titoli decorativi (citazioni, header "German Action
+  Phase"). Non bloccanti perché l'UI usa la traduzione italiana.
+- **News markers via gioco**: l'asset c'è, lo state c'è, ma manca un
+  meccanismo che li piazzi durante eventi (German Landings, Terror in Phase
+  II, Attacks-to-Prison).
+- **Senate-decides-Germans**: il bit `coordinate_marker` è esposto ma non
+  c'è ancora un flow UI che permetta al giocatore Senate di sovrascrivere
+  la scelta del bot Germans.
 - Crisis Round Phase II adjustment (Vassalage shift per i Powers).
 
 ## Struttura
