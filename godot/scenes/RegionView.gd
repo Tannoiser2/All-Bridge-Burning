@@ -19,6 +19,8 @@ var _circle := Vector3(-1, -1, -1)   # (cx, cy, r) normalizzati; r in unità di 
 var _bounds_w := 0.1                  # larghezza zona (normalizzata) per impilare i pezzi
 var _highlight := false
 var _control := ""
+var _mask_tex: Texture2D = null
+var _mask_rect_norm := Rect2()
 
 var _stack: VBoxContainer
 var _ctrl_tr: TextureRect
@@ -227,6 +229,13 @@ func center_point() -> Vector2:
 	return Vector2(_anchor_norm.x * size.x, _anchor_norm.y * size.y)
 
 
+## Mask Vassal pixel-perfect: usata come tint del Controllo invece del fill poligono.
+func set_mask(tex: Texture2D, rect_norm: Rect2) -> void:
+	_mask_tex = tex
+	_mask_rect_norm = rect_norm
+	queue_redraw()
+
+
 func set_highlight(on: bool) -> void:
 	_highlight = on
 	queue_redraw()
@@ -267,10 +276,18 @@ func _draw() -> void:
 	var poly := _scaled_poly()
 	if poly.size() < 3:
 		return
+	# Tint del Controllo: preferisci la mask Vassal (pixel-perfect) se disponibile.
 	if _control != "":
 		var col := GameController.faction_color(_control)
 		col.a = 0.22
-		draw_colored_polygon(poly, col)
+		if _mask_tex != null and _mask_rect_norm.size != Vector2.ZERO:
+			var dst := Rect2(
+				_mask_rect_norm.position * size,
+				_mask_rect_norm.size * size,
+			)
+			draw_texture_rect(_mask_tex, dst, false, col)
+		else:
+			draw_colored_polygon(poly, col)
 	if _flash > 0.0:
 		var fc2 := _flash_color; fc2.a = _flash * 0.45
 		draw_colored_polygon(poly, fc2)

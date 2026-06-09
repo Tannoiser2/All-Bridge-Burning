@@ -179,6 +179,50 @@ def cell_slots(build_file: str) -> dict:
     return {k: [d[i] for i in sorted(d.keys())] for k, d in out.items()}
 
 
+# Mappa province -> file mask PNG nel modulo Vassal (cartella images/).
+PROVINCE_MASKS = {
+    "Häme":            "Hame_Mask.png",
+    "Karelia":         "Karelia_Mask.png",
+    "Kuopion lääni":   "Kuopion_Mask.png",
+    "Mikkelin lääni":  "Mikkelin_Mask.png",
+    "Oulun lääni":     "Oulun-Mask.png",
+    "Pohjanmaa":       "Pohjanmaa_Mask.png",
+    "Uusimaa":         "Uusimaa-Mask.png",
+    "Varsinais-Suomi": "Varsinais-Suomi_Mask.png",
+}
+
+
+def mask_rect(zones: dict, vname: str, mask_path: str) -> dict | None:
+    """Calcola ancora + rect normalizzato della mask: allinea il bbox dei pixel
+    opachi al bbox del poligono Vassal della Zone."""
+    try:
+        from PIL import Image
+    except ImportError:
+        print("ATTENZIONE: Pillow non installato, salto le mask. (pip install Pillow)", file=sys.stderr)
+        return None
+    if vname not in zones:
+        return None
+    pts = [tuple(map(int, p.split(","))) for p in zones[vname].split(";")]
+    xs = [p[0] for p in pts]; ys = [p[1] for p in pts]
+    px0, py0 = min(xs), min(ys)
+    img = Image.open(mask_path)
+    if img.mode != "RGBA":
+        img = img.convert("RGBA")
+    mw, mh = img.size
+    bbox = img.split()[3].getbbox()
+    if bbox is None:
+        return None
+    mbx0, mby0, _, _ = bbox
+    ax = px0 - mbx0
+    ay = py0 - mby0
+    return [
+        round(ax / MAP_W, 4),
+        round(ay / MAP_H, 4),
+        round((ax + mw) / MAP_W, 4),
+        round((ay + mh) / MAP_H, 4),
+    ]
+
+
 def main():
     here = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.abspath(os.path.join(here, "..", ".."))
@@ -198,12 +242,33 @@ def main():
     spaces_list: list = []
     missing: list = []
 
+    masks_dir = os.path.join(tmp_vmod, "images")
+    assets_regions_dir = os.path.join(
+        repo_root, "godot", "games", "all_bridges_burning", "assets", "regions"
+    )
     for vname, sid in PROVINCES.items():
         if vname not in zones:
             missing.append(vname)
             continue
         pts = poly(zones, vname)
         entry: dict = {"polygon": pts, "anchor": centroid(pts)}
+        # Mask Vassal (pixel-perfect): copia in assets/regions/ + calcola rect.
+        mask_file = PROVINCE_MASKS.get(vname)
+        if mask_file:
+            src_mask = os.path.join(masks_dir, mask_file)
+            if os.path.exists(src_mask):
+                dst_name = "%s_mask.png" % sid
+                dst_path = os.path.join(assets_regions_dir, dst_name)
+                os.makedirs(assets_regions_dir, exist_ok=True)
+                try:
+                    with open(src_mask, "rb") as srcf, open(dst_path, "wb") as dstf:
+                        dstf.write(srcf.read())
+                except Exception as exc:
+                    print(f"ATTENZIONE: mask copia fallita per {sid}: {exc}", file=sys.stderr)
+                rect = mask_rect(zones, vname, src_mask)
+                if rect is not None:
+                    entry["mask"] = "regions/" + dst_name
+                    entry["mask_rect"] = rect
         cbox = marker(stacks, vname + " Control") or zone_center(zones, vname + " Control")
         if cbox:
             entry["cbox"] = cbox
