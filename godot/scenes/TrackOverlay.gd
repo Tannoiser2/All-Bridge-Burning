@@ -43,10 +43,13 @@ func _draw() -> void:
 	var s: GameState = GameController.state
 	if s == null or _track.is_empty():
 		return
-	# I "chips" da disegnare sono game-specifici: per Cuba Libre arrivano dal
-	# CubaLibreModule (aid, US Alliance, vittorie), per ABB dai tracciati ABB
-	# (polarization, vassalage, town pop, …). Selezioniamo in base al game_id.
-	var chips: Array = _cuba_chips(s) if GameRegistry.game_id == "cuba_libre" else _abb_chips(s)
+	# In questo PR la TrackOverlay è ancora interamente cuba-shaped (chip,
+	# eligibility per 4 fazioni Cuba, US Alliance, capabilities). Per evitare
+	# crash a runtime su WASM, la rendiamo no-op per moduli non-Cuba finché
+	# non avremo un overlay ABB dedicato (TODO).
+	if GameRegistry.game_id != "cuba_libre":
+		return
+	var chips: Array = _cuba_chips(s)
 	var counts := {}
 	for ch in chips:
 		var key: String = ch[0]
@@ -64,11 +67,10 @@ func _draw() -> void:
 			c.x -= idx * STACK
 		_blit(ch[2], c)
 
-	# Alleanza USA nella casella attiva
-	if GameRegistry.game_id == "cuba_libre":
-		var ai := int(s.tracks.get("us_alliance", 0))
-		var abox: String = ["us_alliance_firm", "us_alliance_reluctant", "us_alliance_embargoed"][ai]
-		_blit(CLAssets.alliance_marker(), _box_rect(abox).get_center())
+	# Alleanza USA nella casella attiva (Cuba Libre).
+	var ai := int(s.tracks.get("us_alliance", 0))
+	var abox: String = ["us_alliance_firm", "us_alliance_reluctant", "us_alliance_embargoed"][ai]
+	_blit(CLAssets.alliance_marker(), _box_rect(abox).get_center())
 
 	_draw_available(s)
 	_draw_eligibility(s)
