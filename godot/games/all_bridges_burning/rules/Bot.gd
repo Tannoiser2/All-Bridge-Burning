@@ -64,7 +64,6 @@ func _plan(faction_id: String) -> Array:
 func _plan_reds() -> Array:
 	var plan: Array = []
 	var ph2 := int(state.tracks.get("phase", 1)) >= 2
-	# Attack solo in Phase II (§3.2.4)
 	if ph2:
 		for sid in _spaces_with_cells("reds", 2):
 			if _has_enemy(sid, "reds"):
@@ -73,7 +72,8 @@ func _plan_reds() -> Array:
 		var st: SpaceState = state.space_state(sid)
 		if st.support > CoinEnums.Support.NEUTRAL:
 			plan.append({"op": "terror", "target": sid})
-	for sid in _uncontrolled_by("reds"):
+	# Rally: priorità province con alta popolazione + uncontrolled, poi città.
+	for sid in _rally_targets("reds"):
 		plan.append({"op": "rally", "target": sid})
 	return plan
 
@@ -81,31 +81,56 @@ func _plan_reds() -> Array:
 func _plan_senate() -> Array:
 	var plan: Array = []
 	var ph2 := int(state.tracks.get("phase", 1)) >= 2
-	# Attack solo in Phase II (§3.2.4)
 	if ph2:
 		for sid in _spaces_with_cells("senate", 2):
 			if _has_enemy(sid, "senate"):
 				plan.append({"op": "attack", "target": sid})
-	for sid in _city_ids():
-		var st: SpaceState = state.space_state(sid)
-		if st.control == "senate":
-			plan.append({"op": "rally", "target": sid})
+	# Rally Senate: priorità province controllate + Town, distribuendo cells.
+	for sid in _rally_targets("senate"):
+		plan.append({"op": "rally", "target": sid})
 	return plan
+
+
+## Ritorna spazi candidati per Rally ordinati per priorità:
+## 1) Province uncontrolled o controllate dalla fazione, ordinate per Pop desc.
+## 2) Città uncontrolled, Pop desc.
+## 3) Tutto il resto.
+## Pesa anche il numero di Cellule amiche già presenti: evita pile su 1 solo
+## spazio (preferisce spazi con meno Cellule amiche, a parità di Pop).
+func _rally_targets(fid: String) -> Array:
+	var candidates: Array = []
+	for sid in state.spaces.keys():
+		var sd: SpaceDef = state.game_def.space(sid)
+		if sd == null:
+			continue
+		var st: SpaceState = state.space_state(sid)
+		var own_cells: int = st.count(fid, "cell")
+		# Skip se già controllata dalla fazione con 3+ Cellule (no piling).
+		if st.control == fid and own_cells >= 3:
+			continue
+		var pop: int = sd.pop
+		var is_prov: bool = sd.type == CoinEnums.SpaceType.PROVINCE
+		# Score: pop alto + provincia preferita; penalizza Cellule già presenti.
+		var score: float = float(pop) * 10.0
+		if is_prov:
+			score += 5.0
+		score -= float(own_cells) * 3.0
+		# Bonus se uncontrolled
+		if st.control == "":
+			score += 4.0
+		candidates.append({"sid": String(sid), "score": score})
+	candidates.sort_custom(func(a, b): return float(a["score"]) > float(b["score"]))
+	var out: Array = []
+	for c in candidates:
+		out.append(c["sid"])
+	return out
 
 
 func _plan_moderates() -> Array:
 	var plan: Array = []
-	var by_pop: Array = []
-	for sid in state.spaces.keys():
-		var sd: SpaceDef = state.game_def.space(sid)
-		if sd.pop <= 0:
-			continue
-		var st: SpaceState = state.space_state(sid)
-		if st.count("moderates", "cell") == 0:
-			by_pop.append({"sid": sid, "pop": sd.pop})
-	by_pop.sort_custom(func(a, b): return int(a["pop"]) > int(b["pop"]))
-	for entry in by_pop:
-		plan.append({"op": "rally", "target": entry["sid"]})
+	# Moderati: Rally distribuiti su spazi con pop, evitando piling.
+	for sid in _rally_targets("moderates"):
+		plan.append({"op": "rally", "target": sid})
 	return plan
 
 

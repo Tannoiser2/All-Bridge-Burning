@@ -419,10 +419,16 @@ func _abb_draw_sop(s: GameState) -> void:
 			draw_string(font, Vector2(bx + 8, by + badge_h - 4), "PHASE II",
 				HORIZONTAL_ALIGNMENT_LEFT, badge_w - 12, 12, Color.WHITE)
 	var seq = GameController.seq
-	# Slot esatti dal Vassal estratti in board_layout.sop_slots.
 	var slots: Dictionary = _sop_slots_load_once()
 	for fid in ["reds", "senate", "moderates", "germans"]:
 		var pos: Vector2 = _sop_slot_for(s, seq, fid, slots)
+		# Fallback: se per qualche motivo lo slot esatto fallisce, usa la
+		# vecchia mappa col/row così almeno il cilindro è visibile.
+		if pos == Vector2.ZERO:
+			var col_key := _sop_col_for(s, seq, fid)
+			if cols.has(col_key) and rows.has(fid):
+				pos = Vector2(float(cols[col_key]) * size.x,
+					float(rows[fid]) * size.y)
 		if pos == Vector2.ZERO:
 			continue
 		var color: Color = GameController.faction_color(fid)
