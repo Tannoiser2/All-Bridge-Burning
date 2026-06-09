@@ -323,11 +323,13 @@ func _abb_draw_available(s: GameState, tok: float) -> void:
 			# slot, partendo dal primo). Altrimenti fallback al riempimento a griglia.
 			var slot_key: String = "%s_%s" % [fid, ptid_e]
 			var slots: Array = _cell_slots.get(slot_key, [])
+			# Admin/Network sono cerchi grandi sulla mappa stampata: bump del 35%.
+			var tok_use: float = tok * 1.35 if ptid_e in ["admin", "network"] else tok
 			if not slots.is_empty():
-				_draw_slotted(slots, n_e, tex, tok)
+				_draw_slotted(slots, n_e, tex, tok_use)
 			else:
 				var sub_rect := Rect2(r.position.x, y, r.size.x, sub_h)
-				_fill_pieces(sub_rect, n_e, tex, tok)
+				_fill_pieces(sub_rect, n_e, tex, tok_use)
 			y += sub_h
 		# Moderati: aggiungi marker News (max 2) + Personality nei loro slot riservati,
 		# se NON sono già sulla mappa.
@@ -356,9 +358,9 @@ func _abb_draw_moderates_extra(s: GameState, box: Rect2, _tok: float) -> void:
 	var nt := CLAssets.news()
 	var pt := CLAssets.personality()
 	var centers_x: Array = [
-		box.position.x + box.size.x * 0.23,
-		box.position.x + box.size.x * 0.40,
-		box.position.x + box.size.x * 0.58,
+		box.position.x + box.size.x * 0.20,
+		box.position.x + box.size.x * 0.37,
+		box.position.x + box.size.x * 0.54,
 	]
 	for i in range(news_avail):
 		if nt != null:
