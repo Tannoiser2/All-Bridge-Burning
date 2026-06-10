@@ -12,8 +12,8 @@ signal piece_dropped(from_id: String, to_id: String, faction: String, type: Stri
 # Scala (frazione della larghezza mappa) dei marcatori nelle caselle stampate.
 # ABB: Control va dentro la sua casella (texture 94px su board 3829 ≈ 0.0245);
 # Support/Oppose più grande perché il cartiglio stampato è più ampio.
-const ABB_CTRL_SCALE := 0.018
-const ABB_SUP_SCALE := 0.013
+const ABB_CTRL_SCALE := 0.014
+const ABB_SUP_SCALE := 0.010
 
 var space_id: String
 var space_def: SpaceDef
