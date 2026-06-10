@@ -16,9 +16,10 @@ func _initialize() -> void:
 	var phase2_reached := 0
 	var fp := {"reds_cell": 0, "senate_cell": 0, "moderates_cell": 0, "reds_admin": 0, "moderates_network": 0}
 	var occ := {}
+	var ev := {}  # eventi giocati dai bot (per carta) + _capabilities
 
 	for gi in range(n):
-		var r := _play_one(gi, act_counts, fp, occ)
+		var r := _play_one(gi, act_counts, fp, occ, ev)
 		wins[r["winner"]] = int(wins[r["winner"]]) + 1
 		sum_cards += int(r["cards"])
 		if r["phase2"]:
@@ -34,6 +35,20 @@ func _initialize() -> void:
 	var ks := act_counts.keys(); ks.sort()
 	for k in ks:
 		print("  %-16s %d" % [k, int(act_counts[k])])
+	print("\n--- EVENTI GIOCATI DAI BOT (§8.1.4/§8.1.5) ---")
+	var ev_total := 0
+	var ev_pairs := []
+	for k in ev:
+		if String(k).begins_with("_"):
+			continue
+		ev_total += int(ev[k])
+		ev_pairs.append({"k": k, "n": int(ev[k])})
+	ev_pairs.sort_custom(func(a, b): return int(a["n"]) > int(b["n"]))
+	print("  Eventi giocati TOTALI: %d  (%.2f/partita)" % [ev_total, float(ev_total) / n])
+	print("  di cui Capability: %d  (%.2f/partita)" % [int(ev.get("_capabilities", 0)), float(int(ev.get("_capabilities", 0))) / n])
+	print("  Pass-per-giocare-Capability: %d" % int(ev.get("_cap_pass", 0)))
+	for p in ev_pairs:
+		print("    %-22s %d" % [p["k"], p["n"]])
 	print("\n--- PEZZI FINALI (media/partita) ---")
 	for k in fp:
 		print("  %-18s %.2f" % [k, float(fp[k]) / n])
@@ -47,11 +62,12 @@ func _initialize() -> void:
 	quit(0)
 
 
-func _play_one(gi: int, act_counts: Dictionary, fp: Dictionary, occ: Dictionary) -> Dictionary:
+func _play_one(gi: int, act_counts: Dictionary, fp: Dictionary, occ: Dictionary, ev: Dictionary) -> Dictionary:
 	var mod := ABBModule.new()
 	var gd := mod.build_game_def()
 	var state := GameState.new(gd)
 	mod.apply_setup(state, "standard")
+	var events := ABBEvents.new(state, mod)
 	# Sim tutto-bot: per §8.1.2 le fazioni Non-player non tracciano/spendono
 	# Risorse. Senza ruoli espliciti, tracks_resources() le tratterebbe da player.
 	for f in ["reds", "senate", "moderates", "germans", "russians"]:
@@ -76,9 +92,11 @@ func _play_one(gi: int, act_counts: Dictionary, fp: Dictionary, occ: Dictionary)
 			if w != "":
 				return _finish(state, fp, occ, w, cards, phase2)
 			continue
-		# Red Revolt! → Phase II
-		if card.number == 24:
-			ABBEvents.new(state, mod).apply(24, "unshaded", "reds")
+		# Red Revolt! → Phase II (backstop §6.5.2: la carta in mazzo attiva la Ph II)
+		if card.number == 24 and int(state.tracks.get("phase", 1)) < 2:
+			events.apply(24, "unshaded", "reds")
+			ev["#24 Red Revolt"] = int(ev.get("#24 Red Revolt", 0)) + 1
+			ev["_capabilities"] = int(ev.get("_capabilities", 0))  # init
 		var seq := SequenceOfPlay.new(state, mod, card)
 		var guard := 0
 		while not seq.is_done() and guard < 12:
@@ -86,6 +104,19 @@ func _play_one(gi: int, act_counts: Dictionary, fp: Dictionary, occ: Dictionary)
 			var fid := seq.pending_faction()
 			if fid == "":
 				break
+			# §8.1.4/§8.1.5: la fazione gioca l'EVENTO se è una carta che le giova
+			# (Capability/critica) ed è legale; altrimenti fa un'Operazione.
+			if seq.is_legal(CoinEnums.ActionType.EVENT) and fid in ["reds", "senate", "moderates"] \
+					and bot.is_event_critical(fid, card.number) \
+					and bot.event_choice(fid, card.number).get("play", false):
+				var ec = bot.event_choice(fid, card.number)
+				events.apply(card.number, String(ec.get("side", "unshaded")), fid)
+				act_counts["EVENT"] = int(act_counts.get("EVENT", 0)) + 1
+				ev["#%d" % card.number] = int(ev.get("#%d" % card.number, 0)) + 1
+				if bot.capability_benefits(fid, card.number):
+					ev["_capabilities"] = int(ev.get("_capabilities", 0)) + 1
+				seq.act(CoinEnums.ActionType.EVENT)
+				continue
 			var turn := bot.take_turn(fid)
 			var action := String(turn.get("action", "pass"))
 			act_counts[action] = int(act_counts.get(action, 0)) + 1
