@@ -9,11 +9,10 @@ extends Control
 signal space_clicked(space_id: String)
 signal piece_dropped(from_id: String, to_id: String, faction: String, type: String)
 
-# Scala (frazione della larghezza mappa) dei marcatori Control/Support.
-# Static var (non const) per poterle regolare DAL VIVO durante il tuning
-# (tasti freccia in Main.gd). Tutte le RegionView leggono lo stesso valore.
-static var ABB_CTRL_SCALE := 0.030
-static var ABB_SUP_SCALE := 0.024
+# Scala (frazione della larghezza mappa) dei marcatori Control/Support
+# nelle caselle stampate (valori definitivi scelti col tuning live, b146).
+const ABB_CTRL_SCALE := 0.030
+const ABB_SUP_SCALE := 0.024
 
 var space_id: String
 var space_def: SpaceDef
