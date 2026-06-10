@@ -10,6 +10,9 @@ var game_def: GameDef
 var spaces: Dictionary = {}              ## space_id -> SpaceState
 var resources: Dictionary = {}          ## faction_id -> int
 var tracks: Dictionary = {}             ## track_id -> int (es. "aid", "us_alliance" idx)
+## Pezzi "Out of Play" (fuori gioco), esclusi dalle Forze Disponibili finché non
+## vengono reintrodotti (es. ABB §6.5.5 Senate Conscription). Chiave "faction:type".
+var out_of_play: Dictionary = {}
 var eligibility: Dictionary = {}        ## faction_id -> CoinEnums.Eligibility
 
 # Mazzo / sequenza di gioco
@@ -193,7 +196,8 @@ func available(faction: String, type: String) -> int:
 	if f == null:
 		return 0
 	var pool := int(f.force_pool.get(type, 0))
-	return max(0, pool - count_on_map(faction, type))
+	var oop := int(out_of_play.get(faction + ":" + type, 0))
+	return max(0, pool - count_on_map(faction, type) - oop)
 
 
 ## Piazza pezzi prelevandoli dalle forze disponibili. Restituisce quanti piazzati.
@@ -327,6 +331,7 @@ func to_dict() -> Dictionary:
 		"spaces": sp,
 		"resources": resources.duplicate(true),
 		"tracks": tracks.duplicate(true),
+		"out_of_play": out_of_play.duplicate(true),
 		"eligibility": eligibility.duplicate(true),
 		"draw_deck": draw_deck.duplicate(),
 		"played_deck": played_deck.duplicate(),
@@ -353,6 +358,7 @@ func load_dict(d: Dictionary) -> void:
 	for k in d.get("resources", {}).keys():
 		resources[k] = int(d["resources"][k])
 	tracks = (d.get("tracks", {}) as Dictionary).duplicate(true)
+	out_of_play = (d.get("out_of_play", {}) as Dictionary).duplicate(true)
 	for k in d.get("eligibility", {}).keys():
 		eligibility[k] = int(d["eligibility"][k])
 	draw_deck.clear()

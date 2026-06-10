@@ -136,6 +136,10 @@ func apply_setup(state: GameState, scenario_id: String = "standard") -> void:
 	# Piazzamenti casuali (Senate Cell in Viipuri/Turku, Moderates Cell in Viipuri/Turku/Tampere).
 	_apply_random_placements(state, setup.get("random_placements", []))
 
+	# §6.5.5: 10 delle 20 Cellule Senato iniziano Out of Play; entrano nelle Forze
+	# Disponibili alla PRIMA Propaganda (Senate Conscription, gestita in Crisis).
+	state.out_of_play["senate:cell"] = 10
+
 	# Disponibilità: tutte le fazioni iniziano Disponibili.
 	for f in state.game_def.factions:
 		state.eligibility[f.id] = CoinEnums.Eligibility.ELIGIBLE

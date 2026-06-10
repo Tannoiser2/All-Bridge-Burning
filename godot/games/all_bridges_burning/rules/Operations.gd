@@ -43,7 +43,7 @@ func rally(fid: String, sid: String, mode: String = "cell") -> Dictionary:
 			n += maxi(sup, 0)
 		elif fid == "reds":
 			n += maxi(-sup, 0)
-		var pool_left: int = int(fdef.force_pool.get(mode, 0)) - state.count_on_map(fid, mode)
+		var pool_left: int = state.available(fid, mode)
 		n = clampi(n, 0, maxi(pool_left, 1))
 	var pt_state: String = "underground" if mode == "cell" else ""
 	state.spaces[sid].add_piece(fid, mode, n, pt_state)
@@ -325,10 +325,10 @@ func _can_place(fid: String, piece_type: String) -> bool:
 	var fdef: FactionDef = state.game_def.faction(fid)
 	if fdef == null:
 		return false
-	var max_count: int = int(fdef.force_pool.get(piece_type, 0))
-	if max_count <= 0:
+	if int(fdef.force_pool.get(piece_type, 0)) <= 0:
 		return false
-	return state.count_on_map(fid, piece_type) < max_count
+	# Forze Disponibili = pool − su mappa − Out of Play (§6.5.5).
+	return state.available(fid, piece_type) > 0
 
 
 func _has_enemy(sid: String, fid: String) -> bool:

@@ -175,6 +175,15 @@ func _test_abb_setup() -> void:
 	for sid in state.spaces.keys():
 		pers_on_map_setup += state.space_state(sid).marker("personality")
 	_eq("Personality NON sulla mappa al setup", pers_on_map_setup, 0)
+	# §6.5.5: 10 Cellule Senato Out of Play al setup → 6 Disponibili (20−4 mappa−10).
+	_eq("Senate Out of Play al setup", int(state.out_of_play.get("senate:cell", 0)), 10)
+	_eq("Senate Cellule Disponibili al setup", state.available("senate", "cell"), 6)
+	# Senate Conscription alla 1ª Propaganda: le 10 Out of Play entrano in gioco.
+	var r2 := _new_abb()
+	var state2: GameState = r2[2]
+	ABBCrisis.new(state2, r2[0]).resolve()
+	_eq("Senate Out of Play dopo 1ª Propaganda", int(state2.out_of_play.get("senate:cell", 0)), 0)
+	_eq("Senate Cellule Disponibili dopo 1ª Propaganda", state2.available("senate", "cell"), 16)
 
 
 func _test_abb_operations() -> void:

@@ -40,6 +40,13 @@ func resolve() -> Dictionary:
 	out["agitation"] = _agitation_phase()
 	# §6.5.4 Old News: rimuovi tutti i Terror, Sabotage, News dalla mappa.
 	out["reset"] = _reset_phase()
+	# §6.5.5 Senate Conscription: alla PRIMA Propaganda (campaign_count ancora 0),
+	# le 10 Cellule Senato Out of Play entrano nelle Forze Disponibili.
+	if int(state.tracks.get("campaign_count", 0)) == 0:
+		var oop := int(state.out_of_play.get("senate:cell", 0))
+		if oop > 0:
+			state.out_of_play["senate:cell"] = 0
+			out["senate_conscription"] = oop
 	# Conteggio Campaign per il bot (PAC2 last_campaign condition).
 	state.tracks["campaign_count"] = int(state.tracks.get("campaign_count", 0)) + 1
 	out["campaign"] = state.tracks["campaign_count"]
