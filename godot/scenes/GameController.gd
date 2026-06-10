@@ -640,6 +640,17 @@ func undo_last() -> bool:
 	return true
 
 
+## Marca un'azione umana eseguita "fuori pipeline" (ABB chiama direttamente
+## ops/specials senza passare da run_operation/run_special). Senza questo,
+## end_turn() vede i flag a false e segnala "nessuna azione da concludere"
+## anche se l'azione è già stata fatta.
+func mark_human_action(kind: String) -> void:
+	match kind:
+		"op": _turn_did_op = true
+		"special": _turn_did_special = true
+		"event": _turn_did_event = true
+
+
 func run_operation(op_id: String, params: Dictionary) -> Dictionary:
 	_capture_undo()
 	var res: Dictionary

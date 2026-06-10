@@ -2003,6 +2003,8 @@ func _abb_execute_march_to(to_sid: String) -> void:
 
 func _abb_log_op(op_id: String, target: String, res: Dictionary) -> void:
 	var ok: bool = bool(res.get("ok", false))
+	if ok:
+		GameController.mark_human_action("op")  # così end_turn() riconosce l'azione
 	var prefix: String = "✓" if ok else "✗"
 	var msg: String = "%s %s @ %s" % [prefix, OP_NAMES.get(op_id, op_id), target]
 	if not ok:
@@ -2146,6 +2148,8 @@ func _abb_execute_sa_coord_to(to_sid: String) -> void:
 
 func _abb_log_sa(sa: String, target: String, res: Dictionary) -> void:
 	var ok: bool = bool(res.get("ok", false))
+	if ok:
+		GameController.mark_human_action("special")  # così end_turn() riconosce l'Att.Speciale
 	var prefix: String = "✓" if ok else "✗"
 	var label: String = SA_NAMES.get(sa, sa)
 	var msg: String = "%s %s @ %s" % [prefix, label, target]
