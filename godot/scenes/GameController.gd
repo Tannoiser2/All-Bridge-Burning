@@ -520,14 +520,30 @@ func auto_resolve_current() -> Dictionary:
 		for f in seq.actors():
 			acted.append(f)
 		seq.finish()
+		# Divisore di turno nel Log (come nel flusso manuale via _after_decision).
+		emit_signal("action_logged", "- Carta conclusa -", "")
 	state.recompute_all_control()
 	module._refresh_victory_tracks(state)
 	emit_signal("state_changed")
 	return {"actors": acted}
 
 
+## Partita interamente automatica = partita all-bot: le eccezioni Non-player
+## (§8.1.2 niente Risorse, §8.1.3 forza d'Attack fissa) devono valere per TUTTE
+## le fazioni, inclusa quella che l'umano aveva selezionato.
+func _set_all_roles_bot() -> void:
+	var changed := false
+	for fid in roles.keys():
+		if String(roles[fid]) != "bot":
+			roles[fid] = "bot"
+			changed = true
+	if changed:
+		emit_signal("action_logged", " Partita automatica: tutte le fazioni passano a Bot (eccezioni §8.1.2/§8.1.3 attive)", "")
+
+
 ## Gioca automaticamente l'intera partita (tutti i bot) fino a fine mazzo o vittoria.
 func run_full_game(max_steps: int = 200) -> void:
+	_set_all_roles_bot()
 	if state.current_card == -1:
 		draw_next()
 	var steps := 0
@@ -568,6 +584,8 @@ func run_card_paced(delay: float = -1.0) -> void:
 		await get_tree().create_timer(delay).timeout
 	if seq != null:
 		seq.finish()
+		# Divisore di turno nel Log (come nel flusso manuale via _after_decision).
+		emit_signal("action_logged", "- Carta conclusa -", "")
 	state.recompute_all_control()
 	module._refresh_victory_tracks(state)
 	if not game_over:
@@ -582,6 +600,7 @@ func run_full_game_paced(delay: float = -1.0) -> void:
 		delay = pace_delay
 	if _busy:
 		return
+	_set_all_roles_bot()
 	if state.current_card == -1:
 		draw_next()
 	var steps := 0
