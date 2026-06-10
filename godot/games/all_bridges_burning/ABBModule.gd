@@ -221,12 +221,13 @@ func victory_status(state: GameState) -> Dictionary:
 	var senate_value: int = _senate_town_pop(state)
 	if vass_g + pol > 5:
 		senate_value = 0
-	# §7.2 Moderati: Risorse > 14 AND (Issues Risolti + Networks + 1) ≥ Polarization.
-	# La 2ª condizione (≥, non >) è modellata come secondo argomento del min(): per
-	# non bloccare la vittoria deve valere mod_alt > 14, cioè inw+1-pol ≥ 0 → +15.
+	# §7.3 Moderati: margine = min(Risorse − 14, Issues+Networks+1 − Pol). Con
+	# soglia 14, value = min(Risorse, Issues+Networks+1 − Pol + 14) riproduce
+	# esattamente quel margine (e richiede margine strettamente positivo per la
+	# vittoria, come da §7.3).
 	var mod_res: int = state.get_resources("moderates")
 	var mod_inw: int = int(state.tracks.get("issues_networks", 0)) + 1
-	var mod_alt: int = mod_inw - pol + 15
+	var mod_alt: int = mod_inw - pol + 14
 	var mod_value: int = min(mod_res, mod_alt)
 
 	return {
