@@ -53,14 +53,26 @@ jobs:
           godot --headless --path godot --export-release "Linux"
           godot --headless --path godot --export-release "macOS"
 
+      - name: Export Cuba Libre (stesso motore, game_id=cuba_libre)
+        run: |
+          sed -i 's|config/name=".*"|config/name="Cuba Libre — Digital"|; s|config/game_id="all_bridges_burning"|config/game_id="cuba_libre"|' godot/project.godot
+          mkdir -p dist/cuba
+          godot --headless --path godot --export-release "Windows Desktop" ../dist/cuba/CubaLibre.exe
+          godot --headless --path godot --export-release "Linux" ../dist/cuba/CubaLibre.x86_64
+          godot --headless --path godot --export-release "macOS" ../dist/cuba/CubaLibre.zip
+          git checkout -- godot/project.godot
+
       - name: Impacchetta i file
         run: |
           cd dist
-          chmod +x linux/AllBridgesBurning.x86_64 || true
+          chmod +x linux/AllBridgesBurning.x86_64 cuba/CubaLibre.x86_64 || true
           zip -j AllBridgesBurning-Windows.zip windows/AllBridgesBurning.exe
           zip -j AllBridgesBurning-Linux.zip linux/AllBridgesBurning.x86_64
           cp macos/AllBridgesBurning.zip AllBridgesBurning-macOS.zip
-          ls -lh AllBridgesBurning-*.zip
+          zip -j CubaLibre-Windows.zip cuba/CubaLibre.exe
+          zip -j CubaLibre-Linux.zip cuba/CubaLibre.x86_64
+          cp cuba/CubaLibre.zip CubaLibre-macOS.zip
+          ls -lh *.zip
 
       - name: Pubblica la Release "desktop-latest"
         uses: softprops/action-gh-release@v2
@@ -74,7 +86,12 @@ jobs:
             - **Linux**: scarica `AllBridgesBurning-Linux.zip`, estrai, rendi eseguibile e avvia `AllBridgesBurning.x86_64`.
             - **macOS**: scarica `AllBridgesBurning-macOS.zip`, estrai. L'app non è firmata: al primo avvio fai
               **clic destro → Apri** (oppure Impostazioni → Privacy e sicurezza → Apri comunque).
+
+            Gli zip `CubaLibre-*` sono lo stesso motore con il gioco Cuba Libre (stesse istruzioni di avvio).
           files: |
             dist/AllBridgesBurning-Windows.zip
             dist/AllBridgesBurning-Linux.zip
             dist/AllBridgesBurning-macOS.zip
+            dist/CubaLibre-Windows.zip
+            dist/CubaLibre-Linux.zip
+            dist/CubaLibre-macOS.zip
