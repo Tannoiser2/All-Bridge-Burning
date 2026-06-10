@@ -15,9 +15,11 @@ func _init(_state: GameState, _module: RulesModule) -> void:
 func agitate(sid: String) -> Dictionary:
 	if not _has_cell("reds", sid):
 		return _err("serve una Cellula Reds in %s" % sid)
-	if state.get_resources("reds") < 1:
-		return _err("risorse Reds insufficienti")
-	state.resources["reds"] -= 1
+	# §8.1.2: solo i player pagano; le Bot non spendono Risorse.
+	if state.tracks_resources("reds"):
+		if state.get_resources("reds") < 1:
+			return _err("risorse Reds insufficienti")
+		state.resources["reds"] -= 1
 	_shift_support(sid, -1)
 	return _ok()
 
@@ -62,7 +64,8 @@ func crackdown(sid: String) -> Dictionary:
 	var t: int = st.marker("terror")
 	if t > 0:
 		st.set_marker("terror", t - 1)
-	if state.get_resources("senate") >= 1:
+	# §8.1.2: solo i player pagano; le Bot non spendono Risorse.
+	if state.tracks_resources("senate") and state.get_resources("senate") >= 1:
 		state.resources["senate"] -= 1
 	_shift_support(sid, +1)
 	return _ok()

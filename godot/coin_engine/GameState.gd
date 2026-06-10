@@ -36,6 +36,14 @@ func space_state(id: String) -> SpaceState:
 	return spaces.get(id, null)
 
 
+## Totale di un marker su tutta la mappa (es. "news": esistono solo 2 segnalini).
+func count_marker_on_map(name: String) -> int:
+	var t := 0
+	for sid in spaces.keys():
+		t += spaces[sid].marker(name)
+	return t
+
+
 # ---------------------------------------------------------------------------
 # Risorse
 # ---------------------------------------------------------------------------

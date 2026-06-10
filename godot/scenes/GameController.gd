@@ -98,6 +98,10 @@ func set_role(fid: String, role: String) -> void:
 ## già le proprie Propaganda nel game_def (ABB), il pool si limita alle carte
 ## non-Propaganda; in fallback Cuba si usa 1..48.
 func build_deck(short: bool = false) -> void:
+	# Senza randomize() l'RNG globale di Godot parte da un seed fisso → shuffle()
+	# dà lo STESSO ordine del mazzo a ogni partita (sempre le stesse carte nella
+	# stessa sequenza). Seminiamo da entropia di sistema a ogni nuova partita.
+	randomize()
 	var events_list: Array = []
 	for c in game_def.cards:
 		if not c.is_propaganda:
@@ -152,6 +156,14 @@ func _start_card_sequence() -> void:
 		seq = SequenceOfPlay.new(state, module, card)
 		# Carta Evento finale (2.3.9): ultima carta del mazzo -> solo Operazioni Limitate.
 		seq.final_event_card = cards_left() == 0
+		# §3.4 German Action Phase: in Phase II, all'inizio di ogni carta Evento il
+		# Senato tira 1d6 per l'eligibility tedesca (1-3 i Germans agiscono prima
+		# dei giocatori, 4-6 dopo). Così il cilindro Germania nella SoP si sposta
+		# fra "Germany first" e "Germany last" invece di restare fermo.
+		if GameRegistry.game_id == "all_bridges_burning" \
+				and int(state.tracks.get("phase", 1)) >= 2 \
+				and bot != null and bot.has_method("roll_german_eligibility"):
+			bot.roll_german_eligibility()
 
 
 func _reset_turn_flags() -> void:
@@ -335,6 +347,10 @@ func _bot_take_pending() -> void:
 	elif t == A.LIMITED_OPERATION:
 		atype = "Op Limitata"
 	var label := "%s: %s" % [atype, _OP_IT.get(optype, optype)]
+	# Combattimento: mostra l'esito dell'Attacco nel log (altrimenti i pezzi
+	# spariscono e basta). Il trace[0] degli handler Attack è la riga di esito.
+	if optype == "attack" and not trace.is_empty():
+		label = "⚔ " + String(trace[0])
 	if t == A.OPERATION_WITH_SPECIAL:
 		label += " + " + String(_SA_IT.get(String(br.get("special_type", "")), br.get("special_type", "")))
 	emit_signal("bot_decision", "%s -> %s" % [fname, label], fid, trace)
@@ -351,6 +367,19 @@ func _np_eligibility_decision(fid: String) -> String:
 	var A := CoinEnums.ActionType
 	var card := state.current_card
 	var crit_eff := _ev_crit_eff(fid, card)
+	# §8.1.4 / §8.1.5 Capabilities (solo ABB):
+	if GameRegistry.game_id == "all_bridges_burning" and bot != null \
+			and bot.has_method("capability_benefits"):
+		# (a) Carta CORRENTE è una Capability che giova a fid → gioca l'Evento.
+		if card > 0 and bot.capability_benefits(fid, card) \
+				and bot.event_choice(fid, card).get("play", false) and seq.is_legal(A.EVENT):
+			return "event"
+		# (b) Carta PROSSIMA è una Capability per fid e nessuno ha ancora Passato
+		#     su questa carta → Passa per giocarla al turno seguente.
+		var nc := next_card()
+		if nc > 0 and seq.passers().is_empty() and bot.capability_benefits(fid, nc) \
+				and bot.event_choice(fid, nc).get("play", false):
+			return "pass"
 	if seq.is_first_slot():
 		# 1) GOV: Guerriglia DR/26J Clandestina a Havana -> Op+SA
 		if fid == "government" and _underground_insurgent_in_havana():
@@ -706,6 +735,11 @@ func resolve_propaganda() -> Dictionary:
 		var crisis_report: Dictionary = propaganda.resolve()
 		emit_signal("action_logged", " Crisis: politics=%s, earnings=%s" %
 			[crisis_report.get("politics", {}), crisis_report.get("earnings", {})], "")
+		# §6.5.2 Pivotal Event: se questa è la 2ª Propaganda e Red Revolt! (#24) non
+		# ha ancora attivato la Phase II, forzala ora (garantisce la Phase II).
+		if propaganda_played == 2 and int(state.tracks.get("phase", 1)) < 2:
+			events.apply(24, "unshaded", "reds")
+			emit_signal("action_logged", " §6.5.2: Red Revolt! forzata → Phase II", "")
 		if is_final:
 			game_over = true
 			_emit_final_report("")

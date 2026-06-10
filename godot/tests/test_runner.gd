@@ -168,8 +168,13 @@ func _test_abb_setup() -> void:
 	_eq("Vassalage Russian", int(state.tracks.get("vassalage_russian", -1)), 3)
 	# Tutte le fazioni Eligibili al setup
 	_eq("Reds Eligible", state.eligibility["reds"], CoinEnums.Eligibility.ELIGIBLE)
-	# Personality marker (Moderates) parte ad Helsinki.
-	_eq("Personality a Helsinki", state.space_state("helsinki").marker("personality"), 1)
+	# Personality marker (Moderates): NON parte sulla mappa. Per regolamento (§1.4.4,
+	# §8.5.1) inizia in Available Forces e viene piazzata in gioco. Quindi a setup
+	# nessuno spazio ha la Personality.
+	var pers_on_map_setup := 0
+	for sid in state.spaces.keys():
+		pers_on_map_setup += state.space_state(sid).marker("personality")
+	_eq("Personality NON sulla mappa al setup", pers_on_map_setup, 0)
 
 
 func _test_abb_operations() -> void:
@@ -459,7 +464,10 @@ func _test_abb_personality_transfer() -> void:
 	# Helsinki ha Personality + 1 Moderates Cell. Aggiungo 2 Reds Cell e
 	# rimuovo manualmente la Moderates Cell → personality transfer dovrebbe scattare.
 	var st: SpaceState = state.space_state("helsinki")
-	_eq("Personality presente al setup", st.marker("personality"), 1)
+	# La Personality non parte più sulla mappa (§1.4.4): la piazzo a Helsinki per
+	# costruire lo scenario di transfer (Helsinki ha già 1 Moderates Cell a setup).
+	st.set_marker("personality", 1)
+	_eq("Personality piazzata per lo scenario", st.marker("personality"), 1)
 	# Rimuovo direttamente la Cell Moderati per simulare ultima rimossa.
 	st.remove_piece("moderates", "cell", 1, "underground")
 	_eq("Moderati Cell rimossa", st.count("moderates", "cell"), 0)

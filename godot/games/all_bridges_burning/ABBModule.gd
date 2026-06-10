@@ -249,6 +249,16 @@ func _senate_town_pop(state: GameState) -> int:
 	return total
 
 
+## Aggiorna i marker-traccia DERIVATI mostrati sui tracciati di vittoria (§1.12).
+## Chiamato da GameController dopo ogni azione/evento/propaganda. Senza questo
+## metodo il controller andava in errore ("Nonexistent function") e il flusso
+## carta si bloccava. `issues_networks` NON è derivato (è un contatore mantenuto
+## da PoliticalDisplay/Eventi) e quindi non va ricalcolato qui.
+func _refresh_victory_tracks(state: GameState) -> void:
+	state.tracks["senate_town_pop"] = _senate_town_pop(state)
+	state.tracks["oppose_admins"] = state.total_opposition() + state.count_on_map("reds", "admin")
+
+
 func tiebreak_order() -> PackedStringArray:
 	return PackedStringArray(["reds", "moderates", "senate", "germans", "russians"])
 

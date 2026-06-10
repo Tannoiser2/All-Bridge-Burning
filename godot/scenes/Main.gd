@@ -163,7 +163,7 @@ var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Specia
 ## Numero di build, in piccolo nell'angolo in alto a sinistra. Permanente:
 ## serve a confermare a colpo d'occhio quale versione il browser ha caricato
 ## (la cache HTTP del .pck è il motivo per cui a volte non vedi i fix).
-const BUILD_VERSION := "b104"
+const BUILD_VERSION := "b133"
 
 
 func _ready() -> void:
@@ -911,12 +911,25 @@ func _mk_menu_btn(text: String) -> MenuButton:
 	return b
 
 
+## I 4 numeri delle carte Propaganda (cards.json), in ordine di Round.
+var _PROP_CARDS: Array = [22, 23, 46, 47]
+
+
+## Numero carta da usare per l'IMMAGINE. Il mazzo usa il sentinel 0 per le
+## Propaganda: lo mappo alla Propaganda specifica (22/23/46/47) in base a quante
+## ne sono già state risolte, così si vede l'arte giusta invece della generica.
+func _card_image_number(card_num: int) -> int:
+	if card_num == 0:
+		return int(_PROP_CARDS[clampi(GameController.propaganda_played, 0, 3)])
+	return card_num
+
+
 func _refresh_side() -> void:
 	var s: GameState = GameController.state
 	var cc: int = s.current_card
-	_card_img.texture = CLAssets.card(cc) if cc >= 0 else null
+	_card_img.texture = CLAssets.card(_card_image_number(cc)) if cc >= 0 else null
 	var nc: int = GameController.next_card()
-	_next_card_img.texture = CLAssets.card(nc) if nc >= 0 else null
+	_next_card_img.texture = CLAssets.card(_card_image_number(nc)) if nc >= 0 else null
 	_card_label.text = GameController.current_card_text()
 
 
@@ -935,11 +948,19 @@ func _on_bot_decision(text: String, faction: String, trace: Array) -> void:
 
 ## Font corsiva sintetica (la font di default non ne ha una): inclina i glifi.
 func _fmt_log_line(text: String, faction: String) -> String:
-	if faction != "":
-		var hex := GameController.faction_color(faction).to_html(false)
-		var txt := "000000" if faction == "directorio" else "ffffff"
-		return "[bgcolor=#%s] [color=#%s] %s [/color] [/bgcolor]" % [hex, txt, text]
-	return text
+	if faction == "":
+		return text
+	# Niente sfondo: solo TESTO colorato (più leggibile su sfondo scuro). Colori
+	# scelti per contrasto: Reds rosso, Senato bianco, Moderati blu, Germani grigio.
+	var hex := "ffffff"
+	match faction:
+		"reds": hex = "ff6b6b"
+		"senate": hex = "ffffff"
+		"moderates": hex = "5aa0e8"
+		"germans": hex = "c7c7c7"
+		"russians": hex = "c19a6b"
+		_: hex = GameController.faction_color(faction).to_html(false)
+	return "[color=#%s]%s[/color]" % [hex, text]
 
 
 func _render_log() -> void:
@@ -988,6 +1009,9 @@ func _render_log() -> void:
 					s += "  [font_size=9][color=#9fb3c8]%s%s[/color][/font_size]\n" % [pad, line]
 			else:
 				s += "\n"
+		else:
+			# Voci SENZA "logica" (es. PASSA): vanno comunque a capo.
+			s += "\n"
 	_log.text = s
 	_log.scroll_to_line(maxi(0, _log.get_line_count() - 1))
 

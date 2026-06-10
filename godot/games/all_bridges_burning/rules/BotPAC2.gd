@@ -21,6 +21,15 @@ var module: RulesModule
 var _deck: Array = []
 var _dice_seed: int = -1
 
+## Tassonomia ops: un turno = UN Comando (Operazione) + al più UNA Attività
+## Speciale. Le SA NON possono essere l'azione di un turno da sole — altrimenti
+## il bot le spamma all'infinito (Dialogue/Crackdown). Tipo esplicito (gotcha web
+## export: `const X = [...]` rifiutato dal parser stretto).
+var COMMAND_OPS: Array = ["rally", "march", "attack", "terror", "message",
+	"activism", "build_admin", "build_network", "politics"]
+var SPECIAL_OPS: Array = ["agitate", "crackdown", "dialogue", "publish",
+	"foreign_relations", "prepare"]
+
 
 func _init(p_state: GameState, p_module: RulesModule, p_dice_seed: int = -1) -> void:
 	state = p_state
@@ -41,6 +50,14 @@ func _load_deck() -> void:
 
 ## Restituisce {"card": int, "action": String, "trace": Array} se ha agito, null altrimenti.
 func take_turn(faction_id: String) -> Dictionary:
+	# REDS: motore Non-player FEDELE al rulebook §8.3 (carte #48-53).
+	# Senate/Moderates: ancora sul percorso interim (verranno trascritti §8.4/§8.5).
+	if faction_id == "reds":
+		return ABBNonPlayerReds.new(state, module, _dice_seed).take_turn()
+	if faction_id == "senate":
+		return ABBNonPlayerSenate.new(state, module, _dice_seed).take_turn()
+	if faction_id == "moderates":
+		return ABBNonPlayerModerates.new(state, module, _dice_seed).take_turn()
 	var trace: Array[String] = []
 	for entry in _deck:
 		if String(entry.get("faction", "")) != faction_id:
@@ -53,12 +70,32 @@ func take_turn(faction_id: String) -> Dictionary:
 		trace.append("#%d match: %s" % [card_num, cond])
 		var ops := ABBOperations.new(state, module)
 		var specials := ABBSpecialActivities.new(state, module)
-		for act in entry.get("actions", []):
-			var res := _exec_action(ops, specials, faction_id, act, trace)
-			if res.get("ok", false):
-				trace.append_array(res.get("log", []))
-				return {"card": card_num, "action": String(act.get("op", "")), "trace": trace}
-		trace.append("#%d: nessuna action eseguibile, prosegui" % card_num)
+		var actions: Array = entry.get("actions", [])
+		# Pass 1: esegui UN Comando (la prima op Comando che riesce). Senza un
+		# Comando riuscito la carta non vale come turno → si prova la prossima.
+		var command_action := ""
+		for act_c in actions:
+			var op_c := String(act_c.get("op", ""))
+			if not (op_c in COMMAND_OPS):
+				continue
+			var res_c := _exec_action(ops, specials, faction_id, act_c, trace)
+			if res_c.get("ok", false):
+				command_action = op_c
+				trace.append_array(res_c.get("log", []))
+				break
+		if command_action == "":
+			trace.append("#%d: nessun Comando eseguibile, prosegui" % card_num)
+			continue
+		# Pass 2: al più UNA Attività Speciale di accompagnamento (mai da sola).
+		for act_s in actions:
+			var op_s := String(act_s.get("op", ""))
+			if not (op_s in SPECIAL_OPS):
+				continue
+			var res_s := _exec_action(ops, specials, faction_id, act_s, trace)
+			if res_s.get("ok", false):
+				trace.append_array(res_s.get("log", []))
+				break
+		return {"card": card_num, "action": command_action, "trace": trace}
 	return {}
 
 
@@ -147,6 +184,11 @@ func _eval_atom(atom: String, fid: String) -> bool:
 			if state.space_state(sid).marker("personality") > 0:
 				return true
 		return false
+	# issues_behind_polarization: la vittoria Moderati richiede
+	# issues_networks ≥ Polarization (mod_value usa issues_networks+1−pol). Vero
+	# quando i Moderati sono indietro e DEVONO giocare Politics per recuperare.
+	if atom == "issues_behind_polarization":
+		return int(state.tracks.get("issues_networks", 0)) < int(state.tracks.get("polarization", 0))
 	if atom == "last_campaign":
 		# Conteggio Crisis Round risolti (incrementato in ABBCrisis.resolve).
 		# In ABB ci sono 4 Round di Propaganda: l'ultimo è il 4°.
@@ -214,6 +256,14 @@ func _exec_action(ops: ABBOperations, specials: ABBSpecialActivities,
 			return _do_attack(ops, fid, act.get("params", {}))
 		"terror":
 			return _do_terror(ops, fid, act.get("params", {}))
+		"build_admin":
+			return _do_build_admin(fid)
+		"build_network":
+			return _do_build_network(fid)
+		"agitate":
+			return _do_agitate(specials, fid)
+		"politics":
+			return _do_politics(ops, fid)
 		"crackdown":
 			return _do_crackdown(specials, fid)
 		"activism":
@@ -309,6 +359,47 @@ func _do_message(fid: String) -> Dictionary:
 	return {"ok": false}
 
 
+## §3.2.2 Agitate (Reds): sposta il Supporto di 1 verso Opposizione SENZA alzare
+## la Polarization (a differenza del Terror). È la leva primaria dei Reds verso
+## la vittoria (Opposition + Admin > 11). Preferisce Town/Province a Pop alta non
+## già in Opposizione Attiva.
+func _do_agitate(specials: ABBSpecialActivities, fid: String) -> Dictionary:
+	if fid != "reds":
+		return {"ok": false}
+	var cands: Array = []
+	for sid in state.spaces.keys():
+		var sd: SpaceDef = state.game_def.space(sid)
+		if sd == null or sd.pop <= 0:
+			continue
+		var st: SpaceState = state.space_state(sid)
+		if st.count("reds", "cell") <= 0:
+			continue
+		if int(st.support) <= int(CoinEnums.Support.ACTIVE_OPPOSITION):
+			continue
+		cands.append(String(sid))
+	cands.sort_custom(func(a, b):
+		return state.game_def.space(a).pop > state.game_def.space(b).pop)
+	for sid in cands:
+		var res = specials.agitate(String(sid))
+		if res.get("ok", false):
+			return res
+	return {"ok": false}
+
+
+## §3.3.4 Politics (Moderates): piazza 1 cubo nel Political Display per far
+## risolvere un'Issue in Politics Phase (§6.2). Risolvere Issue alza
+## issues_networks, parte della vittoria Moderati (mod_value usa
+## issues_networks+1−pol). Richiede Polarization ≤ 5, pezzi Moderati on-map,
+## un'Issue Unresolved e abbastanza Risorse (1 + pol/2). Colore: spinge quello
+## già in testa, così il totale cubi sale e l'Issue si risolve prima.
+func _do_politics(ops: ABBOperations, fid: String) -> Dictionary:
+	if fid != "moderates":
+		return {"ok": false}
+	var pd: Dictionary = state.tracks.get("political_display", {"senate": 0, "reds": 0})
+	var color := "senate" if int(pd.get("senate", 0)) >= int(pd.get("reds", 0)) else "reds"
+	return ops.politics(fid, color)
+
+
 func _do_activism(ops: ABBOperations, fid: String) -> Dictionary:
 	# Cerca uno spazio con Cellula amica + nemico Attivo da capovolgere.
 	for sid in state.spaces.keys():
@@ -341,6 +432,11 @@ func _do_foreign_relations(specials: ABBSpecialActivities, fid: String, params: 
 func _do_rally(ops: ABBOperations, fid: String, params: Dictionary) -> Dictionary:
 	var max_spaces: int = int(params.get("max_spaces", 1))
 	var priority: Array = params.get("priority", [])
+	# "concentrate": invece di spargere 1 Cellula in N spazi, accumula Cellule
+	# nello stesso spazio finché la Fazione lo CONTROLLA (controllo = pezzi propri
+	# > somma di tutti gli altri). Necessario per conquistare le Town: 1 Cellula
+	# sparsa non basta mai. Cap di 5 Rally per spazio per non svuotare il pool.
+	var concentrate: bool = bool(params.get("concentrate", false))
 	if priority.is_empty():
 		priority = ["random_with_pop"]   # fallback minimale, non greedy
 	var placed: int = 0
@@ -352,13 +448,31 @@ func _do_rally(ops: ABBOperations, fid: String, params: Dictionary) -> Dictionar
 		for sid in candidates:
 			if placed >= max_spaces:
 				break
-			var res = ops.rally(fid, String(sid), "cell")
-			if res.get("ok", false):
-				placed += 1
-				log.append("Rally %s @ %s (prio:%s)" % [fid, sid, prio])
+			if concentrate:
+				var n := _rally_concentrate(ops, fid, String(sid))
+				if n > 0:
+					placed += 1
+					log.append("Rally %s @ %s ×%d (prio:%s, control)" % [fid, sid, n, prio])
+			else:
+				var res = ops.rally(fid, String(sid), "cell")
+				if res.get("ok", false):
+					placed += 1
+					log.append("Rally %s @ %s (prio:%s)" % [fid, sid, prio])
 	if placed > 0:
 		return {"ok": true, "log": log}
 	return {"ok": false}
+
+
+## Accumula Rally nello stesso spazio finché `fid` lo controlla (o finché
+## risorse/pool/cap si esauriscono). Ritorna il numero di Cellule piazzate.
+func _rally_concentrate(ops: ABBOperations, fid: String, sid: String) -> int:
+	var n := 0
+	while n < 5 and state.space_state(sid).control != fid:
+		var res = ops.rally(fid, sid, "cell")
+		if not res.get("ok", false):
+			break
+		n += 1
+	return n
 
 
 ## Filtri di priorità Rally PAC2 (rulebook §8.4.1, §8.4.2, §8.5.3).
@@ -418,6 +532,21 @@ func _rally_filter(fid: String, priority: String) -> Array:
 			for sid in state.spaces.keys():
 				if state.space_state(sid).support <= -2:
 					out.append(String(sid))
+		# Spargi su TUTTI gli spazi con Pop (Province incluse) dove la fazione ha
+		# < 2 Cellule. Per i Reds è la chiave: l'Opposizione (vittoria) conta la
+		# Pop di OGNI spazio, non solo le Town — concentrare in città lascia le
+		# Province vuote e spreca Pop.
+		"pop_spread":
+			var spread: Array = []
+			for sid in state.spaces.keys():
+				var sd: SpaceDef = state.game_def.space(sid)
+				if sd == null or sd.pop <= 0:
+					continue
+				if state.space_state(sid).count(fid, "cell") < 2:
+					spread.append({"sid": String(sid), "pop": sd.pop})
+			spread.sort_custom(func(a, b): return int(a["pop"]) > int(b["pop"]))
+			for e in spread:
+				out.append(e["sid"])
 		# Pop ordinata desc (anti-piling via fallback)
 		"random_with_pop", "random":
 			var by_pop: Array = []
@@ -458,14 +587,87 @@ func _do_attack(ops: ABBOperations, fid: String, _params: Dictionary) -> Diction
 	return {"ok": false}
 
 
+## Terror (§3.2.3): Operations.terror accetta qualunque Cellula (anche
+## underground), quindi NON filtriamo per "active" qui — altrimenti i Reds, che
+## tengono le Cellule underground, non costruirebbero mai Opposition.
+## Priorità: Pop più alta prima (sposta più Supporto/Opposizione).
 func _do_terror(ops: ABBOperations, fid: String, _params: Dictionary) -> Dictionary:
+	# I Reds vengono AZZERATI in vittoria se vassalage_russo + Polarization > 5.
+	# Ogni Terror alza Polarization di 1: fermarsi prima di auto-sabotarsi.
+	if fid == "reds":
+		var pol := int(state.tracks.get("polarization", 0))
+		var vr := int(state.tracks.get("vassalage_russian", 0))
+		if pol + vr >= 5:
+			return {"ok": false}
+	var cands: Array = []
 	for sid in state.spaces.keys():
 		var st: SpaceState = state.space_state(sid)
-		if st.count(fid, "cell", "active") <= 0:
+		if st.count(fid, "cell") <= 0:
 			continue
+		if st.marker("terror") >= 2:
+			continue
+		cands.append(String(sid))
+	cands.sort_custom(func(a, b):
+		return state.game_def.space(a).pop > state.game_def.space(b).pop)
+	for sid in cands:
 		var res = ops.terror(fid, String(sid))
 		if res.get("ok", false):
 			return res
+	return {"ok": false}
+
+
+## §3.2.1 Reds Rally → Amministrazione: piazza 1 Admin in uno spazio controllato
+## dai Reds con ≥2 Cellule e nessun Admin. Lavora verso la vittoria Reds
+## (Opposition + Admin > 11). Self-gating: se nessuno spazio qualifica, fallisce
+## e il planner prova il prossimo Comando della carta.
+func _do_build_admin(fid: String) -> Dictionary:
+	if fid != "reds":
+		return {"ok": false}
+	if state.available("reds", "admin") <= 0:
+		return {"ok": false}
+	# §8.1.2: i Bot non spendono Risorse → niente check/costo qui.
+	for sid in state.spaces.keys():
+		var st: SpaceState = state.space_state(sid)
+		if st.control != "reds":
+			continue
+		if st.count("reds", "cell", "underground") < 2:
+			continue
+		if st.count("reds", "admin") > 0:
+			continue
+		# §3.2.1: "replace two Reds Cells with their Administration."
+		var placed := state.place_from_available("reds", "admin", String(sid), 1, "")
+		if placed > 0:
+			st.remove_piece("reds", "cell", 2, "underground")
+			state.recompute_control(String(sid))
+			return {"ok": true, "log": ["Build Admin reds @ %s (−2 Cell)" % sid]}
+	return {"ok": false}
+
+
+## §3.3.x Moderates Rally/Message → Network: piazza 1 Network in una Town con
+## ≥1 Cellula Moderati e nessun Network. I Network alzano gli Earnings Moderati
+## (1 + #Network per Crisis) verso la soglia di 15 Risorse. Self-gating.
+func _do_build_network(fid: String) -> Dictionary:
+	if fid != "moderates":
+		return {"ok": false}
+	if state.available("moderates", "network") <= 0:
+		return {"ok": false}
+	# §8.1.2: i Moderates Bot tracciano le Risorse SOLO per la vittoria, non le
+	# spendono per i Comandi → costruire Network non costa Risorse al bot.
+	for sid in state.spaces.keys():
+		var sd: SpaceDef = state.game_def.space(sid)
+		if sd == null or sd.type != CoinEnums.SpaceType.CITY:
+			continue
+		var st: SpaceState = state.space_state(sid)
+		if st.count("moderates", "cell", "underground") < 2:
+			continue
+		if st.count("moderates", "network") > 0:
+			continue
+		# §3.3.1: "Replace two Moderates Cells with a Moderates Network."
+		var placed := state.place_from_available("moderates", "network", String(sid), 1, "")
+		if placed > 0:
+			st.remove_piece("moderates", "cell", 2, "underground")
+			state.recompute_control(String(sid))
+			return {"ok": true, "log": ["Build Network moderates @ %s (−2 Cell)" % sid]}
 	return {"ok": false}
 
 

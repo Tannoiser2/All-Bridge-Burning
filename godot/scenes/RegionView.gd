@@ -26,6 +26,8 @@ var _stack: VBoxContainer
 var _ctrl_tr: TextureRect
 var _sup_tr: TextureRect
 var _pieces: Array = []   # token dei pezzi (posizionati a griglia)
+var _overlay: Array = []  # marker su mappa (Terror/News/Personality) come NODI figli
+                          # → disegnati SOPRA le pedine (il _draw() finisce sotto)
 
 
 func setup(sd: SpaceDef, poly: Array, anchor: Vector2, cbox := Vector2(-1, -1),
@@ -59,9 +61,13 @@ func setup(sd: SpaceDef, poly: Array, anchor: Vector2, cbox := Vector2(-1, -1),
 	_stack.mouse_filter = Control.MOUSE_FILTER_PASS
 	add_child(_stack)
 
-	# Marcatori Controllo/Supporto nelle caselle stampate
+	# Marcatori Controllo/Supporto nelle caselle stampate. z_index alto così restano
+	# SOPRA i marker-overlay (Terror/News/Personality/Prepared), che sono nodi figli
+	# aggiunti dopo e altrimenti li coprirebbero.
 	_ctrl_tr = _make_marker_rect()
 	_sup_tr = _make_marker_rect()
+	_ctrl_tr.z_index = 3
+	_sup_tr.z_index = 3
 
 
 func _make_marker_rect() -> TextureRect:
@@ -129,14 +135,38 @@ func relayout() -> void:
 	# Terrore/Sabotaggio appena sopra la griglia.
 	_stack.reset_size()
 	_stack.position = Vector2(a.x - _stack.size.x * 0.5, grid_top - 16.0)
-	# Marcatori Controllo/Supporto nelle caselle.
-	# Per ABB li disegniamo in _draw() (controllo pixel-preciso); i TextureRect
-	# nodi restano solo per Cuba Libre.
+	# Marker-overlay (Terror/News/Personality) come nodi figli, SOPRA la griglia.
+	var mksz: float = size.x * 0.024
+	for m in _overlay:
+		var slot: Vector2 = m.get_meta("mk_slot", Vector2.ZERO)
+		m.size = Vector2(mksz, mksz)
+		m.custom_minimum_size = m.size
+		m.position = Vector2(a.x - mksz * 0.5 + slot.x * mksz * 1.1,
+			grid_top + slot.y * mksz * 1.2)
+		if m.has_meta("mk_badge"):
+			m.add_theme_font_size_override("font_size", int(mksz * 0.7))
+	# Marcatori Controllo/Supporto: per ABB ora come NODI figli (z_index alto, sopra
+	# i marker-overlay) posizionati su cbox/sbox del Vassal — prima erano in _draw()
+	# (sotto i nodi figli) e venivano coperti.
 	if GameRegistry.game_id == "all_bridges_burning":
 		if _ctrl_tr != null:
-			_ctrl_tr.visible = false
+			if _cbox.x >= 0:
+				var mkc: float = size.x * 0.027
+				_ctrl_tr.size = Vector2(mkc, mkc)
+				_ctrl_tr.custom_minimum_size = _ctrl_tr.size
+				_ctrl_tr.position = Vector2(_cbox.x * size.x, _cbox.y * size.y) - _ctrl_tr.size * 0.5
+				_ctrl_tr.visible = true
+			else:
+				_ctrl_tr.visible = false
 		if _sup_tr != null:
-			_sup_tr.visible = false
+			if _sbox.x >= 0:
+				var mks: float = size.x * 0.022
+				_sup_tr.size = Vector2(mks, mks)
+				_sup_tr.custom_minimum_size = _sup_tr.size
+				_sup_tr.position = Vector2(_sbox.x * size.x, _sbox.y * size.y) - _sup_tr.size * 0.5
+				_sup_tr.visible = true
+			else:
+				_sup_tr.visible = false
 	else:
 		var mk_w: float = size.x * 0.028
 		var mk_h: float = mk_w * 0.97
@@ -166,15 +196,28 @@ func refresh(state: GameState) -> void:
 	else:
 		_sup_tr.texture = null
 
-	# Terrore/Sabotaggio restano vicino allo spazio (con i pezzi)
-	var mrow := HBoxContainer.new()
-	mrow.add_theme_constant_override("separation", 1)
-	mrow.mouse_filter = Control.MOUSE_FILTER_PASS
-	_stack.add_child(mrow)
-	for i in range(st.marker("terror")):
-		_add_marker(mrow, CLAssets.terror())
-	if st.marker("sabotage") > 0:
-		_add_marker(mrow, CLAssets.sabotage())
+	# Terror / News / Personality come NODI figli (sopra le pedine). Riga -2 =
+	# Terror (in alto), riga -1 = Personality + News (appena sopra l'anchor).
+	for m in _overlay:
+		m.queue_free()
+	_overlay = []
+	if GameRegistry.game_id == "all_bridges_burning":
+		for i in range(mini(st.marker("terror"), 2)):
+			_add_overlay(CLAssets.terror(), i, -2)
+		var col := 0
+		if st.marker("personality") > 0:
+			_add_overlay(CLAssets.personality(), col, -1); col += 1
+		for i in range(mini(st.marker("news"), 2)):
+			_add_overlay(CLAssets.news(), col, -1); col += 1
+		# Capability su mappa (Jaeger/Commander) + Prepared, riga +1 (sotto le
+		# pedine) — anch'essi come NODI figli (prima erano sotto le pedine).
+		var col2 := 0
+		for cap_key in ["jaeger_senate", "commander_reds"]:
+			if st.marker(cap_key) > 0:
+				_add_overlay(CLAssets.abb_cap(cap_key), col2, 1); col2 += 1
+		for fid_p in ["reds", "senate"]:
+			if st.marker("prepared_" + fid_p) > 0:
+				_add_overlay(CLAssets.prepared(fid_p), col2, 1); col2 += 1
 
 	# Pezzi (sprite trascinabili) - posizionati a griglia centrata in relayout.
 	for p in _pieces:
@@ -199,6 +242,41 @@ func refresh(state: GameState) -> void:
 			_pieces.append(cm)
 
 	call_deferred("relayout")
+
+
+## Crea un marker-overlay (nodo figlio TextureRect) con uno slot (col,row) per il
+## posizionamento in relayout. Disegnato SOPRA le pedine.
+func _add_overlay(t: Texture2D, col: int, row: int) -> void:
+	if t == null:
+		return
+	var tr := TextureRect.new()
+	tr.texture = t
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tr.set_meta("mk_slot", Vector2(col, row))
+	add_child(tr)
+	_overlay.append(tr)
+
+
+## Badge-overlay procedurale (es. Prepared "P") come NODO figlio: Label con
+## sfondo colorato. Posizionato in relayout come gli altri overlay.
+func _add_overlay_badge(letter: String, bg: Color, col: int, row: int) -> void:
+	var lbl := Label.new()
+	lbl.text = letter
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.add_theme_color_override("font_color", Color.WHITE)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = bg
+	sb.set_border_width_all(1)
+	sb.border_color = Color.BLACK
+	lbl.add_theme_stylebox_override("normal", sb)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lbl.set_meta("mk_slot", Vector2(col, row))
+	lbl.set_meta("mk_badge", true)
+	add_child(lbl)
+	_overlay.append(lbl)
 
 
 func _add_marker(parent: Node, t: Texture2D) -> void:
@@ -321,46 +399,10 @@ func _draw_abb_markers() -> void:
 	var s: GameState = GameController.state
 	if s == null or not s.spaces.has(space_id):
 		return
-	var st: SpaceState = s.space_state(space_id)
-
-	# Controllo/Supporto: disegnati qui con dimensione ESPLICITA (0.019 della
-	# larghezza mappa) e posizione cbox/sbox. Niente TextureRect → niente
-	# sorprese di sizing. Le caselle distano 0.033 → con marker 0.019 c'è un
-	# gap netto, nessuna sovrapposizione.
-	var mk: float = size.x * 0.019
-	if _control != "" and _control != "russians" and _control != "germans" and _cbox.x >= 0:
-		var ct := CLAssets.control(_control)
-		if ct != null:
-			var c := Vector2(_cbox.x * size.x, _cbox.y * size.y)
-			draw_texture_rect(ct, Rect2(c - Vector2(mk, mk) * 0.5, Vector2(mk, mk)), false)
-	if space_def.has_population() and st.support != 0 and _sbox.x >= 0:
-		var sup := CLAssets.support(st.support)
-		if sup != null:
-			var sc := Vector2(_sbox.x * size.x, _sbox.y * size.y)
-			draw_texture_rect(sup, Rect2(sc - Vector2(mk, mk) * 0.5, Vector2(mk, mk)), false)
-
-	var ax := _anchor_norm.x * size.x
-	var ay := _anchor_norm.y * size.y
-	var sz := size.x * 0.022
-	var offset := sz * 1.15
-	if st.marker("personality") > 0:
-		var pt := CLAssets.personality()
-		if pt != null:
-			draw_texture_rect(pt, Rect2(Vector2(ax - sz * 0.5, ay - sz * 1.8), Vector2(sz, sz)), false)
-	if st.marker("news") > 0:
-		var nt := CLAssets.news()
-		if nt != null:
-			draw_texture_rect(nt, Rect2(Vector2(ax - sz * 0.5 + offset, ay - sz * 1.8), Vector2(sz, sz)), false)
-	# Capability markers su mappa (Jaeger/Commander).
-	var col := 0
-	for cap_key in ["jaeger_senate", "commander_reds"]:
-		if st.marker(cap_key) > 0:
-			var ct := CLAssets.abb_cap(cap_key)
-			if ct != null:
-				draw_texture_rect(ct,
-					Rect2(Vector2(ax - sz * 0.5 + col * offset, ay + sz * 0.8),
-						Vector2(sz, sz)), false)
-				col += 1
+	# Tutti i marker su mappa (Control/Support + Terror/News/Personality/Capability/
+	# Prepared) sono ora NODI figli (vedi refresh/relayout/_add_overlay), disegnati
+	# SOPRA le pedine. Qui non si disegna più nulla via draw_texture_rect.
+	pass
 
 
 ## Disegna una X rossa al centroide del polo nei bordi sabotati con un vicino.

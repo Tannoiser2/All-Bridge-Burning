@@ -52,6 +52,10 @@ func _play_one(gi: int, act_counts: Dictionary, fp: Dictionary, occ: Dictionary)
 	var gd := mod.build_game_def()
 	var state := GameState.new(gd)
 	mod.apply_setup(state, "standard")
+	# Sim tutto-bot: per §8.1.2 le fazioni Non-player non tracciano/spendono
+	# Risorse. Senza ruoli espliciti, tracks_resources() le tratterebbe da player.
+	for f in ["reds", "senate", "moderates", "germans", "russians"]:
+		state.roles[f] = "bot"
 	var bot := ABBBot.new(state, mod)
 	bot._pac2_dice_seed = gi + 1
 
@@ -98,7 +102,19 @@ func _play_one(gi: int, act_counts: Dictionary, fp: Dictionary, occ: Dictionary)
 				act_counts["G:" + ga] = int(act_counts.get("G:" + ga, 0)) + 1
 
 	var vs2 := mod.victory_status(state)
-	return _finish(state, fp, occ, _best_margin(vs2), cards, phase2)
+	# §7.3: a fine partita vince il margine più alto (tiebreak per ordine), MAI "none".
+	return _finish(state, fp, occ, _tiebreak_winner(vs2), cards, phase2)
+
+
+## §7.3 tiebreak finale: margine più alto; a parità, ordine reds < moderates < senate.
+func _tiebreak_winner(vs: Dictionary) -> String:
+	var best := ""
+	var bm := -999999
+	for f in ["reds", "moderates", "senate"]:
+		var m := int(vs[f]["margin"])
+		if m > bm:
+			bm = m; best = f
+	return best
 
 
 func _build_deck(gd: GameDef, gi: int) -> Array:

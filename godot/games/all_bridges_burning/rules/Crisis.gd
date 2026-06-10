@@ -19,20 +19,134 @@ func resolve() -> Dictionary:
 	# §6.5.3 Powers adjustment: solo in Phase II.
 	if int(state.tracks.get("phase", 1)) >= 2:
 		out["powers"] = _powers_adjustment()
-	# §6.5: Prisoners of War effect — +1 Polarization per ogni 2 Cellule in prigione.
-	var prisoners: Dictionary = state.tracks.get("prisoners", {"senate": 0, "reds": 0})
-	var total_prisoners: int = int(prisoners.get("senate", 0)) + int(prisoners.get("reds", 0))
-	if total_prisoners >= 2:
-		var pol_bump := int(total_prisoners / 2)
-		var prev_pol := int(state.tracks.get("polarization", 0))
-		state.tracks["polarization"] = clampi(prev_pol + pol_bump, 0, 10)
-		out["prisoners_polarization"] = pol_bump
+	# §6.5.1 Prisoners of War — SOLO Phase II. Prima i NP Reds/Senate rilasciano
+	# TUTTI i prigionieri nemici se Polarization ≥ 6, altrimenti nessuno (Solitaire
+	# Play Aid §6.5.1). Poi, per ogni 2 Cellule rimaste in prigione, +1 Polarization.
+	if int(state.tracks.get("phase", 1)) >= 2:
+		var prisoners: Dictionary = state.tracks.get("prisoners", {"senate": 0, "reds": 0})
+		if int(state.tracks.get("polarization", 0)) >= 6:
+			state.tracks["prisoners"] = {"senate": 0, "reds": 0}
+			out["prisoners_released"] = true
+		else:
+			var total_prisoners: int = int(prisoners.get("senate", 0)) + int(prisoners.get("reds", 0))
+			if total_prisoners >= 2:
+				var pol_bump := int(total_prisoners / 2)
+				var prev_pol := int(state.tracks.get("polarization", 0))
+				state.tracks["polarization"] = clampi(prev_pol + pol_bump, 0, 10)
+				out["prisoners_polarization"] = pol_bump
+	# §6.4.2 Agitation: gestione Supporto/Opposizione e clausole di
+	# dis-azzeramento (Polarization vs Vassalaggio) — DEVE precedere il controllo
+	# di vittoria, quindi sta qui prima del Reset.
+	out["agitation"] = _agitation_phase()
 	# §6.5.4 Old News: rimuovi tutti i Terror, Sabotage, News dalla mappa.
 	out["reset"] = _reset_phase()
 	# Conteggio Campaign per il bot (PAC2 last_campaign condition).
 	state.tracks["campaign_count"] = int(state.tracks.get("campaign_count", 0)) + 1
 	out["campaign"] = state.tracks["campaign_count"]
 	return out
+
+
+## §6.4.2 Agitation (Solitaire Play Aid). Ogni Fazione Non-player aggiusta
+## Supporto/Opposizione nei propri spazi e, all'ULTIMA Propaganda, riduce la
+## Polarization per non azzerare la propria vittoria (§7.2). Trascrizione fedele
+## delle tre colonne del play-aid (Senate / Reds / Moderates).
+func _agitation_phase() -> Dictionary:
+	var log: Array = []
+	# "final Propaganda" = l'ultima (4ª) Propaganda. campaign_count viene
+	# incrementato a fine resolve(): qui vale 3 alla 4ª.
+	var is_final := int(state.tracks.get("campaign_count", 0)) >= 3
+	var vg := int(state.tracks.get("vassalage_german", 0))
+	var vr := int(state.tracks.get("vassalage_russian", 0))
+
+	# ---- SENATE: spazi con Controllo Senate e Cellula Senate Attiva ----
+	# ❶ se Senate Town Pop 4+ e ultima Propaganda: riduci Polarization così che
+	#    Vassalaggio Tedesco + Polarization = 5 (solo riduzione).
+	if _senate_town_pop_ctrl() >= 4 and is_final:
+		var tgt := maxi(0, 5 - vg)
+		if int(state.tracks.get("polarization", 0)) > tgt:
+			state.tracks["polarization"] = tgt
+			log.append("Senate Agitation: Pol→%d" % tgt)
+	# ❷ Agita al massimo: sposta verso Supporto dove controlla con Cellula Attiva.
+	for sid in state.spaces.keys():
+		var st: SpaceState = state.space_state(sid)
+		if st.control == "senate" and st.count("senate", "cell", "active") > 0:
+			_shift_support(sid, 1)
+
+	# ---- REDS: spazi con Controllo Reds e Cellula Attiva o Admin ----
+	# ❸ Alza l'Opposizione al massimo: (a) nelle Town, (b) a 1+ Pop. §6.4.2: con
+	#    Admin Reds nello spazio fino a qualunque livello (Attiva −2), altrimenti
+	#    solo fino a Opposizione PASSIVA (−1).
+	for sid in _pop_spaces_towns_first():
+		var st: SpaceState = state.space_state(sid)
+		if st.control == "reds" and (st.count("reds", "cell", "active") > 0 or st.count("reds", "admin") > 0):
+			var floor_opp := ACTIVE_OPP_INT if st.count("reds", "admin") > 0 else -1
+			if int(st.support) > floor_opp:
+				_shift_support(sid, -1)
+	# ❹ se Oppose+Admins 12+ e ultima Propaganda: Polarization così che
+	#    Vassalaggio Russo + Polarization = 5.
+	if is_final and (state.total_opposition() + state.count_on_map("reds", "admin")) >= 12:
+		var tgt2 := maxi(0, 5 - vr)
+		if int(state.tracks.get("polarization", 0)) > tgt2:
+			state.tracks["polarization"] = tgt2
+			log.append("Reds Agitation: Pol→%d" % tgt2)
+
+	# ---- MODERATES: spazi 1+ Pop senza Controllo con un pezzo Moderati ----
+	# ❶ se ultima Propaganda e Risorse 15+: Polarization = Issues+Networks(+1).
+	if is_final and int(state.get_resources("moderates")) >= 15:
+		var tgt3 := clampi(int(state.tracks.get("issues_networks", 0)) + 1, 0, 10)
+		if int(state.tracks.get("polarization", 0)) > tgt3:
+			state.tracks["polarization"] = tgt3
+			log.append("Moderates Agitation: Pol→%d" % tgt3)
+	# ❷ se Oppose+Admins 10+: sposta verso Neutrale finché Oppose+Admins ≤ 9.
+	var guard := 0
+	while (state.total_opposition() + state.count_on_map("reds", "admin")) >= 10 and guard < 30:
+		guard += 1
+		var shifted := false
+		for sid in _pop_spaces_towns_first():
+			var st: SpaceState = state.space_state(sid)
+			if int(st.support) < 0 and st.count("moderates", "cell") > 0:
+				_shift_support(sid, 1)
+				shifted = true
+				break
+		if not shifted:
+			break
+	return {"log": log}
+
+
+## Town Pop sotto Controllo Senate (per §6.4.2 ❶).
+func _senate_town_pop_ctrl() -> int:
+	var t := 0
+	for sid in state.spaces.keys():
+		var sd: SpaceDef = state.game_def.space(sid)
+		if sd != null and sd.type == CoinEnums.SpaceType.CITY \
+				and state.space_state(sid).control == "senate":
+			t += sd.pop
+	return t
+
+
+## Spazi con 1+ Pop, Town prima delle Province (§8.1.7).
+func _pop_spaces_towns_first() -> Array:
+	var towns: Array = []
+	var provs: Array = []
+	for sid in state.spaces.keys():
+		var sd: SpaceDef = state.game_def.space(sid)
+		if sd == null or sd.pop <= 0:
+			continue
+		if sd.type == CoinEnums.SpaceType.CITY:
+			towns.append(String(sid))
+		else:
+			provs.append(String(sid))
+	return towns + provs
+
+
+func _shift_support(sid: String, delta: int) -> void:
+	var st: SpaceState = state.space_state(sid)
+	var cur := int(st.support)
+	st.support = clampi(cur + delta, ACTIVE_OPP_INT, ACTIVE_SUP_INT) as CoinEnums.Support
+
+
+const ACTIVE_OPP_INT := -2
+const ACTIVE_SUP_INT := 2
 
 
 ## §6.5.4 Old News: rimuove Terror, Sabotage, News markers dalla mappa

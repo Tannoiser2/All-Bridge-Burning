@@ -13,7 +13,9 @@
     "senate_town_pop": 1,
     "oppose_admins": 3,
     "cells_on_map": 13,
-    "issues_networks": 1
+    "issues_networks": 1,
+    "prepared_senate": 2,
+    "prepared_reds": 1
   },
   "spaces": {
     "helsinki": {
@@ -24,8 +26,7 @@
         "russian_troop": 1
       },
       "support": "neutral",
-      "control": "none",
-      "markers": {"personality": 1}
+      "control": "none"
     },
     "uusimaa": {
       "forces": {"reds_cell": 2},
