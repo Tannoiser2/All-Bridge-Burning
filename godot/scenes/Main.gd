@@ -163,7 +163,7 @@ var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Specia
 ## Numero di build, in piccolo nell'angolo in alto a sinistra. Permanente:
 ## serve a confermare a colpo d'occhio quale versione il browser ha caricato
 ## (la cache HTTP del .pck è il motivo per cui a volte non vedi i fix).
-const BUILD_VERSION := "b141"
+const BUILD_VERSION := "b142"
 
 
 func _ready() -> void:
@@ -616,6 +616,32 @@ func _layout_board() -> void:
 		_moves_overlay.position = Vector2.ZERO
 		_moves_overlay.size = base
 		_update_moves_overlay()
+
+
+## Tuning DAL VIVO della dimensione dei marker Control/Support (solo ABB):
+##   O / P  → Control −/+        K / L → Support/Oppose −/+
+## Il valore corrente è mostrato nella barra istruzioni e nel Log, così basta
+## leggerlo e comunicarlo. Passo 0.001 (con Shift 0.0005 per la precisione fine).
+func _unhandled_key_input(event: InputEvent) -> void:
+	if GameRegistry.game_id != "all_bridges_burning":
+		return
+	if not (event is InputEventKey and event.pressed and not event.echo):
+		return
+	var step := 0.0005 if event.shift_pressed else 0.001
+	var changed := true
+	match event.keycode:
+		KEY_O: RegionView.ABB_CTRL_SCALE = maxf(0.002, RegionView.ABB_CTRL_SCALE - step)
+		KEY_P: RegionView.ABB_CTRL_SCALE += step
+		KEY_K: RegionView.ABB_SUP_SCALE = maxf(0.002, RegionView.ABB_SUP_SCALE - step)
+		KEY_L: RegionView.ABB_SUP_SCALE += step
+		_: changed = false
+	if changed:
+		_layout_board()
+		var msg := "📐 Control=%.4f  Support=%.4f   (O/P=Control −/+ , K/L=Support −/+ , Shift=fine)" \
+			% [RegionView.ABB_CTRL_SCALE, RegionView.ABB_SUP_SCALE]
+		if _instr != null:
+			_instr.text = msg
+		GameController.emit_signal("action_logged", msg, "")
 
 
 # ---------------------------------------------------------------------------

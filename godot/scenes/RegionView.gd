@@ -9,11 +9,11 @@ extends Control
 signal space_clicked(space_id: String)
 signal piece_dropped(from_id: String, to_id: String, faction: String, type: String)
 
-# Scala (frazione della larghezza mappa) dei marcatori nelle caselle stampate.
-# ABB: Control va dentro la sua casella (texture 94px su board 3829 ≈ 0.0245);
-# Support/Oppose più grande perché il cartiglio stampato è più ampio.
-const ABB_CTRL_SCALE := 0.014
-const ABB_SUP_SCALE := 0.010
+# Scala (frazione della larghezza mappa) dei marcatori Control/Support.
+# Static var (non const) per poterle regolare DAL VIVO durante il tuning
+# (tasti freccia in Main.gd). Tutte le RegionView leggono lo stesso valore.
+static var ABB_CTRL_SCALE := 0.014
+static var ABB_SUP_SCALE := 0.010
 
 var space_id: String
 var space_def: SpaceDef
