@@ -472,4 +472,34 @@ func _red_revolt(side: String, faction: String) -> Dictionary:
 		return {"ok": true, "log": log}
 	state.tracks["phase"] = 2
 	log.append("Red Revolt! (%s) giocata da %s: parte la Phase II — i Germans ora agiscono via flowchart (§3.4)." % [side, faction])
+	# I marker Capability "prenotati" in Phase I (Jaeger/Commander, §5.3) si
+	# piazzano ORA: senza questo restavano pending per sempre e non davano mai
+	# il bonus Attack né comparivano sulla mappa.
+	_deploy_pending_capabilities(log)
 	return {"ok": true, "log": log}
+
+
+## Piazza i marker Capability prenotati in Phase I (pending_*): Jaeger su Vaasa
+## (o spazio con Cellula Senato), Commander su uno spazio con Cellula Reds.
+func _deploy_pending_capabilities(log: Array[String]) -> void:
+	for spec in [["jaeger_senate", "senate", "vaasa"], ["commander_reds", "reds", ""]]:
+		var key: String = spec[0]
+		var faction: String = spec[1]
+		var n := int(state.tracks.get("pending_" + key, 0))
+		if n <= 0:
+			continue
+		state.tracks["pending_" + key] = 0
+		for _i in range(n):
+			var target: String = spec[2]
+			if target == "" or state.space_state(target).count(faction, "cell") <= 0:
+				target = ""
+				for sid in state.spaces.keys():
+					if state.space_state(sid).count(faction, "cell") > 0:
+						target = String(sid)
+						break
+			if target == "":
+				log.append("Marker %s: nessuna Cellula %s sulla mappa, non piazzato." % [key, faction])
+				continue
+			var st: SpaceState = state.space_state(target)
+			st.set_marker(key, st.marker(key) + 1)
+			log.append("Marker %s piazzato a %s (Phase II)." % [key, target])

@@ -93,10 +93,16 @@ func attack(fid: String, sid: String, rng_seed: int = -1) -> Dictionary:
 		return _err("spazio sconosciuto")
 	var st: SpaceState = state.space_state(sid)
 	var strength: int = st.count(fid, "cell") + st.count(fid, "troops")
-	# §5.3 Capability bonuses: +2 Attack Strength per Jaeger/Commander/Cannons/Trains.
-	strength += _capability_attack_bonus(fid, st)
 	if strength <= 0:
 		return _err("nessun pezzo attaccante")
+	# §5.3 Capability bonuses: +2 Attack Strength per Jaeger/Commander/Cannons/Trains.
+	strength += _capability_attack_bonus(fid, st)
+	# §3.2.4: marker Prepared del DIFENSORE → −2 alla forza d'attacco.
+	var enemy_pre: String = _first_enemy(sid, fid)
+	if enemy_pre in ["senate", "reds"] and st.marker("prepared_" + enemy_pre) > 0:
+		strength -= 2
+	if strength <= 0:
+		return _ok({"roll": 0, "strength": strength, "hit": false})
 	# §3.2.4: "pay one Resource per selected space." §8.1.2: solo i player pagano
 	# (Powers e Bot non spendono Risorse).
 	if state.tracks_resources(fid):
