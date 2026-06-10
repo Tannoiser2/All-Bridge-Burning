@@ -78,6 +78,9 @@ func control_count(faction: String, st: SpaceState) -> int:
 		return 0
 	for type_id in st.pieces[faction].keys():
 		var pt: PieceTypeDef = game_def.piece_type(type_id)
+		# Pezzi che non contano MAI per il Controllo (ABB §1.7: Truppe Powers).
+		if pt != null and not pt.counts_for_control:
+			continue
 		for state in st.pieces[faction][type_id].keys():
 			if pt != null and not pt.state_counts_for_control(state):
 				continue
@@ -93,15 +96,15 @@ func recompute_control(space_id: String) -> void:
 	var best_faction := ""
 	var best := 0
 	var others_total := 0
-	var counts: Dictionary = {}
 	for f in game_def.factions:
 		var c := control_count(f.id, st)
-		counts[f.id] = c
 		others_total += c
-		if c > best:
+		# Solo le Fazioni che POSSONO controllare sono candidate (ABB §1.7: solo
+		# Reds/Senate; Moderati/Powers contano per negare ma non controllano).
+		if f.can_control and c > best:
 			best = c
 			best_faction = f.id
-	# Controlla se best supera la somma di tutti gli altri.
+	# Controlla se la migliore Fazione-controllante supera la somma di tutte le altre.
 	if best > 0 and best > (others_total - best):
 		st.control = best_faction
 	else:

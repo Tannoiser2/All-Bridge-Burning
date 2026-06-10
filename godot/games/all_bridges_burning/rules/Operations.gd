@@ -31,10 +31,24 @@ func rally(fid: String, sid: String, mode: String = "cell") -> Dictionary:
 		if state.get_resources(fid) < cost:
 			return _err("risorse insufficienti (servono %d)" % cost)
 		state.resources[fid] -= cost
+	# §3.2.1: numero di Cellule = 1 + modificatori. Senato +1 per livello di
+	# Supporto; Reds +1 per livello di Opposizione. Le SOTTRAZIONI (Supporto/
+	# Opposizione avversa, Terror) sono pagate per essere offsettate; le Bot le
+	# offsettano sempre automaticamente (§8.1.3) → non vengono mai applicate.
+	# Admin/Network piazzano sempre 1.
+	var n := 1
+	if mode == "cell":
+		var sup := int(state.space_state(sid).support)
+		if fid == "senate":
+			n += maxi(sup, 0)
+		elif fid == "reds":
+			n += maxi(-sup, 0)
+		var pool_left: int = int(fdef.force_pool.get(mode, 0)) - state.count_on_map(fid, mode)
+		n = clampi(n, 0, maxi(pool_left, 1))
 	var pt_state: String = "underground" if mode == "cell" else ""
-	state.spaces[sid].add_piece(fid, mode, 1, pt_state)
+	state.spaces[sid].add_piece(fid, mode, n, pt_state)
 	state.recompute_control(sid)
-	return _ok({"cost": cost})
+	return _ok({"cost": cost, "placed": n})
 
 
 ## March (§3.2.5): sposta pezzi verso spazio adiacente. Phase II only per
@@ -257,15 +271,16 @@ func politics(fid: String, cube_color: String) -> Dictionary:
 	return _ok({"cost": cost, "cube": cube_color})
 
 
-## Terror (§3.2.3): poni Terror marker; sposta Supporto/Opposizione.
-## In Phase II, se il marker piazzato è il 2°, viene piazzato anche un News.
-## Massimo 2 Terror per spazio (rulebook §1.4.3).
+## Terror (§3.2.3): poni un Terror marker e RIMUOVI pezzi nemici (fino a 1, o 2 se
+## Polarization ≥ 6). NON sposta il Supporto/Opposizione — quello è compito di
+## Agitate (§3.2.2) / Agitation (§6.4.2). Serve una Cellula ATTIVA della fazione.
+## In Phase II, il 2° marker piazza anche un News. Max 2 Terror per spazio (§1.4.3).
 func terror(fid: String, sid: String) -> Dictionary:
 	if not state.spaces.has(sid):
 		return _err("spazio sconosciuto")
 	var st: SpaceState = state.space_state(sid)
-	if st.count(fid, "cell") <= 0:
-		return _err("serve una Cellula in %s" % sid)
+	if st.count(fid, "cell", "active") <= 0:
+		return _err("serve una Cellula Attiva in %s (§3.2.3)" % sid)
 	if st.marker("terror") >= 2:
 		return _err("massimo 2 Terror per spazio (§1.4.3)")
 	# §3.2.3: "Pay one Resource per selected space." §8.1.2: solo i player pagano.
@@ -278,13 +293,28 @@ func terror(fid: String, sid: String) -> Dictionary:
 	# News marker §3.2.3: il 2° Terror in Phase II piazza un News.
 	if prev == 1 and int(state.tracks.get("phase", 1)) >= 2 and state.count_marker_on_map("news") < 2:
 		st.set_marker("news", st.marker("news") + 1)
-	if fid == "reds":
-		_shift_support(sid, -1)
-	elif fid == "senate":
-		_shift_support(sid, +1)
+	# §3.2.3: rimuovi fino a 1 pezzo nemico (2 se Polarization ≥ 6). Ordine: Cellule
+	# (Attive prima), Truppe, Admin/Network. Cellule Senate/Reds → Prigione + News.
+	var max_rem: int = 2 if int(state.tracks.get("polarization", 0)) >= 6 else 1
+	var removed: int = 0
+	for _k in range(max_rem):
+		var efid := _first_enemy(sid, fid)
+		if efid == "":
+			break
+		for pair in [["cell", "active"], ["troops", ""], ["cell", "underground"], ["admin", ""], ["network", ""]]:
+			if st.count(efid, pair[0], pair[1]) > 0:
+				st.remove_piece(efid, pair[0], 1, pair[1])
+				removed += 1
+				_maybe_transfer_personality(sid, efid, fid)
+				if pair[0] == "cell" and efid in ["senate", "reds"]:
+					var prisoners: Dictionary = state.tracks.get("prisoners", {"senate": 0, "reds": 0})
+					prisoners[efid] = int(prisoners.get(efid, 0)) + 1
+					state.tracks["prisoners"] = prisoners
+				break
+	state.recompute_control(sid)
 	# Polarization +1 per ogni Terror piazzato.
 	_polarize(1)
-	return _ok({"news_placed": prev == 1 and int(state.tracks.get("phase", 1)) >= 2})
+	return _ok({"removed": removed, "news_placed": prev == 1 and int(state.tracks.get("phase", 1)) >= 2})
 
 
 # ---------------------------------------------------------------------------

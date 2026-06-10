@@ -42,6 +42,10 @@ func build_game_def() -> GameDef:
 	var factions_data: Dictionary = _load_json(DATA_DIR + "factions.json")
 	for f in factions_data.get("factions", []):
 		gd.add_faction(FactionDef.from_dict(f))
+	# §1.7: solo Reds e Senate possono Controllare. Moderati e Powers (Germani/
+	# Russi) non controllano mai (ma negano il Controllo col loro conteggio).
+	for fd in gd.factions:
+		fd.can_control = fd.id in ["reds", "senate"]
 
 	# Carte evento: TODO (PR Eventi).
 	var cards_data: Dictionary = _load_json(DATA_DIR + "cards.json")
@@ -64,8 +68,10 @@ func build_game_def() -> GameDef:
 
 func _register_piece_types(gd: GameDef) -> void:
 	# Truppe (cubi) — Germania (grigio) e Russia (marrone).
+	# §1.7: le Truppe dei Powers sono ESCLUSE dal conteggio del Controllo.
 	var troops := PieceTypeDef.new("troops", "Truppe")
 	troops.category = CoinEnums.PieceCategory.CUBE
+	troops.counts_for_control = false
 	gd.add_piece_type(troops)
 
 	# Cellule (ottagoni) — Reds, Senate, Moderates. Active / Underground (§1.4.1).
@@ -215,9 +221,12 @@ func victory_status(state: GameState) -> Dictionary:
 	var senate_value: int = _senate_town_pop(state)
 	if vass_g + pol > 5:
 		senate_value = 0
+	# §7.2 Moderati: Risorse > 14 AND (Issues Risolti + Networks + 1) ≥ Polarization.
+	# La 2ª condizione (≥, non >) è modellata come secondo argomento del min(): per
+	# non bloccare la vittoria deve valere mod_alt > 14, cioè inw+1-pol ≥ 0 → +15.
 	var mod_res: int = state.get_resources("moderates")
 	var mod_inw: int = int(state.tracks.get("issues_networks", 0)) + 1
-	var mod_alt: int = mod_inw - pol + 14
+	var mod_alt: int = mod_inw - pol + 15
 	var mod_value: int = min(mod_res, mod_alt)
 
 	return {

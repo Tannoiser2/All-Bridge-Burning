@@ -17,6 +17,10 @@ var default_state: String = ""      ## stato in cui il pezzo viene piazzato
 ## Stati in cui il pezzo NON conta per il Controllo (es. Casinò "closed").
 var non_counting_states: PackedStringArray = PackedStringArray()
 
+## Il pezzo conta MAI per il Controllo? (es. ABB §1.7: le Truppe Tedesche/Russe
+## sono escluse dal conteggio del Controllo). Default true.
+var counts_for_control: bool = true
+
 
 func _init(p_id: String = "", p_name: String = "") -> void:
 	id = p_id

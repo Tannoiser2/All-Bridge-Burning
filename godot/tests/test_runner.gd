@@ -200,10 +200,15 @@ func _test_abb_operations() -> void:
 	var atk = ops.attack("reds", "helsinki", 3)
 	_check("Attack restituisce risultato", atk.has("ok"))
 
-	var terror_before: int = state.space_state("uusimaa").marker("terror")
+	# §3.2.3: Terror richiede una Cellula ATTIVA + un nemico da rimuovere.
+	var us: SpaceState = state.space_state("uusimaa")
+	us.add_piece("reds", "cell", 1, "active")
+	us.add_piece("senate", "cell", 1, "active")
+	var terror_before: int = us.marker("terror")
 	var ter = ops.terror("reds", "uusimaa")
 	_check("Terror OK", ter.get("ok", false))
-	_eq("Terror marker +1", state.space_state("uusimaa").marker("terror"), terror_before + 1)
+	_eq("Terror marker +1", us.marker("terror"), terror_before + 1)
+	_check("Terror rimuove 1 pezzo nemico", int(ter.get("removed", 0)) >= 1)
 
 
 func _test_abb_specials() -> void:
@@ -442,8 +447,11 @@ func _test_abb_terror_phase_ii_news() -> void:
 	var mod: ABBModule = r[0]
 	state.tracks["phase"] = 2
 	# Helsinki: Reds Cell + un Senate Cell. 1° Terror = nessun News, 2° = News.
+	# §3.2.3: serve una Cellula Reds ATTIVA + nemici da rimuovere (ne aggiungo).
 	var ops := ABBOperations.new(state, mod)
 	var st: SpaceState = state.space_state("helsinki")
+	st.add_piece("reds", "cell", 1, "active")
+	st.add_piece("senate", "cell", 3, "active")
 	var t1 = ops.terror("reds", "helsinki")
 	_check("1° Terror ok", t1.get("ok", false))
 	_eq("News 0 dopo 1° Terror", st.marker("news"), 0)

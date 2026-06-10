@@ -9,6 +9,10 @@ var short_name: String
 var color: String               ## nome/hex del colore della Fazione
 var role: CoinEnums.FactionRole = CoinEnums.FactionRole.INSURGENT
 
+## Questa Fazione può CONTROLLARE uno spazio? (ABB §1.7: solo Reds e Senate;
+## Moderati e Powers non controllano mai — ma negano il Controllo). Default true.
+var can_control: bool = true
+
 ## Forze totali disponibili: piece_type_id -> conteggio massimo.
 var force_pool: Dictionary = {}
 
