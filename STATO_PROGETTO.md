@@ -1,7 +1,7 @@
 # Stato del progetto — All Bridges Burning (Digital Edition)
 
-**Data:** 2026-06-10 (sessione "bot fedeli §8 + bilanciamento + UI")
-**Ultima build web:** `b152` (etichetta gialla in alto a sinistra nel gioco)
+**Data:** 2026-06-10 (sessione "bot fedeli §8 + bilanciamento + UI + mazzo §2.4")
+**Ultima build web:** `b154` (etichetta gialla in alto a sinistra nel gioco)
 **Sito live:** <https://tannoiser2.github.io/All-Bridge-Burning/>
 **Repo:** `Tannoiser2/All-Bridge-Burning` — locale: `~/Desktop/all-bridges-burning/`
 **Test:** 353/353 verdi (`tests/test_runner.gd`)
@@ -28,6 +28,16 @@ Il gioco è **completo e giocabile**, fedele al modulo Vassal e al regolamento
   in `Events._np_instruction_effect`.
 - **Simboli P/i/pieni** estratti visivamente dalle 47 carte del Vassal →
   `cards.json` campo `np` (33 carte), parsati in `CardDef.np_has()`.
+- **Mazzo fedele al Setup** (b154): 21 Eventi 1917 (#1-21) e 21 1918 (#25-45)
+  mescolati separatamente; Campaign Deck = (4 Eventi+1 Propaganda) mescolati +
+  5 Eventi in cima; 2 Campaign 1917 sopra 2 Campaign 1918 (40 carte); 3 avanzi
+  per anno fuori. **#24 Red Revolt! MAI nel mazzo** (§2.4): entra col trigger
+  27+ Cellule Reds+Senato a fine turno, o sostituendo la prima carta dopo la
+  2ª Propaganda; procedura §2.4.1 completa al suo arrivo (azione gratuita Reds
+  a Helsinki, Capability, Powers al Vassalaggio, Reds contano come Evento via
+  SequenceOfPlay.force_action).
+- **Log auto-partita** (b153): divisori "Fine turno N" anche nei loop auto;
+  partita automatica = tutti i ruoli a Bot (eccezioni §8.1.2/§8.1.3 attive).
 - **Germans flowchart §3.4** in Phase II; §6.5.2 Red Revolt! forzata alla 2ª
   Propaganda se non ancora avvenuta.
 
