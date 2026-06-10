@@ -739,13 +739,35 @@ func resolve_propaganda() -> Dictionary:
 		return {"ok": false}
 	propaganda_played += 1
 	var is_final := propaganda_played >= 4
-	emit_signal("action_logged", " Round Propaganda %d/4" % propaganda_played, "")
+	emit_signal("action_logged", "══ ROUND PROPAGANDA %d/4 — Crisis Round (§6.0) ══" % propaganda_played, "")
 	# All Bridges Burning: il "round periodico" è il Crisis Round (§6.0),
 	# strutturalmente diverso da Cuba Libre. Chiamiamo direttamente il modulo.
 	if GameRegistry.game_id == "all_bridges_burning":
+		# §6.1 Fase Vittoria: all'INIZIO di ogni Propaganda. Se una fazione ha
+		# margine positivo la partita finisce subito (i Powers "prevenitori" sono
+		# già modellati: Vassalaggio+Polarization>5 azzera il valore in §7.2).
+		var vs: Dictionary = module.victory_status(state)
+		for fid in ["reds", "senate", "moderates"]:
+			var v: Dictionary = vs[fid]
+			emit_signal("action_logged", " §6.1 Vittoria %s: %d/%d (margine %+d)" %
+				[faction_name(fid), int(v["value"]), int(v["threshold"]), int(v["margin"])], fid)
+		if not is_final:
+			var early := ""
+			var tb := Array(module.tiebreak_order())
+			for fid in ["reds", "senate", "moderates"]:
+				if int(vs[fid]["margin"]) <= 0:
+					continue
+				if early == "" or int(vs[fid]["margin"]) > int(vs[early]["margin"]) \
+						or (int(vs[fid]["margin"]) == int(vs[early]["margin"]) and tb.find(fid) < tb.find(early)):
+					early = fid
+			if early != "":
+				emit_signal("action_logged", " §6.1: %s supera la soglia — VITTORIA immediata" % faction_name(early), early)
+				game_over = true
+				_emit_final_report(early)
+				emit_signal("state_changed")
+				return {"propaganda": true, "winner": early}
 		var crisis_report: Dictionary = propaganda.resolve()
-		emit_signal("action_logged", " Crisis: politics=%s, earnings=%s" %
-			[crisis_report.get("politics", {}), crisis_report.get("earnings", {})], "")
+		_log_abb_crisis(crisis_report)
 		# §6.5.2 Pivotal Event: se questa è la 2ª Propaganda e Red Revolt! (#24) non
 		# ha ancora attivato la Phase II, forzala ora (garantisce la Phase II).
 		if propaganda_played == 2 and int(state.tracks.get("phase", 1)) < 2:
@@ -779,6 +801,43 @@ func resolve_propaganda() -> Dictionary:
 		propaganda.reset_phase()
 	emit_signal("state_changed")
 	return {"propaganda": true}
+
+
+## Log leggibile del Crisis Round ABB (§6.0), fase per fase, dai dati del report.
+func _log_abb_crisis(r: Dictionary) -> void:
+	var p: Dictionary = r.get("politics", {})
+	for line in p.get("log", []):
+		emit_signal("action_logged", " • Politics (§6.2): %s" % line, "")
+	if p.has("resolved"):
+		emit_signal("action_logged", " • Politics (§6.2): risolta l'Issue «%s»" % String(p["resolved"]), "")
+	var e: Dictionary = r.get("earnings", {})
+	var parts: Array = []
+	for fid in ["reds", "senate", "moderates"]:
+		if e.has(fid) and int(e[fid]) != 0:
+			parts.append("%s +%d" % [faction_name(fid), int(e[fid])])
+	if parts.size() > 0:
+		emit_signal("action_logged", " • Earnings (§6.3): Risorse %s" % ", ".join(PackedStringArray(parts)), "")
+	var ag: Dictionary = r.get("agitation", {})
+	for line in ag.get("log", []):
+		emit_signal("action_logged", " • Agitation (§6.4.2): %s" % line, "")
+	var pw: Dictionary = r.get("powers", {})
+	for line in pw.get("log", []):
+		emit_signal("action_logged", " • Powers (§6.5.3): %s" % line, "")
+	if r.get("prisoners_released", false):
+		emit_signal("action_logged", " • Prigionieri (§6.5.1): tutti rilasciati (Polarization ≥ 6)", "")
+	elif r.has("prisoners_polarization"):
+		emit_signal("action_logged", " • Prigionieri (§6.5.1): Polarization +%d" % int(r["prisoners_polarization"]), "")
+	var rs: Dictionary = r.get("reset", {})
+	var rm: Array = []
+	var rm_names := {"terror": "Terror", "sabotage": "Sabotage", "news": "News", "borders": "bordi sabotati"}
+	for mk in ["terror", "sabotage", "news", "borders"]:
+		if int(rs.get(mk, 0)) > 0:
+			rm.append("%s ×%d" % [rm_names[mk], int(rs[mk])])
+	if rm.size() > 0:
+		emit_signal("action_logged", " • Old News (§6.5.4): rimossi %s" % ", ".join(PackedStringArray(rm)), "")
+	if r.has("senate_conscription"):
+		emit_signal("action_logged", " • Coscrizione (§6.5.5): %d Cellule Senato da Out of Play a Disponibili" % int(r["senate_conscription"]), "")
+	emit_signal("action_logged", " • Polarization ora a %d" % int(state.tracks.get("polarization", 0)), "")
 
 
 ## Report finale nel log: dichiara la Fazione vincente e i punteggi di tutte
