@@ -779,11 +779,31 @@ func _red_revolt(side: String, faction: String) -> Dictionary:
 		log.append("Red Revolt! ha già attivato la Phase II — nessun effetto.")
 		return {"ok": true, "log": log}
 	state.tracks["phase"] = 2
-	log.append("Red Revolt! (%s) giocata da %s: parte la Phase II — i Germans ora agiscono via flowchart (§3.4)." % [side, faction])
-	# I marker Capability "prenotati" in Phase I (Jaeger/Commander, §5.3) si
-	# piazzano ORA: senza questo restavano pending per sempre e non davano mai
-	# il bonus Attack né comparivano sulla mappa.
+	log.append("Red Revolt! (%s): parte la Phase II — i Germans ora agiscono via flowchart (§3.4)." % side)
+	# §2.4.1 ❷ — azione gratuita dei Reds. Per i bot, instruction sheet #24:
+	# ❶ rimuovi le Cellule Senato (e i Prepared) a Helsinki, ❷ altrimenti Rally lì.
+	if String(state.roles.get("reds", "player")) == "bot" and state.spaces.has("helsinki"):
+		var hl: SpaceState = state.space_state("helsinki")
+		var sen := hl.count("senate", "cell")
+		if hl.count("reds", "cell") > 0 and sen > 0:
+			for st_name in ["active", "underground"]:
+				while hl.count("senate", "cell", st_name) > 0:
+					hl.remove_piece("senate", "cell", 1, st_name)
+			hl.set_marker("prepared_senate", 0)
+			state.recompute_control("helsinki")
+			log.append("§2.4.1: rimosse %d Cellule Senato (e Prepared) a Helsinki." % sen)
+		else:
+			var rr: Dictionary = ABBOperations.new(state, module).rally("reds", "helsinki", "cell")
+			if rr.get("ok", false):
+				log.append("§2.4.1: Rally Reds gratuito a Helsinki.")
+	# §2.4.1 ❸ — i marker Capability "prenotati" in Phase I (Jaeger/Commander,
+	# §5.3) si piazzano ORA (prima Reds, poi Senato — Jaeger su Vaasa).
 	_deploy_pending_capabilities(log)
+	# §2.4.1 ❹ — Powers allineati al Vassalaggio (Germans in Available; Russi
+	# in una Town casuale con pezzi Reds). Riusa la logica §6.5.3 del Crisis.
+	var pw: Dictionary = ABBCrisis.new(state, module)._powers_adjustment()
+	for line in pw.get("log", []):
+		log.append("§2.4.1: %s" % line)
 	return {"ok": true, "log": log}
 
 

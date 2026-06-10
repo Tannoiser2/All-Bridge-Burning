@@ -135,6 +135,27 @@ func act_pass() -> bool:
 	return true
 
 
+## Registra fid come Fazione che HA AGITO indipendentemente dal pending (ABB
+## §2.4.1: con Red Revolt! i Reds contano come se avessero giocato l'Evento,
+## "Regardless of Eligibility status"). Le altre fazioni proseguono normalmente.
+func force_action(fid: String, action: int) -> void:
+	if _actors.has(fid):
+		return
+	var first := _actors.is_empty()
+	if first:
+		_first_action = action
+	_actors.append(fid)
+	action_box[fid] = _box_for(action, first)
+	# Se fid era ancora in coda fra i pending, toglilo dall'ordine.
+	var i := _eligible_order.find(fid)
+	if i >= 0 and i >= _idx:
+		_eligible_order.remove_at(i)
+	if _actors.size() >= 2:
+		_done = true
+	else:
+		_check_done()
+
+
 ## La Fazione in sospeso svolge un'azione (Operazione/Evento/...). L'effetto concreto
 ## è gestito dal chiamante; qui si registra l'azione e si aggiorna il flusso.
 func act(action: int) -> bool:

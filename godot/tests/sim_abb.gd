@@ -79,6 +79,7 @@ func _play_one(gi: int, act_counts: Dictionary, fp: Dictionary, occ: Dictionary,
 	var cards := 0
 	var props := 0
 	var phase2 := false
+	var rr_due := false   # §2.4: Red Revolt! sostituirà la prossima carta
 
 	for card in deck:
 		if props >= 4:
@@ -87,16 +88,22 @@ func _play_one(gi: int, act_counts: Dictionary, fp: Dictionary, occ: Dictionary,
 		if card.is_propaganda:
 			props += 1
 			ABBCrisis.new(state, mod).resolve()
+			# §2.4: se Red Revolt! non è scattata entro la fine della 2ª
+			# Propaganda, sostituisce la PROSSIMA carta (qui: flag → al
+			# prossimo giro la carta viene rimpiazzata da #24).
+			if props == 2 and int(state.tracks.get("phase", 1)) < 2:
+				rr_due = true
 			var vs := mod.victory_status(state)
 			var w := _winner(vs)
 			if w != "":
 				return _finish(state, fp, occ, w, cards, phase2)
 			continue
-		# Red Revolt! → Phase II (backstop §6.5.2: la carta in mazzo attiva la Ph II)
-		if card.number == 24 and int(state.tracks.get("phase", 1)) < 2:
+		# §2.4: Red Revolt! sostituisce questa carta (trigger 27+ Cellule o 2ª Propaganda).
+		if rr_due and int(state.tracks.get("phase", 1)) < 2:
+			rr_due = false
 			events.apply(24, "unshaded", "reds")
 			ev["#24 Red Revolt"] = int(ev.get("#24 Red Revolt", 0)) + 1
-			ev["_capabilities"] = int(ev.get("_capabilities", 0))  # init
+			continue  # la carta sostituita è scartata senza effetto
 		var seq := SequenceOfPlay.new(state, mod, card)
 		var guard := 0
 		while not seq.is_done() and guard < 12:
@@ -125,6 +132,11 @@ func _play_one(gi: int, act_counts: Dictionary, fp: Dictionary, occ: Dictionary,
 			else:
 				seq.act(CoinEnums.ActionType.OPERATION)
 		seq.finish()
+		# §2.4: 27+ Cellule Reds+Senato a fine turno → Red Revolt! al posto
+		# del prossimo Evento.
+		if int(state.tracks.get("phase", 1)) < 2 and not rr_due \
+				and state.count_on_map("reds", "cell") + state.count_on_map("senate", "cell") >= 27:
+			rr_due = true
 		if int(state.tracks.get("phase", 1)) >= 2:
 			phase2 = true
 			var gt := bot.take_turn("germans")
@@ -148,27 +160,43 @@ func _tiebreak_winner(vs: Dictionary) -> String:
 	return best
 
 
+## Mazzo FEDELE al Setup: 21 Eventi 1917 (#1-21) e 21 Eventi 1918 (#25-45)
+## mescolati separatamente; Campaign Deck = (4 Eventi + 1 Propaganda) mescolati
+## + 5 Eventi in cima; 2 Campaign 1917 sopra 2 Campaign 1918; 3 avanzi per anno
+## fuori; #24 Red Revolt! NON nel mazzo (entra per trigger §2.4 nel loop).
 func _build_deck(gd: GameDef, gi: int) -> Array:
-	var events := []
-	var props := []
+	var y1917: Array = []
+	var y1918: Array = []
+	var props: Array = []
 	for c in gd.cards:
 		if c.is_propaganda:
 			props.append(c)
+		elif c.number == 24:
+			continue
+		elif c.number <= 21:
+			y1917.append(c)
 		else:
-			events.append(c)
+			y1918.append(c)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = gi * 104729 + 1
-	for i in range(events.size() - 1, 0, -1):
-		var j := rng.randi_range(0, i)
-		var t = events[i]; events[i] = events[j]; events[j] = t
-	var deck := []
+	for arr in [y1917, y1918]:
+		for i in range(arr.size() - 1, 0, -1):
+			var j := rng.randi_range(0, i)
+			var t = arr[i]; arr[i] = arr[j]; arr[j] = t
+	var deck: Array = []
 	var pi := 0
-	for i in range(events.size()):
-		deck.append(events[i])
-		if (i + 1) % 11 == 0 and pi < props.size():
-			deck.append(props[pi]); pi += 1
-	while pi < props.size():
-		deck.append(props[pi]); pi += 1
+	for pool in [y1917, y1917, y1918, y1918]:
+		var bottom: Array = []
+		for _i in range(4):
+			bottom.append(pool.pop_back())
+		bottom.append(props[pi]); pi += 1
+		for i in range(bottom.size() - 1, 0, -1):
+			var j2 := rng.randi_range(0, i)
+			var t2 = bottom[i]; bottom[i] = bottom[j2]; bottom[j2] = t2
+		var top: Array = []
+		for _i in range(5):
+			top.append(pool.pop_back())
+		deck.append_array(top + bottom)
 	return deck
 
 

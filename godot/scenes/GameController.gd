@@ -102,6 +102,9 @@ func build_deck(short: bool = false) -> void:
 	# dà lo STESSO ordine del mazzo a ogni partita (sempre le stesse carte nella
 	# stessa sequenza). Seminiamo da entropia di sistema a ogni nuova partita.
 	randomize()
+	if GameRegistry.game_id == "all_bridges_burning":
+		_build_deck_abb()
+		return
 	var events_list: Array = []
 	for c in game_def.cards:
 		if not c.is_propaganda:
@@ -135,6 +138,65 @@ func build_deck(short: bool = false) -> void:
 	state.current_card = -1
 
 
+## Mazzo ABB fedele al Setup (retro del regolamento):
+## - 21 Eventi "1917" (#1-21) e 21 "1918" (#25-45) mescolati SEPARATAMENTE;
+## - ogni Campaign Deck = (4 Eventi + 1 Propaganda) mescolati, con 5 Eventi
+##   aggiunti IN CIMA (non mescolati) → la Propaganda non esce mai nelle prime 5;
+## - mazzo = 2 Campaign 1917 sopra 2 Campaign 1918;
+## - 3 carte avanzate per anno NON entrano (e non si guardano);
+## - #24 Red Revolt! resta FUORI dal mazzo (§2.4: entra per trigger 27+ Cellule
+##   o dopo la 2ª Propaganda, sostituendo la carta successiva).
+func _build_deck_abb() -> void:
+	var y1917: Array = []
+	var y1918: Array = []
+	for c in game_def.cards:
+		if c.is_propaganda or c.number == 24:
+			continue
+		if c.number <= 21:
+			y1917.append(c.number)
+		else:
+			y1918.append(c.number)
+	y1917.shuffle()
+	y1918.shuffle()
+	state.draw_deck.clear()
+	for pool in [y1917, y1917, y1918, y1918]:
+		# fondo del Campaign: 4 Eventi + Propaganda, mescolati
+		var bottom: Array = []
+		for _i in range(4):
+			bottom.append(pool.pop_back())
+		bottom.append(0)
+		bottom.shuffle()
+		# cima del Campaign: 5 Eventi così come vengono (non mescolati di nuovo)
+		var top: Array = []
+		for _i in range(5):
+			top.append(pool.pop_back())
+		for n in top + bottom:
+			state.draw_deck.append(int(n))
+	# Le 3 carte avanzate per anno restano nei pool e si scartano (non ispezionabili).
+	state.tracks["red_revolt_placed"] = 0
+	propaganda_played = 0
+	game_over = false
+	winner = ""
+	state.current_card = -1
+
+
+## §2.4: se a fine turno di una Fazione ci sono 27+ Cellule Reds+Senato sulla
+## mappa (Phase I), il prossimo Evento è scartato e sostituito da Red Revolt! #24.
+func _check_red_revolt_trigger() -> void:
+	if GameRegistry.game_id != "all_bridges_burning":
+		return
+	if int(state.tracks.get("phase", 1)) >= 2 or int(state.tracks.get("red_revolt_placed", 0)) == 1:
+		return
+	var cells := state.count_on_map("reds", "cell") + state.count_on_map("senate", "cell")
+	if cells < 27 or state.draw_deck.is_empty():
+		return
+	var discarded := int(state.draw_deck[0])
+	state.draw_deck[0] = 24
+	state.tracks["red_revolt_placed"] = 1
+	emit_signal("action_logged",
+		" §2.4: %d Cellule Reds+Senato sulla mappa — il prossimo Evento (#%d) è scartato e sostituito da Red Revolt!" % [cells, discarded], "")
+
+
 ## Pesca la carta successiva (la mette come corrente). -1 = mazzo esaurito.
 func draw_next() -> int:
 	if state.draw_deck.is_empty():
@@ -147,6 +209,18 @@ func draw_next() -> int:
 		if int(state.tracks.get(key, -1)) > 0 and int(state.tracks[key]) != state.current_card:
 			state.tracks[key] = -1
 	_start_card_sequence()
+	# §2.4.1: quando Red Revolt! diventa la carta corrente, la procedura parte
+	# SUBITO (prima che le fazioni agiscano): Phase II + azione Reds + Capability
+	# + allineamento Powers. I Reds contano come se avessero giocato l'Evento.
+	if GameRegistry.game_id == "all_bridges_burning" and state.current_card == 24 \
+			and int(state.tracks.get("phase", 1)) < 2:
+		var rr: Dictionary = events.apply(24, "unshaded", "reds")
+		for line in rr.get("log", []):
+			emit_signal("action_logged", " " + String(line), "reds")
+		if seq != null:
+			seq.force_action("reds", CoinEnums.ActionType.EVENT)
+		state.recompute_all_control()
+		module._refresh_victory_tracks(state)
 	emit_signal("state_changed")
 	return state.current_card
 
@@ -474,6 +548,7 @@ func _after_decision() -> void:
 	_reset_turn_flags()
 	state.recompute_all_control()
 	module._refresh_victory_tracks(state)
+	_check_red_revolt_trigger()
 	if seq != null and seq.is_done():
 		seq.finish()
 		emit_signal("action_logged", "- Carta conclusa -", "")
@@ -515,6 +590,7 @@ func auto_resolve_current() -> Dictionary:
 	while seq != null and not seq.is_done() and guard < 8:
 		guard += 1
 		_bot_take_pending()
+		_check_red_revolt_trigger()
 	var acted: Array = []
 	if seq != null:
 		for f in seq.actors():
@@ -580,6 +656,7 @@ func run_card_paced(delay: float = -1.0) -> void:
 	while seq != null and not seq.is_done() and guard < 8:
 		guard += 1
 		_bot_take_pending()
+		_check_red_revolt_trigger()
 		emit_signal("state_changed")
 		await get_tree().create_timer(delay).timeout
 	if seq != null:
@@ -802,11 +879,19 @@ func resolve_propaganda() -> Dictionary:
 				return {"propaganda": true, "winner": early}
 		var crisis_report: Dictionary = propaganda.resolve()
 		_log_abb_crisis(crisis_report)
-		# §6.5.2 Pivotal Event: se questa è la 2ª Propaganda e Red Revolt! (#24) non
-		# ha ancora attivato la Phase II, forzala ora (garantisce la Phase II).
-		if propaganda_played == 2 and int(state.tracks.get("phase", 1)) < 2:
-			events.apply(24, "unshaded", "reds")
-			emit_signal("action_logged", " §6.5.2: Red Revolt! forzata → Phase II", "")
+		# §2.4: se Red Revolt! non è ancora scattata entro la fine della 2ª
+		# Propaganda, è piazzata come PRIMA carta dopo la Propaganda, al posto
+		# della carta che c'era (che viene scartata).
+		if propaganda_played == 2 and int(state.tracks.get("phase", 1)) < 2 \
+				and int(state.tracks.get("red_revolt_placed", 0)) == 0:
+			if not state.draw_deck.is_empty():
+				var discarded := int(state.draw_deck[0])
+				state.draw_deck[0] = 24
+				state.tracks["red_revolt_placed"] = 1
+				emit_signal("action_logged",
+					" §2.4: Red Revolt! sostituisce la prima carta dopo la 2ª Propaganda (#%d scartata)" % discarded, "")
+			else:
+				events.apply(24, "unshaded", "reds")  # fallback: mazzo esaurito
 		if is_final:
 			game_over = true
 			_emit_final_report("")
