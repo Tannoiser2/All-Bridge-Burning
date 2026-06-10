@@ -55,6 +55,17 @@ jobs:
           # GitHub Pages: assicura che non venga processato da Jekyll
           touch web/.nojekyll
 
+      - name: Cache-busting (rinomina i file col hash del commit)
+        run: |
+          V="${GITHUB_SHA::8}"
+          cd web
+          for ext in js wasm pck "audio.worklet.js"; do
+            [ -f "index.$ext" ] && mv "index.$ext" "index.$V.$ext"
+          done
+          # Aggiorna i riferimenti dentro index.html (script src, executable, fileSizes)
+          sed -i "s/index\.js/index.$V.js/g; s/index\.pck/index.$V.pck/g; s/index\.wasm/index.$V.wasm/g; s/\"executable\":\"index\"/\"executable\":\"index.$V\"/" index.html
+          echo "--- riferimenti in index.html:"; grep -oE "index\.[a-z0-9.]*\.(js|wasm|pck)|\"executable\":\"[^\"]*\"" index.html | sort -u
+
       - name: Carica artifact Pages
         uses: actions/upload-pages-artifact@v3
         with:

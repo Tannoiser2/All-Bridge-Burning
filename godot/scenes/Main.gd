@@ -164,7 +164,7 @@ var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Specia
 ## Numero di build, in piccolo nell'angolo in alto a sinistra. Permanente:
 ## serve a confermare a colpo d'occhio quale versione il browser ha caricato
 ## (la cache HTTP del .pck è il motivo per cui a volte non vedi i fix).
-const BUILD_VERSION := "b144"
+const BUILD_VERSION := "b145"
 
 
 func _ready() -> void:
@@ -548,10 +548,10 @@ func _build_side_panel() -> PanelContainer:
 		vb.add_child(_mk_size_label)
 		var mrow := HBoxContainer.new()
 		mrow.add_theme_constant_override("separation", 3)
-		mrow.add_child(_mk_btn("Control −", func(): _adjust_marker(true, -0.001)))
-		mrow.add_child(_mk_btn("Control +", func(): _adjust_marker(true, 0.001)))
-		mrow.add_child(_mk_btn("Support −", func(): _adjust_marker(false, -0.001)))
-		mrow.add_child(_mk_btn("Support +", func(): _adjust_marker(false, 0.001)))
+		mrow.add_child(_mk_btn("Control −", func(): _adjust_marker(true, -0.002)))
+		mrow.add_child(_mk_btn("Control +", func(): _adjust_marker(true, 0.002)))
+		mrow.add_child(_mk_btn("Support −", func(): _adjust_marker(false, -0.002)))
+		mrow.add_child(_mk_btn("Support +", func(): _adjust_marker(false, 0.002)))
 		vb.add_child(mrow)
 
 	_log = RichTextLabel.new()
