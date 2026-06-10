@@ -188,7 +188,7 @@ func _eval_atom(atom: String, fid: String) -> bool:
 	# issues_networks ≥ Polarization (mod_value usa issues_networks+1−pol). Vero
 	# quando i Moderati sono indietro e DEVONO giocare Politics per recuperare.
 	if atom == "issues_behind_polarization":
-		return int(state.tracks.get("issues_networks", 0)) < int(state.tracks.get("polarization", 0))
+		return (module as ABBModule).issues_networks_expr(state) < int(state.tracks.get("polarization", 0))
 	if atom == "last_campaign":
 		# Conteggio Crisis Round risolti (incrementato in ABBCrisis.resolve).
 		# In ABB ci sono 4 Round di Propaganda: l'ultimo è il 4°.

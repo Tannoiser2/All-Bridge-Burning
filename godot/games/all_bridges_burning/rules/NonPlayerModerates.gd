@@ -241,7 +241,7 @@ func _card64_politics() -> Dictionary:
 func _personality_sa(trace: Array) -> void:
 	if int(state.tracks.get("phase", 1)) < 2:
 		return
-	if int(state.tracks.get("issues_networks", 0)) + 1 >= 3:
+	if (module as ABBModule).issues_networks_expr(state) >= 3:
 		_polarize(-int(ceil(_roll_d6() / 2.0)))
 		trace.append("Personalità: riduce la Polarizzazione")
 	else:

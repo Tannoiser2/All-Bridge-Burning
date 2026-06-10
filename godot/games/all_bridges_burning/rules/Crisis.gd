@@ -100,7 +100,7 @@ func _agitation_phase() -> Dictionary:
 	# ---- MODERATES: spazi 1+ Pop senza Controllo con un pezzo Moderati ----
 	# ❶ se ultima Propaganda e Risorse 15+: Polarization = Issues+Networks(+1).
 	if is_final and int(state.get_resources("moderates")) >= 15:
-		var tgt3 := clampi(int(state.tracks.get("issues_networks", 0)) + 1, 0, 10)
+		var tgt3 := clampi((module as ABBModule).issues_networks_expr(state), 0, 10)
 		if int(state.tracks.get("polarization", 0)) > tgt3:
 			state.tracks["polarization"] = tgt3
 			log.append("Moderates Agitation: Pol→%d" % tgt3)

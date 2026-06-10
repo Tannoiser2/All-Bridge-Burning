@@ -109,8 +109,8 @@ func resolve_politics(dice_seed: int = -1) -> Dictionary:
 	pd["senate"] = 0
 	pd["reds"] = 0
 	state.tracks["political_display"] = pd
-	# Bump Networks+Issues track per Polarization (§6.2)
-	state.tracks["issues_networks"] = int(state.tracks.get("issues_networks", 0)) + 1
+	# Il track issues_networks è DERIVATO (resolved_by è il primitivo): viene
+	# ricalcolato da ABBModule._refresh_victory_tracks / issues_networks_expr.
 	out["resolved"] = ISSUES[idx]["name"]
 	out["by"] = resolved_by
 	out["log"].append("Politics: Issue '%s' risolta dal %s (roll %d ≤ %d cubi)." % [

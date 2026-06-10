@@ -228,9 +228,10 @@ func victory_status(state: GameState) -> Dictionary:
 	# §7.3 Moderati: margine = min(Risorse − 14, Issues+Networks+1 − Pol). Con
 	# soglia 14, value = min(Risorse, Issues+Networks+1 − Pol + 14) riproduce
 	# esattamente quel margine (e richiede margine strettamente positivo per la
-	# vittoria, come da §7.3).
+	# vittoria, come da §7.3). L'espressione è calcolata dai PRIMITIVI (Issues
+	# risolte + Network su mappa + 1): il vecchio contatore ignorava i Network.
 	var mod_res: int = state.get_resources("moderates")
-	var mod_inw: int = int(state.tracks.get("issues_networks", 0)) + 1
+	var mod_inw: int = issues_networks_expr(state)
 	var mod_alt: int = mod_inw - pol + 14
 	var mod_value: int = min(mod_res, mod_alt)
 
@@ -263,14 +264,25 @@ func _senate_town_pop(state: GameState) -> int:
 	return total
 
 
+## "Issues risolte + Network su mappa + 1" (§7.2/§7.3) — il marker Vassal
+## "Networks + Issues + 1" parte infatti dalla casella 1.
+func issues_networks_expr(state: GameState) -> int:
+	var resolved := 0
+	for entry in state.tracks.get("issues", []):
+		if String(entry.get("resolved_by", "")) != "":
+			resolved += 1
+	return resolved + state.count_on_map("moderates", "network") + 1
+
+
 ## Aggiorna i marker-traccia DERIVATI mostrati sui tracciati di vittoria (§1.12).
 ## Chiamato da GameController dopo ogni azione/evento/propaganda. Senza questo
 ## metodo il controller andava in errore ("Nonexistent function") e il flusso
-## carta si bloccava. `issues_networks` NON è derivato (è un contatore mantenuto
-## da PoliticalDisplay/Eventi) e quindi non va ricalcolato qui.
+## carta si bloccava. `issues_networks` è ora anch'esso DERIVATO (= Issues
+## risolte + Network su mappa + 1, come il marker Vassal).
 func _refresh_victory_tracks(state: GameState) -> void:
 	state.tracks["senate_town_pop"] = _senate_town_pop(state)
 	state.tracks["oppose_admins"] = state.total_opposition() + state.count_on_map("reds", "admin")
+	state.tracks["issues_networks"] = issues_networks_expr(state)
 
 
 func tiebreak_order() -> PackedStringArray:

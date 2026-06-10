@@ -126,7 +126,6 @@ func _apply_basic_effect(number: int, side: String, faction: String, log: Array[
 			if String(issues[i].get("resolved_by", "")) != "":
 				issues[i]["resolved_by"] = ""
 				state.tracks["issues"] = issues
-				state.tracks["issues_networks"] = maxi(0, int(state.tracks.get("issues_networks", 0)) - 1)
 				log.append("Rimosso Resolved Issue: %s." % ABBPoliticalDisplay.ISSUES[i]["name"])
 				return true
 	# #4 shaded: Place Available Moderates Cell anywhere (first eligible)
