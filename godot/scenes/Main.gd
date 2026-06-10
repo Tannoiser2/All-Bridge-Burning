@@ -163,7 +163,7 @@ var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Specia
 ## Numero di build, in piccolo nell'angolo in alto a sinistra. Permanente:
 ## serve a confermare a colpo d'occhio quale versione il browser ha caricato
 ## (la cache HTTP del .pck è il motivo per cui a volte non vedi i fix).
-const BUILD_VERSION := "b138"
+const BUILD_VERSION := "b139"
 
 
 func _ready() -> void:
