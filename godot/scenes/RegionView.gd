@@ -80,7 +80,9 @@ func _make_marker_rect() -> TextureRect:
 	var tr := TextureRect.new()
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	tr.custom_minimum_size = Vector2(30, 30)
+	# NIENTE custom_minimum_size: una min-size (era 30×30) CLAMPA ogni `size`
+	# più piccola assegnata in relayout() — i marker restavano inchiodati a 30px
+	# qualunque scala si impostasse.
 	tr.size = Vector2(30, 30)
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(tr)
@@ -146,7 +148,6 @@ func relayout() -> void:
 	for m in _overlay:
 		var slot: Vector2 = m.get_meta("mk_slot", Vector2.ZERO)
 		m.size = Vector2(mksz, mksz)
-		m.custom_minimum_size = m.size
 		m.position = Vector2(a.x - mksz * 0.5 + slot.x * mksz * 1.1,
 			grid_top + slot.y * mksz * 1.2)
 		if m.has_meta("mk_badge"):
@@ -159,7 +160,6 @@ func relayout() -> void:
 			if _cbox.x >= 0:
 				var mkc: float = size.x * ABB_CTRL_SCALE
 				_ctrl_tr.size = Vector2(mkc, mkc)
-				_ctrl_tr.custom_minimum_size = _ctrl_tr.size
 				_ctrl_tr.position = Vector2(_cbox.x * size.x, _cbox.y * size.y) - _ctrl_tr.size * 0.5
 				_ctrl_tr.visible = true
 			else:
@@ -168,7 +168,6 @@ func relayout() -> void:
 			if _sbox.x >= 0:
 				var mks: float = size.x * ABB_SUP_SCALE
 				_sup_tr.size = Vector2(mks, mks)
-				_sup_tr.custom_minimum_size = _sup_tr.size
 				_sup_tr.position = Vector2(_sbox.x * size.x, _sbox.y * size.y) - _sup_tr.size * 0.5
 				_sup_tr.visible = true
 			else:
@@ -178,12 +177,10 @@ func relayout() -> void:
 		var mk_h: float = mk_w * 0.97
 		if _ctrl_tr != null:
 			_ctrl_tr.size = Vector2(mk_w, mk_h)
-			_ctrl_tr.custom_minimum_size = _ctrl_tr.size
 			var cp := _cbox if _cbox.x >= 0 else Vector2(_anchor_norm.x - 0.012, _anchor_norm.y - 0.03)
 			_ctrl_tr.position = Vector2(cp.x * size.x, cp.y * size.y) - _ctrl_tr.size * 0.5
 		if _sup_tr != null:
 			_sup_tr.size = Vector2(mk_w, mk_h)
-			_sup_tr.custom_minimum_size = _sup_tr.size
 			var sp := _sbox if _sbox.x >= 0 else Vector2(_anchor_norm.x + 0.012, _anchor_norm.y - 0.03)
 			_sup_tr.position = Vector2(sp.x * size.x, sp.y * size.y) - _sup_tr.size * 0.5
 	queue_redraw()
@@ -292,7 +289,6 @@ func _add_marker(parent: Node, t: Texture2D) -> void:
 	tr.texture = t
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	tr.custom_minimum_size = Vector2(15, 15)
 	tr.size = Vector2(15, 15)
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(tr)
