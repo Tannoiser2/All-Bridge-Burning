@@ -28,7 +28,7 @@
       "title": "Senate Phase I / Cells Available",
       "condition": "phase==1 AND available_senate_cells > 0",
       "actions": [
-        {"op": "rally", "params": {"max_spaces": 3, "priority": ["sup_with_senate_lt_3", "where_senate", "random"]}},
+        {"op": "rally", "params": {"max_spaces": 2, "concentrate": true, "priority": ["control_at_pop_town", "sup_with_senate_lt_3", "where_senate", "random"]}},
         {"op": "foreign_relations", "params": {"faction": "germans", "if_vassal_ge": 3, "delta": -1}},
         {"op": "prepare", "params": {}}
       ]
@@ -39,16 +39,19 @@
       "title": "Senate Phase II / Cells Available",
       "condition": "phase>=2 AND available_senate_cells > 0",
       "actions": [
-        {"op": "rally", "params": {"max_spaces": 3, "priority": ["control_at_pop_town", "senate_capability_space", "largest_senate_groups", "random_with_pop"]}},
+        {"op": "rally", "params": {"max_spaces": 2, "concentrate": true, "priority": ["control_at_pop_town", "senate_capability_space", "largest_senate_groups", "random_with_pop"]}},
         {"op": "prepare", "params": {}}
       ]
     },
     {
       "number": 53,
       "faction": "reds",
-      "title": "Reds Phase II / No Admin",
-      "condition": "phase>=2 AND no_admin_without_reds",
+      "title": "Reds Phase II / Build Admin + Terror",
+      "condition": "phase>=2",
       "actions": [
+        {"op": "build_admin", "params": {}},
+        {"op": "rally", "params": {"max_spaces": 3, "priority": ["pop_spread", "uncontrolled", "random_with_pop"]}},
+        {"op": "agitate", "params": {}},
         {"op": "prepare", "params": {}}
       ]
     },
@@ -63,11 +66,23 @@
       ]
     },
     {
+      "number": 66,
+      "faction": "moderates",
+      "title": "Moderates Politics (resolve Issues when Polarization rises)",
+      "condition": "issues_behind_polarization AND polarization < 6",
+      "actions": [
+        {"op": "politics", "params": {}},
+        {"op": "dialogue", "params": {}}
+      ]
+    },
+    {
       "number": 55,
       "faction": "moderates",
-      "title": "Moderates Message + Dialogue + Publish",
+      "title": "Moderates Build Network + Message + Dialogue + Publish",
       "condition": "always",
       "actions": [
+        {"op": "build_network", "params": {}},
+        {"op": "rally", "params": {"max_spaces": 2, "priority": ["town_no_personality", "active_support"]}},
         {"op": "message", "params": {"max_cells": 3, "target_priority": ["personality_3_mods", "network_2_mods", "town_without_network_most_mods"]}},
         {"op": "dialogue", "params": {"if_opp_plus_admins_ge": 10, "remove": "opp_or_control"}},
         {"op": "publish", "params": {"earn_max_resources": true}}
@@ -165,10 +180,13 @@
     {
       "number": 65,
       "faction": "reds",
-      "title": "Reds Rally fallback",
+      "title": "Reds workhorse: Admin / Rally(control) / Agitate",
       "condition": "always",
       "actions": [
-        {"op": "rally", "params": {"priority": ["uncontrolled", "active_opp"]}}
+        {"op": "build_admin", "params": {}},
+        {"op": "rally", "params": {"max_spaces": 3, "priority": ["pop_spread", "uncontrolled", "random_with_pop"]}},
+        {"op": "agitate", "params": {}},
+        {"op": "terror", "params": {"target_priority": ["high_pop_not_full_opp"]}}
       ]
     }
   ]

@@ -168,8 +168,22 @@ func _test_abb_setup() -> void:
 	_eq("Vassalage Russian", int(state.tracks.get("vassalage_russian", -1)), 3)
 	# Tutte le fazioni Eligibili al setup
 	_eq("Reds Eligible", state.eligibility["reds"], CoinEnums.Eligibility.ELIGIBLE)
-	# Personality marker (Moderates) parte ad Helsinki.
-	_eq("Personality a Helsinki", state.space_state("helsinki").marker("personality"), 1)
+	# Personality marker (Moderates): NON parte sulla mappa. Per regolamento (§1.4.4,
+	# §8.5.1) inizia in Available Forces e viene piazzata in gioco. Quindi a setup
+	# nessuno spazio ha la Personality.
+	var pers_on_map_setup := 0
+	for sid in state.spaces.keys():
+		pers_on_map_setup += state.space_state(sid).marker("personality")
+	_eq("Personality NON sulla mappa al setup", pers_on_map_setup, 0)
+	# §6.5.5: 10 Cellule Senato Out of Play al setup → 6 Disponibili (20−4 mappa−10).
+	_eq("Senate Out of Play al setup", int(state.out_of_play.get("senate:cell", 0)), 10)
+	_eq("Senate Cellule Disponibili al setup", state.available("senate", "cell"), 6)
+	# Senate Conscription alla 1ª Propaganda: le 10 Out of Play entrano in gioco.
+	var r2 := _new_abb()
+	var state2: GameState = r2[2]
+	ABBCrisis.new(state2, r2[0]).resolve()
+	_eq("Senate Out of Play dopo 1ª Propaganda", int(state2.out_of_play.get("senate:cell", 0)), 0)
+	_eq("Senate Cellule Disponibili dopo 1ª Propaganda", state2.available("senate", "cell"), 16)
 
 
 func _test_abb_operations() -> void:
@@ -195,10 +209,15 @@ func _test_abb_operations() -> void:
 	var atk = ops.attack("reds", "helsinki", 3)
 	_check("Attack restituisce risultato", atk.has("ok"))
 
-	var terror_before: int = state.space_state("uusimaa").marker("terror")
+	# §3.2.3: Terror richiede una Cellula ATTIVA + un nemico da rimuovere.
+	var us: SpaceState = state.space_state("uusimaa")
+	us.add_piece("reds", "cell", 1, "active")
+	us.add_piece("senate", "cell", 1, "active")
+	var terror_before: int = us.marker("terror")
 	var ter = ops.terror("reds", "uusimaa")
 	_check("Terror OK", ter.get("ok", false))
-	_eq("Terror marker +1", state.space_state("uusimaa").marker("terror"), terror_before + 1)
+	_eq("Terror marker +1", us.marker("terror"), terror_before + 1)
+	_check("Terror rimuove 1 pezzo nemico", int(ter.get("removed", 0)) >= 1)
 
 
 func _test_abb_specials() -> void:
@@ -437,8 +456,11 @@ func _test_abb_terror_phase_ii_news() -> void:
 	var mod: ABBModule = r[0]
 	state.tracks["phase"] = 2
 	# Helsinki: Reds Cell + un Senate Cell. 1° Terror = nessun News, 2° = News.
+	# §3.2.3: serve una Cellula Reds ATTIVA + nemici da rimuovere (ne aggiungo).
 	var ops := ABBOperations.new(state, mod)
 	var st: SpaceState = state.space_state("helsinki")
+	st.add_piece("reds", "cell", 1, "active")
+	st.add_piece("senate", "cell", 3, "active")
 	var t1 = ops.terror("reds", "helsinki")
 	_check("1° Terror ok", t1.get("ok", false))
 	_eq("News 0 dopo 1° Terror", st.marker("news"), 0)
@@ -459,7 +481,10 @@ func _test_abb_personality_transfer() -> void:
 	# Helsinki ha Personality + 1 Moderates Cell. Aggiungo 2 Reds Cell e
 	# rimuovo manualmente la Moderates Cell → personality transfer dovrebbe scattare.
 	var st: SpaceState = state.space_state("helsinki")
-	_eq("Personality presente al setup", st.marker("personality"), 1)
+	# La Personality non parte più sulla mappa (§1.4.4): la piazzo a Helsinki per
+	# costruire lo scenario di transfer (Helsinki ha già 1 Moderates Cell a setup).
+	st.set_marker("personality", 1)
+	_eq("Personality piazzata per lo scenario", st.marker("personality"), 1)
 	# Rimuovo direttamente la Cell Moderati per simulare ultima rimossa.
 	st.remove_piece("moderates", "cell", 1, "underground")
 	_eq("Moderati Cell rimossa", st.count("moderates", "cell"), 0)

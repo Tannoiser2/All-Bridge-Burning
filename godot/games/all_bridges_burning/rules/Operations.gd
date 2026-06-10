@@ -23,16 +23,32 @@ func rally(fid: String, sid: String, mode: String = "cell") -> Dictionary:
 	if not _can_place(fid, mode):
 		return _err("forze esaurite (%s/%s)" % [fid, mode])
 	# Costo Rally: 1 default; per Moderati 3 quando Polarization ≥ 6 (§3.3.1).
+	# §8.1.2: solo le fazioni player pagano; le Bot non spendono Risorse.
 	var cost := 1
 	if fid == "moderates" and int(state.tracks.get("polarization", 0)) >= 6:
 		cost = 3
-	if state.get_resources(fid) < cost:
-		return _err("risorse insufficienti (servono %d)" % cost)
-	state.resources[fid] -= cost
+	if state.tracks_resources(fid):
+		if state.get_resources(fid) < cost:
+			return _err("risorse insufficienti (servono %d)" % cost)
+		state.resources[fid] -= cost
+	# §3.2.1: numero di Cellule = 1 + modificatori. Senato +1 per livello di
+	# Supporto; Reds +1 per livello di Opposizione. Le SOTTRAZIONI (Supporto/
+	# Opposizione avversa, Terror) sono pagate per essere offsettate; le Bot le
+	# offsettano sempre automaticamente (§8.1.3) → non vengono mai applicate.
+	# Admin/Network piazzano sempre 1.
+	var n := 1
+	if mode == "cell":
+		var sup := int(state.space_state(sid).support)
+		if fid == "senate":
+			n += maxi(sup, 0)
+		elif fid == "reds":
+			n += maxi(-sup, 0)
+		var pool_left: int = state.available(fid, mode)
+		n = clampi(n, 0, maxi(pool_left, 1))
 	var pt_state: String = "underground" if mode == "cell" else ""
-	state.spaces[sid].add_piece(fid, mode, 1, pt_state)
+	state.spaces[sid].add_piece(fid, mode, n, pt_state)
 	state.recompute_control(sid)
-	return _ok({"cost": cost})
+	return _ok({"cost": cost, "placed": n})
 
 
 ## March (§3.2.5): sposta pezzi verso spazio adiacente. Phase II only per
@@ -51,6 +67,13 @@ func march(fid: String, from_sid: String, to_sid: String, piece_type: String = "
 	var from_state: String = "underground" if piece_type == "cell" else ""
 	if state.space_state(from_sid).count(fid, piece_type, from_state) < count:
 		return _err("pezzi insufficienti")
+	# §3.2.5: "pay one Resource per each three Cells (round up) moving into a
+	# selected space." §8.1.2: solo i player pagano (Powers/Bot no).
+	if state.tracks_resources(fid):
+		var march_cost := int(ceil(count / 3.0))
+		if state.get_resources(fid) < march_cost:
+			return _err("risorse insufficienti per March (§3.2.5)")
+		state.resources[fid] = int(state.get_resources(fid)) - march_cost
 	state.spaces[from_sid].remove_piece(fid, piece_type, count, from_state)
 	var to_state: String = ""
 	if piece_type == "cell":
@@ -74,6 +97,12 @@ func attack(fid: String, sid: String, rng_seed: int = -1) -> Dictionary:
 	strength += _capability_attack_bonus(fid, st)
 	if strength <= 0:
 		return _err("nessun pezzo attaccante")
+	# §3.2.4: "pay one Resource per selected space." §8.1.2: solo i player pagano
+	# (Powers e Bot non spendono Risorse).
+	if state.tracks_resources(fid):
+		if state.get_resources(fid) < 1:
+			return _err("risorse insufficienti per Attack (§3.2.4)")
+		state.resources[fid] = int(state.get_resources(fid)) - 1
 	var rng := RandomNumberGenerator.new()
 	if rng_seed >= 0:
 		rng.seed = rng_seed
@@ -95,7 +124,8 @@ func attack(fid: String, sid: String, rng_seed: int = -1) -> Dictionary:
 			# Attack-to-Prison §3.2.4: Cellule Senato/Reds rimosse vanno in
 			# Prisoners of War; piazza un News marker sullo spazio.
 			if pair[0] == "cell" and enemy_fid in ["senate", "reds"]:
-				st.set_marker("news", st.marker("news") + 1)
+				if state.count_marker_on_map("news") < 2:
+					st.set_marker("news", st.marker("news") + 1)
 				var prisoners: Dictionary = state.tracks.get("prisoners", {"senate": 0, "reds": 0})
 				prisoners[enemy_fid] = int(prisoners.get(enemy_fid, 0)) + 1
 				state.tracks["prisoners"] = prisoners
@@ -135,6 +165,11 @@ func activism(fid: String, sid: String) -> Dictionary:
 	var st: SpaceState = state.space_state(sid)
 	if st.count(fid, "cell") <= 0:
 		return _err("serve una Cellula amica in %s" % sid)
+	# §3.2.2: "Pay one Resource per selected space." §8.1.2: solo i player pagano.
+	if state.tracks_resources(fid):
+		if state.get_resources(fid) < 1:
+			return _err("risorse insufficienti per Activism (§3.2.2)")
+		state.resources[fid] = int(state.get_resources(fid)) - 1
 	# Cerca una Cellula nemica Attiva da capovolgere.
 	for f in state.game_def.factions:
 		if f.id == fid:
@@ -220,43 +255,66 @@ func politics(fid: String, cube_color: String) -> Dictionary:
 		return _err("Politics impossibile con Polarization ≥ 6")
 	if not (cube_color in ["senate", "reds"]):
 		return _err("colore cubo non valido")
-	var cost := 1 + int(pol / 2)
-	if state.get_resources(fid) < cost:
-		return _err("risorse insufficienti (servono %d)" % cost)
 	# Moderati richiedono pezzi sulla mappa.
 	if state.count_on_map("moderates", "cell") + state.count_on_map("moderates", "network") <= 0:
 		return _err("Moderati non hanno pezzi sulla mappa")
 	var pd := ABBPoliticalDisplay.new(state)
 	if pd.current_unresolved_index() < 0:
 		return _err("nessuna Issue Unresolved")
-	state.resources[fid] -= cost
+	# §8.1.2: solo i player pagano il costo (1 + pol/2); le Bot no.
+	var cost := 1 + int(pol / 2)
+	if state.tracks_resources(fid):
+		if state.get_resources(fid) < cost:
+			return _err("risorse insufficienti (servono %d)" % cost)
+		state.resources[fid] -= cost
 	pd.place_cubes(cube_color, 1)
 	return _ok({"cost": cost, "cube": cube_color})
 
 
-## Terror (§3.2.3): poni Terror marker; sposta Supporto/Opposizione.
-## In Phase II, se il marker piazzato è il 2°, viene piazzato anche un News.
-## Massimo 2 Terror per spazio (rulebook §1.4.3).
+## Terror (§3.2.3): poni un Terror marker e RIMUOVI pezzi nemici (fino a 1, o 2 se
+## Polarization ≥ 6). NON sposta il Supporto/Opposizione — quello è compito di
+## Agitate (§3.2.2) / Agitation (§6.4.2). Serve una Cellula ATTIVA della fazione.
+## In Phase II, il 2° marker piazza anche un News. Max 2 Terror per spazio (§1.4.3).
 func terror(fid: String, sid: String) -> Dictionary:
 	if not state.spaces.has(sid):
 		return _err("spazio sconosciuto")
 	var st: SpaceState = state.space_state(sid)
-	if st.count(fid, "cell") <= 0:
-		return _err("serve una Cellula in %s" % sid)
+	if st.count(fid, "cell", "active") <= 0:
+		return _err("serve una Cellula Attiva in %s (§3.2.3)" % sid)
 	if st.marker("terror") >= 2:
 		return _err("massimo 2 Terror per spazio (§1.4.3)")
+	# §3.2.3: "Pay one Resource per selected space." §8.1.2: solo i player pagano.
+	if state.tracks_resources(fid):
+		if state.get_resources(fid) < 1:
+			return _err("risorse insufficienti per Terror (§3.2.3)")
+		state.resources[fid] = int(state.get_resources(fid)) - 1
 	var prev := st.marker("terror")
 	st.set_marker("terror", prev + 1)
 	# News marker §3.2.3: il 2° Terror in Phase II piazza un News.
-	if prev == 1 and int(state.tracks.get("phase", 1)) >= 2:
+	if prev == 1 and int(state.tracks.get("phase", 1)) >= 2 and state.count_marker_on_map("news") < 2:
 		st.set_marker("news", st.marker("news") + 1)
-	if fid == "reds":
-		_shift_support(sid, -1)
-	elif fid == "senate":
-		_shift_support(sid, +1)
+	# §3.2.3: rimuovi fino a 1 pezzo nemico (2 se Polarization ≥ 6). Ordine: Cellule
+	# (Attive prima), Truppe, Admin/Network. Cellule Senate/Reds → Prigione + News.
+	var max_rem: int = 2 if int(state.tracks.get("polarization", 0)) >= 6 else 1
+	var removed: int = 0
+	for _k in range(max_rem):
+		var efid := _first_enemy(sid, fid)
+		if efid == "":
+			break
+		for pair in [["cell", "active"], ["troops", ""], ["cell", "underground"], ["admin", ""], ["network", ""]]:
+			if st.count(efid, pair[0], pair[1]) > 0:
+				st.remove_piece(efid, pair[0], 1, pair[1])
+				removed += 1
+				_maybe_transfer_personality(sid, efid, fid)
+				if pair[0] == "cell" and efid in ["senate", "reds"]:
+					var prisoners: Dictionary = state.tracks.get("prisoners", {"senate": 0, "reds": 0})
+					prisoners[efid] = int(prisoners.get(efid, 0)) + 1
+					state.tracks["prisoners"] = prisoners
+				break
+	state.recompute_control(sid)
 	# Polarization +1 per ogni Terror piazzato.
 	_polarize(1)
-	return _ok({"news_placed": prev == 1 and int(state.tracks.get("phase", 1)) >= 2})
+	return _ok({"removed": removed, "news_placed": prev == 1 and int(state.tracks.get("phase", 1)) >= 2})
 
 
 # ---------------------------------------------------------------------------
@@ -267,10 +325,10 @@ func _can_place(fid: String, piece_type: String) -> bool:
 	var fdef: FactionDef = state.game_def.faction(fid)
 	if fdef == null:
 		return false
-	var max_count: int = int(fdef.force_pool.get(piece_type, 0))
-	if max_count <= 0:
+	if int(fdef.force_pool.get(piece_type, 0)) <= 0:
 		return false
-	return state.count_on_map(fid, piece_type) < max_count
+	# Forze Disponibili = pool − su mappa − Out of Play (§6.5.5).
+	return state.available(fid, piece_type) > 0
 
 
 func _has_enemy(sid: String, fid: String) -> bool:

@@ -14,6 +14,8 @@ var _polarization_track: Dictionary = {}  # ABB: slot 0..10 del tracciato Polari
 var _sop: Dictionary = {}      # ABB: posizione cilindri Sequence of Play
 var _sop_slots_cache: Dictionary = {}  # ABB: 21 slot SoP esatti dal Vassal
 var _cell_slots: Dictionary = {}  # ABB: "<fid>_cell" -> [[x,y],...] slot Vassal
+var _cube_slots: Dictionary = {}  # ABB: cubi politici (avail + Political Display), Vassal
+var _marker_slots: Dictionary = {}  # ABB: News/Personality/Issues/reserve, Vassal esatti
 var _box: Dictionary = {}      # nome -> [x0,y0,x1,y1] normalizzati
 var _circles: Dictionary = {}  # fazione -> [[x,y],...] centri dei cerchietti basi/casinò (Vassal)
 var _loose: Dictionary = {}    # fazione -> tipo -> [x0,y0,x1,y1] area dei pezzi sciolti
@@ -31,6 +33,8 @@ func _ready() -> void:
 			_sop = d.get("sop", {})
 			_sop_slots_cache = d.get("sop_slots", {})
 			_cell_slots = d.get("cell_slots", {})
+			_cube_slots = d.get("cube_slots", {})
+			_marker_slots = d.get("marker_slots", {})
 			_box = d.get("box", {})
 			_circles = d.get("avail_circles", {})
 			_loose = d.get("avail_loose", {})
@@ -70,10 +74,15 @@ func _draw() -> void:
 			_disp[key] = float(v)
 		var idx := int(counts.get(v, 0))
 		counts[v] = idx + 1
-		# Polarization su tracciato dedicato (0..10) per ABB.
+		# Polarization E Networks+Issues vivono sul tracciato Polarization (0..10)
+		# per ABB. Il marker Networks parte dalla casella "1" (issues_networks=1 a
+		# setup). Offset verticale per non sovrapporsi al marker Polarization.
 		var c: Vector2
 		if key == "abb_polarization" and not _polarization_track.is_empty():
 			c = _polarization_cell(int(_disp[key]))
+		elif key == "abb_issues_networks" and not _polarization_track.is_empty():
+			c = _polarization_cell(int(_disp[key]))
+			c.y -= STACK
 		else:
 			c = _interp_cell(float(_disp[key]))
 			if v <= 30:
@@ -353,29 +362,22 @@ func _abb_draw_moderates_extra(s: GameState, box: Rect2, _tok: float) -> void:
 	# Disponibili: 2 News - su mappa, 1 Personality - su mappa.
 	var news_avail: int = maxi(0, 2 - news_on_map)
 	var pers_avail: int = 0 if pers_on_map else 1
-	# Calibrato sulla map.jpg ABB misurando i 3 grandi cerchi stampati
-	# News News Personality del box Moderates Available Forces.
-	var cy: float = box.position.y + box.size.y * 0.48
-	var slot_size: float = box.size.x * 0.16
+	# Posizioni ESATTE dal Vassal (marker_slots): News 1/2 + Personality.
+	var slot_size: float = size.x * 0.026
 	var nt := CLAssets.news()
 	var pt := CLAssets.personality()
-	var centers_x: Array = [
-		box.position.x + box.size.x * 0.20,
-		box.position.x + box.size.x * 0.37,
-		box.position.x + box.size.x * 0.54,
-	]
-	for i in range(news_avail):
+	var news_slots: Array = _marker_slots.get("news", [])
+	for i in range(mini(news_avail, news_slots.size())):
 		if nt != null:
-			var cx: float = float(centers_x[i])
-			draw_texture_rect(nt,
-				Rect2(Vector2(cx - slot_size * 0.5, cy - slot_size * 0.5),
-					Vector2(slot_size, slot_size)), false)
-	if pers_avail > 0:
-		if pt != null:
-			var cx_p: float = float(centers_x[2])
-			draw_texture_rect(pt,
-				Rect2(Vector2(cx_p - slot_size * 0.5, cy - slot_size * 0.5),
-					Vector2(slot_size, slot_size)), false)
+			var np: Array = news_slots[i]
+			var c := Vector2(float(np[0]) * size.x, float(np[1]) * size.y)
+			draw_texture_rect(nt, Rect2(c - Vector2(slot_size, slot_size) * 0.5,
+				Vector2(slot_size, slot_size)), false)
+	if pers_avail > 0 and pt != null and _marker_slots.has("personality"):
+		var pp: Array = _marker_slots["personality"]
+		var cp := Vector2(float(pp[0]) * size.x, float(pp[1]) * size.y)
+		draw_texture_rect(pt, Rect2(cp - Vector2(slot_size, slot_size) * 0.5,
+			Vector2(slot_size, slot_size)), false)
 
 
 ## Disegna fino a `n` copie di `tex` posizionate sui primi `n` slot Vassal.
@@ -471,9 +473,11 @@ func _sop_slot_for(s: GameState, seq, fid: String, slots: Dictionary) -> Vector2
 			# non caricato → TrackOverlay null.
 			var pass_slot: String = ["pass_a", "pass_b", "pass_c"][mini(pass_idx, 2)]
 			return _slot_pos(slots, pass_slot)
-		# Agito: scegli slot in base all'azione + ordine
+		# Agito: scegli slot in base all'azione + ordine. Per la 2ª fazione la
+		# casella dipende dalla scelta della 1ª (flowchart §2.3): la prima scelta
+		# determina le caselle successive.
 		var actor_idx := _actor_index(seq, fid)
-		return _action_slot(k, actor_idx, slots)
+		return _action_slot(k, actor_idx, slots, seq.first_action())
 	# Non ha ancora agito → Eligible 1st/2nd/3rd o Ineligible
 	if int(s.eligibility.get(fid, CoinEnums.Eligibility.ELIGIBLE)) == CoinEnums.Eligibility.INELIGIBLE:
 		var ineligible_slots := ["ineligible_1", "ineligible_2", "ineligible_3"]
@@ -493,22 +497,34 @@ func _slot_pos(slots: Dictionary, key: String) -> Vector2:
 
 
 ## Mappa l'azione (action_box value) al slot Vassal corretto.
-## actor_idx 0 = 1° player ad agire (colonna X=3107),
-## actor_idx 1+ = 2°/3° player (colonna X=3315).
-func _action_slot(action_key: String, actor_idx: int, slots: Dictionary) -> Vector2:
+## actor_idx 0 = 1° player ad agire (colonna D, X=3107),
+## actor_idx 1+ = 2°/3° player (colonna C, X=3315).
+## first_action = ActionType della 1ª fazione (-1 se nessuna): per la 2ª fazione
+## la casella è il CONSEGUENTE nel flowchart della scelta della 1ª (§2.3):
+##   1ª Op            → 2ª Comando Limitato (lim_cmd_d_mid, "sotto centrale")
+##   1ª Op+SA         → 2ª Evento           (event_c)
+##   1ª Evento        → 2ª Comando (+SA)     (cmd_3315_mid)
+func _action_slot(action_key: String, actor_idx: int, slots: Dictionary, first_action: int = -1) -> Vector2:
 	if actor_idx == 0:
 		match action_key:
 			"1st_op_only", "1st_op_sa", "2nd_op_sa": return _slot_pos(slots, "cmd_3107")
 			"1st_event", "2nd_limop_or_event": return _slot_pos(slots, "event_d")
 			"2nd_limop": return _slot_pos(slots, "lim_cmd_d")
 		return _slot_pos(slots, "cmd_3107")
-	# 2°/3° player (X=3315 column, 6 slot varianti)
+	# 2°/3° player (colonna C): la posizione segue la scelta della 1ª fazione.
+	match first_action:
+		CoinEnums.ActionType.OPERATION:
+			return _slot_pos(slots, "lim_cmd_d_mid")    # 1ª Op → 2ª Lim Cmd
+		CoinEnums.ActionType.OPERATION_WITH_SPECIAL:
+			return _slot_pos(slots, "event_c")          # 1ª Op+SA → 2ª Evento
+		CoinEnums.ActionType.EVENT:
+			return _slot_pos(slots, "cmd_3315_mid")     # 1ª Evento → 2ª Cmd
+	# Fallback (1ª ha Passato o Carta Evento Finale: tutti Limited): usa l'azione.
 	match action_key:
-		"2nd_limop": return _slot_pos(slots, "lim_cmd_c_top")
+		"2nd_limop": return _slot_pos(slots, "lim_cmd_d_mid")
 		"2nd_limop_or_event": return _slot_pos(slots, "event_c")
-		"2nd_op_sa", "1st_op_sa": return _slot_pos(slots, "cmd_3315_mid")
-		"1st_op_only": return _slot_pos(slots, "cmd_3315_top")
 		"1st_event": return _slot_pos(slots, "event_c")
+		"1st_op_only": return _slot_pos(slots, "cmd_3315_top")
 	return _slot_pos(slots, "cmd_3315_mid")
 
 
@@ -541,10 +557,17 @@ func _actor_index(seq, fid: String) -> int:
 
 ## Rank della fazione nella lista di eligibili (0 = 1st, 1 = 2nd, 2 = 3rd).
 func _eligible_rank(s: GameState, seq, fid: String) -> int:
-	var order := ["reds", "senate", "moderates"]
+	# L'ordine Eligible (1st/2nd/3rd) segue l'ordine delle fazioni STAMPATO sulla
+	# carta corrente (come fa SequenceOfPlay._build_eligible_order), NON un ordine
+	# fisso reds<senate<moderates: in ABB le carte variano l'iniziativa.
+	var order: Array = ["reds", "senate", "moderates"]
+	if seq != null and seq.card != null and not seq.card.faction_order.is_empty():
+		order = []
+		for f in seq.card.faction_order:
+			if f in ["reds", "senate", "moderates"]:
+				order.append(String(f))
 	if seq != null:
-		# Idea: per ABB il rank Eligible deriva da SeqRank (computed) ma noi
-		# usiamo un'approssimazione: i NON-attori restano in ordine reds<senate<moderates.
+		# I NON-attori ancora Eligible occupano 1st/2nd/3rd nell'ordine di carta.
 		var elig := []
 		for f in order:
 			if not seq.action_box.has(f):
@@ -564,25 +587,47 @@ const ABB_CAP_FACTION := {
 	"Trains":  "senate",
 }
 
+## Titolo Capability → chiave icona marker (CLAssets.abb_cap). Mostra il segnalino
+## vero accanto al nome nel pannello invece della sola scritta.
+const ABB_CAP_ICON := {
+	"Cannons":   "cannon_senate",
+	"Trains":    "train_senate",
+	"Jaeger":    "jaeger_senate",
+	"Commander": "commander_reds",
+}
+
 
 func _abb_draw_capabilities(s: GameState) -> void:
 	var r := _box_rect("capabilities")
-	if r.size == Vector2.ZERO or s.active_capabilities.is_empty():
+	if r.size == Vector2.ZERO:
 		return
-	var font := ThemeDB.fallback_font
-	var n := s.active_capabilities.size()
-	var top := r.position.y + r.size.y * 0.30
-	var avail_h := r.size.y * 0.65
-	var slot := avail_h / float(n)
-	var ch := minf(20.0, slot - 3.0)
-	var y := top
+	var prep_s := int(s.tracks.get("prepared_senate", 0))
+	var prep_r := int(s.tracks.get("prepared_reds", 0))
+	if s.active_capabilities.is_empty() and prep_s <= 0 and prep_r <= 0:
+		return
+	var n := s.active_capabilities.size() + prep_s + prep_r
+	var sz := minf(r.size.y * 0.55, r.size.x / float(maxi(n, 1)) - 6.0)
+	var x := r.position.x + 8
+	var y := r.position.y + r.size.y * 0.30
+	# Capability attive (icone dei segnalini).
 	for title in s.active_capabilities:
-		var fac: String = ABB_CAP_FACTION.get(String(title), "reds")
-		var chip := Rect2(r.position.x + r.size.x * 0.04, y, r.size.x * 0.92, ch)
-		draw_rect(chip, GameController.faction_color(fac), true)
-		draw_string(font, Vector2(chip.position.x + 8, y + ch * 0.76), String(title),
-			HORIZONTAL_ALIGNMENT_LEFT, chip.size.x - 14, clampi(int(ch * 0.74), 9, 16), Color.WHITE)
-		y += slot
+		var icon_key: String = ABB_CAP_ICON.get(String(title), "")
+		if icon_key == "":
+			continue
+		var icon := CLAssets.abb_cap(icon_key)
+		if icon != null:
+			draw_texture_rect(icon, Rect2(x, y, sz, sz), false)
+			x += sz + 6
+	# Prepared markers DISPONIBILI (asset veri): 2 Senato + 1 Reds al setup, calano
+	# quando vengono piazzati sulla mappa.
+	for i in range(prep_s):
+		var ts := CLAssets.prepared("senate")
+		if ts != null:
+			draw_texture_rect(ts, Rect2(x, y, sz, sz), false); x += sz + 6
+	for i in range(prep_r):
+		var tr := CLAssets.prepared("reds")
+		if tr != null:
+			draw_texture_rect(tr, Rect2(x, y, sz, sz), false); x += sz + 6
 
 
 ## Mappa lo stato Sequence/Eligibility della fazione a una colonna del SoP.
@@ -603,6 +648,36 @@ func _sop_col_for(s: GameState, seq, fid: String) -> String:
 
 
 ## Political Display §1.11: cubi Senato/Rossi (current Issue) + 3 Resolved badges.
+## Cubo politico disegnato come ROMBO (ruotato 45°, spigolo in su) per combaciare
+## con gli slot a rombo stampati sulla plancia.
+func _draw_cube(pos: Vector2, sz: float, col: Color) -> void:
+	var pts := PackedVector2Array([
+		Vector2(pos.x + sz * 0.5, pos.y),           # alto
+		Vector2(pos.x + sz, pos.y + sz * 0.5),      # destra
+		Vector2(pos.x + sz * 0.5, pos.y + sz),      # basso
+		Vector2(pos.x, pos.y + sz * 0.5),           # sinistra
+	])
+	draw_colored_polygon(pts, col)
+	var outline := pts.duplicate()
+	outline.append(pts[0])
+	draw_polyline(outline, Color.BLACK, 1.0)
+
+
+## Cubi Politici DISPONIBILI: posizioni ESATTE dal Vassal (cube_slots "<fid>_avail").
+## I 3 slot sono le coordinate centro-segnalino, normalizzate sull'immagine plancia.
+func _draw_available_cubes(s: GameState, fid: String, count: int) -> void:
+	if count <= 0:
+		return
+	var slots: Array = _cube_slots.get("%s_avail" % fid, [])
+	if slots.is_empty():
+		return
+	var sz: float = size.x * 0.020
+	for i in range(mini(count, slots.size())):
+		var p: Array = slots[i]
+		var c := Vector2(float(p[0]) * size.x, float(p[1]) * size.y)
+		_draw_cube(c - Vector2(sz, sz) * 0.5, sz, GameController.faction_color(fid))
+
+
 func _abb_draw_political_display(s: GameState) -> void:
 	var r := _box_rect("political_display")
 	if r.size == Vector2.ZERO:
@@ -611,49 +686,44 @@ func _abb_draw_political_display(s: GameState) -> void:
 	var pd: Dictionary = s.tracks.get("political_display", {"senate": 0, "reds": 0})
 	var senate_cubes := int(pd.get("senate", 0))
 	var reds_cubes := int(pd.get("reds", 0))
-	# Cubi nella semicirconferenza: bianco Senato a sinistra, rosso Rossi a destra.
-	var cube_size: float = minf(r.size.y * 0.10, 22.0)
-	var mid_x := r.position.x + r.size.x * 0.5
-	var top_y := r.position.y + r.size.y * 0.10
-	# Senato (bianchi) impilati colonna sinistra.
-	for i in senate_cubes:
-		var px := r.position.x + r.size.x * 0.15 + (i % 4) * (cube_size + 2.0)
-		var py := top_y + int(i / 4) * (cube_size + 2.0)
-		draw_rect(Rect2(Vector2(px, py), Vector2(cube_size, cube_size)),
-			GameController.faction_color("senate"), true)
-		draw_rect(Rect2(Vector2(px, py), Vector2(cube_size, cube_size)), Color.BLACK, false, 1.0)
-	# Rossi a destra.
-	for i in reds_cubes:
-		var px2 := mid_x + r.size.x * 0.10 + (i % 4) * (cube_size + 2.0)
-		var py2 := top_y + int(i / 4) * (cube_size + 2.0)
-		draw_rect(Rect2(Vector2(px2, py2), Vector2(cube_size, cube_size)),
-			GameController.faction_color("reds"), true)
-		draw_rect(Rect2(Vector2(px2, py2), Vector2(cube_size, cube_size)), Color.BLACK, false, 1.0)
-	# 3 badge Resolved Issues in basso.
+	# Cubi sui quadratini della "camera": posizioni ESATTE dal Vassal (cube_slots
+	# reds_pd / senate_pd), colonna Rossi a sinistra e Senato a destra.
+	var cube_size: float = size.x * 0.020
+	var reds_pd: Array = _cube_slots.get("reds_pd", [])
+	var sen_pd: Array = _cube_slots.get("senate_pd", [])
+	for i in range(mini(reds_cubes, reds_pd.size())):
+		var rp: Array = reds_pd[i]
+		_draw_cube(Vector2(float(rp[0]) * size.x, float(rp[1]) * size.y) - Vector2(cube_size, cube_size) * 0.5,
+			cube_size, GameController.faction_color("reds"))
+	for i in range(mini(senate_cubes, sen_pd.size())):
+		var sp: Array = sen_pd[i]
+		_draw_cube(Vector2(float(sp[0]) * size.x, float(sp[1]) * size.y) - Vector2(cube_size, cube_size) * 0.5,
+			cube_size, GameController.faction_color("senate"))
+	# Cubi DISPONIBILI nei box fazione (3 ciascuno meno quelli sul Display): tornano
+	# qui quando un'Issue si risolve. Senato (bianchi) e Reds (rossi).
+	_draw_available_cubes(s, "senate", 3 - senate_cubes)
+	_draw_available_cubes(s, "reds", 3 - reds_cubes)
+	# Marker "Resolved" sulle CASELLE Issue stampate (posizioni ESATTE dal Vassal,
+	# marker_slots.issues). Disegnato SOLO quando un'Issue è risolta, col colore
+	# della fazione risolvente; se Unresolved non si disegna nulla (la casella
+	# stampata dice già "Unresolved").
 	var issues: Array = s.tracks.get("issues", [])
-	var badge_w: float = (r.size.x - 16.0) / 3.0
-	var badge_h: float = r.size.y * 0.22
-	var by := r.position.y + r.size.y - badge_h - 4.0
-	for i in range(min(issues.size(), 3)):
-		var entry: Dictionary = issues[i]
-		var bx := r.position.x + 4.0 + i * (badge_w + 4.0)
-		var rect := Rect2(bx, by, badge_w, badge_h)
+	var issue_slots: Dictionary = _marker_slots.get("issues", {})
+	var msz: float = size.x * 0.024
+	for entry in issues:
 		var by_who: String = String(entry.get("resolved_by", ""))
-		var fill: Color
 		if by_who == "":
-			fill = Color(0.85, 0.85, 0.85, 0.35)  # Unresolved (grigio chiaro)
-		elif by_who == "senate":
-			fill = GameController.faction_color("senate")
-		elif by_who == "reds":
-			fill = GameController.faction_color("reds")
-		else:
-			fill = GameController.faction_color("moderates")
-		fill.a = 0.85
-		draw_rect(rect, fill, true)
-		draw_rect(rect, Color.BLACK, false, 1.0)
-		var labels: Array = ["Working", "Reform", "Social"]
-		draw_string(font, Vector2(bx + 4, by + badge_h - 4), labels[i],
-			HORIZONTAL_ALIGNMENT_LEFT, badge_w - 6, 10, Color.WHITE)
+			continue
+		var key: String = String(entry.get("id", ""))
+		if not issue_slots.has(key):
+			continue
+		var ip: Array = issue_slots[key]
+		var c := Vector2(float(ip[0]) * size.x, float(ip[1]) * size.y)
+		var col := GameController.faction_color(by_who)
+		col.a = 0.92
+		var rect := Rect2(c - Vector2(msz, msz) * 0.5, Vector2(msz, msz))
+		draw_rect(rect, col, true)
+		draw_rect(rect, Color.BLACK, false, 1.5)
 
 
 ## Prisoners of War §6.5: chip Senato + chip Rossi col conteggio.

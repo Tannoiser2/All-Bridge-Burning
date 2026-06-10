@@ -10,6 +10,9 @@ var game_def: GameDef
 var spaces: Dictionary = {}              ## space_id -> SpaceState
 var resources: Dictionary = {}          ## faction_id -> int
 var tracks: Dictionary = {}             ## track_id -> int (es. "aid", "us_alliance" idx)
+## Pezzi "Out of Play" (fuori gioco), esclusi dalle Forze Disponibili finché non
+## vengono reintrodotti (es. ABB §6.5.5 Senate Conscription). Chiave "faction:type".
+var out_of_play: Dictionary = {}
 var eligibility: Dictionary = {}        ## faction_id -> CoinEnums.Eligibility
 
 # Mazzo / sequenza di gioco
@@ -34,6 +37,14 @@ func _init(p_game_def: GameDef = null) -> void:
 
 func space_state(id: String) -> SpaceState:
 	return spaces.get(id, null)
+
+
+## Totale di un marker su tutta la mappa (es. "news": esistono solo 2 segnalini).
+func count_marker_on_map(name: String) -> int:
+	var t := 0
+	for sid in spaces.keys():
+		t += spaces[sid].marker(name)
+	return t
 
 
 # ---------------------------------------------------------------------------
@@ -70,6 +81,9 @@ func control_count(faction: String, st: SpaceState) -> int:
 		return 0
 	for type_id in st.pieces[faction].keys():
 		var pt: PieceTypeDef = game_def.piece_type(type_id)
+		# Pezzi che non contano MAI per il Controllo (ABB §1.7: Truppe Powers).
+		if pt != null and not pt.counts_for_control:
+			continue
 		for state in st.pieces[faction][type_id].keys():
 			if pt != null and not pt.state_counts_for_control(state):
 				continue
@@ -85,15 +99,15 @@ func recompute_control(space_id: String) -> void:
 	var best_faction := ""
 	var best := 0
 	var others_total := 0
-	var counts: Dictionary = {}
 	for f in game_def.factions:
 		var c := control_count(f.id, st)
-		counts[f.id] = c
 		others_total += c
-		if c > best:
+		# Solo le Fazioni che POSSONO controllare sono candidate (ABB §1.7: solo
+		# Reds/Senate; Moderati/Powers contano per negare ma non controllano).
+		if f.can_control and c > best:
 			best = c
 			best_faction = f.id
-	# Controlla se best supera la somma di tutti gli altri.
+	# Controlla se la migliore Fazione-controllante supera la somma di tutte le altre.
 	if best > 0 and best > (others_total - best):
 		st.control = best_faction
 	else:
@@ -182,7 +196,8 @@ func available(faction: String, type: String) -> int:
 	if f == null:
 		return 0
 	var pool := int(f.force_pool.get(type, 0))
-	return max(0, pool - count_on_map(faction, type))
+	var oop := int(out_of_play.get(faction + ":" + type, 0))
+	return max(0, pool - count_on_map(faction, type) - oop)
 
 
 ## Piazza pezzi prelevandoli dalle forze disponibili. Restituisce quanti piazzati.
@@ -316,6 +331,7 @@ func to_dict() -> Dictionary:
 		"spaces": sp,
 		"resources": resources.duplicate(true),
 		"tracks": tracks.duplicate(true),
+		"out_of_play": out_of_play.duplicate(true),
 		"eligibility": eligibility.duplicate(true),
 		"draw_deck": draw_deck.duplicate(),
 		"played_deck": played_deck.duplicate(),
@@ -342,6 +358,7 @@ func load_dict(d: Dictionary) -> void:
 	for k in d.get("resources", {}).keys():
 		resources[k] = int(d["resources"][k])
 	tracks = (d.get("tracks", {}) as Dictionary).duplicate(true)
+	out_of_play = (d.get("out_of_play", {}) as Dictionary).duplicate(true)
 	for k in d.get("eligibility", {}).keys():
 		eligibility[k] = int(d["eligibility"][k])
 	draw_deck.clear()

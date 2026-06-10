@@ -29,8 +29,10 @@ func create_bot(state, module):
 	return ABBBot.new(state, module)
 
 func default_roles(_game_def: GameDef) -> Dictionary:
-	# Solitario classico: l'umano gioca il Senate contro Reds e Moderates NP.
-	# Germans e Russians sono Powers gestite dal motore (mai "player").
+	# DEFAULT (modificabile in-game col toggle ruolo, Main._toggle_role): l'umano
+	# parte come Senate, ma può giocare QUALSIASI fazione fra Reds/Senate/Moderates
+	# (anche più d'una). Germans e Russians sono Powers gestite dal motore (mai
+	# "player"). Le Risorse le traccia/spende solo chi è "player" (§8.1.2).
 	return {
 		"senate": "player",
 		"reds": "bot",

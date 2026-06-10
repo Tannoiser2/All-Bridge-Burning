@@ -42,6 +42,10 @@ func build_game_def() -> GameDef:
 	var factions_data: Dictionary = _load_json(DATA_DIR + "factions.json")
 	for f in factions_data.get("factions", []):
 		gd.add_faction(FactionDef.from_dict(f))
+	# §1.7: solo Reds e Senate possono Controllare. Moderati e Powers (Germani/
+	# Russi) non controllano mai (ma negano il Controllo col loro conteggio).
+	for fd in gd.factions:
+		fd.can_control = fd.id in ["reds", "senate"]
 
 	# Carte evento: TODO (PR Eventi).
 	var cards_data: Dictionary = _load_json(DATA_DIR + "cards.json")
@@ -64,8 +68,10 @@ func build_game_def() -> GameDef:
 
 func _register_piece_types(gd: GameDef) -> void:
 	# Truppe (cubi) — Germania (grigio) e Russia (marrone).
+	# §1.7: le Truppe dei Powers sono ESCLUSE dal conteggio del Controllo.
 	var troops := PieceTypeDef.new("troops", "Truppe")
 	troops.category = CoinEnums.PieceCategory.CUBE
+	troops.counts_for_control = false
 	gd.add_piece_type(troops)
 
 	# Cellule (ottagoni) — Reds, Senate, Moderates. Active / Underground (§1.4.1).
@@ -129,6 +135,10 @@ func apply_setup(state: GameState, scenario_id: String = "standard") -> void:
 
 	# Piazzamenti casuali (Senate Cell in Viipuri/Turku, Moderates Cell in Viipuri/Turku/Tampere).
 	_apply_random_placements(state, setup.get("random_placements", []))
+
+	# §6.5.5: 10 delle 20 Cellule Senato iniziano Out of Play; entrano nelle Forze
+	# Disponibili alla PRIMA Propaganda (Senate Conscription, gestita in Crisis).
+	state.out_of_play["senate:cell"] = 10
 
 	# Disponibilità: tutte le fazioni iniziano Disponibili.
 	for f in state.game_def.factions:
@@ -215,6 +225,10 @@ func victory_status(state: GameState) -> Dictionary:
 	var senate_value: int = _senate_town_pop(state)
 	if vass_g + pol > 5:
 		senate_value = 0
+	# §7.3 Moderati: margine = min(Risorse − 14, Issues+Networks+1 − Pol). Con
+	# soglia 14, value = min(Risorse, Issues+Networks+1 − Pol + 14) riproduce
+	# esattamente quel margine (e richiede margine strettamente positivo per la
+	# vittoria, come da §7.3).
 	var mod_res: int = state.get_resources("moderates")
 	var mod_inw: int = int(state.tracks.get("issues_networks", 0)) + 1
 	var mod_alt: int = mod_inw - pol + 14
@@ -247,6 +261,16 @@ func _senate_town_pop(state: GameState) -> int:
 		if state.space_state(sid).control == "senate":
 			total += sd.pop
 	return total
+
+
+## Aggiorna i marker-traccia DERIVATI mostrati sui tracciati di vittoria (§1.12).
+## Chiamato da GameController dopo ogni azione/evento/propaganda. Senza questo
+## metodo il controller andava in errore ("Nonexistent function") e il flusso
+## carta si bloccava. `issues_networks` NON è derivato (è un contatore mantenuto
+## da PoliticalDisplay/Eventi) e quindi non va ricalcolato qui.
+func _refresh_victory_tracks(state: GameState) -> void:
+	state.tracks["senate_town_pop"] = _senate_town_pop(state)
+	state.tracks["oppose_admins"] = state.total_opposition() + state.count_on_map("reds", "admin")
 
 
 func tiebreak_order() -> PackedStringArray:

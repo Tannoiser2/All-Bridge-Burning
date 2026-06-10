@@ -31,6 +31,13 @@ static func tex(file: String) -> Texture2D:
 		return _cache[file]
 	var path: String = _assets_dir() + file
 	var t: Texture2D = load(path) if ResourceLoader.exists(path) else null
+	# Fallback: marker condivisi (es. terror.png, sabotage.png) esistono solo in
+	# cuba_libre/assets. Se mancano nella cartella del gioco corrente, ricadi lì
+	# invece di restituire null (→ marker invisibile).
+	if t == null and _assets_dir() != FALLBACK_DIR:
+		var fb: String = FALLBACK_DIR + file
+		if ResourceLoader.exists(fb):
+			t = load(fb)
 	if t != null:
 		_cache[file] = t
 	return t
@@ -108,6 +115,7 @@ static func abb_cap(marker_key: String) -> Texture2D:
 	return null
 static func terror() -> Texture2D: return tex("terror.png")
 static func sabotage() -> Texture2D: return tex("sabotage.png")
+static func prepared(faction: String) -> Texture2D: return tex("prepared_%s.png" % faction)
 
 # ABB VP / track markers (rulebook §1.12)
 static func abb_polarization() -> Texture2D: return tex("polarization_marker.png")
