@@ -106,6 +106,7 @@ var _card_label: RichTextLabel
 var _faction_label: RichTextLabel
 var _log: RichTextLabel
 var _instr: Label
+var _mk_size_label: Label   # mostra la dimensione corrente dei marker (tuning ABB)
 var _turn_banner: Label
 var _btn_end: Button
 var _btn_pass: Button
@@ -163,7 +164,7 @@ var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Specia
 ## Numero di build, in piccolo nell'angolo in alto a sinistra. Permanente:
 ## serve a confermare a colpo d'occhio quale versione il browser ha caricato
 ## (la cache HTTP del .pck è il motivo per cui a volte non vedi i fix).
-const BUILD_VERSION := "b142"
+const BUILD_VERSION := "b143"
 
 
 func _ready() -> void:
@@ -539,6 +540,20 @@ func _build_side_panel() -> PanelContainer:
 	vb.add_child(log_title)
 
 	# Log con altezza fissa, sempre visibile e scrollabile; righe "[+] logica" espandibili.
+	# --- Tuning DAL VIVO dimensione marker Control/Support (solo ABB) ---
+	if GameRegistry.game_id == "all_bridges_burning":
+		_mk_size_label = Label.new()
+		_mk_size_label.add_theme_font_size_override("font_size", 11)
+		_mk_size_label.text = _mk_size_text()
+		vb.add_child(_mk_size_label)
+		var mrow := HBoxContainer.new()
+		mrow.add_theme_constant_override("separation", 3)
+		mrow.add_child(_mk_btn("Control −", func(): _adjust_marker(true, -0.001)))
+		mrow.add_child(_mk_btn("Control +", func(): _adjust_marker(true, 0.001)))
+		mrow.add_child(_mk_btn("Support −", func(): _adjust_marker(false, -0.001)))
+		mrow.add_child(_mk_btn("Support +", func(): _adjust_marker(false, 0.001)))
+		vb.add_child(mrow)
+
 	_log = RichTextLabel.new()
 	_log.bbcode_enabled = true
 	_log.scroll_following = true
@@ -616,6 +631,22 @@ func _layout_board() -> void:
 		_moves_overlay.position = Vector2.ZERO
 		_moves_overlay.size = base
 		_update_moves_overlay()
+
+
+## Testo con i valori correnti delle scale dei marker.
+func _mk_size_text() -> String:
+	return "📐 Marker  Control=%.4f   Support=%.4f" % [RegionView.ABB_CTRL_SCALE, RegionView.ABB_SUP_SCALE]
+
+
+## Applica la variazione di scala e rifà il layout (effetto immediato).
+func _adjust_marker(is_ctrl: bool, delta: float) -> void:
+	if is_ctrl:
+		RegionView.ABB_CTRL_SCALE = maxf(0.002, RegionView.ABB_CTRL_SCALE + delta)
+	else:
+		RegionView.ABB_SUP_SCALE = maxf(0.002, RegionView.ABB_SUP_SCALE + delta)
+	_layout_board()
+	if _mk_size_label != null:
+		_mk_size_label.text = _mk_size_text()
 
 
 ## Tuning DAL VIVO della dimensione dei marker Control/Support (solo ABB):
