@@ -1,161 +1,132 @@
 # Stato del progetto — All Bridges Burning (Digital Edition)
 
-**Data:** 2026-06-10
-**Ultima build web:** `b104` (vedi etichetta gialla in alto a sinistra nel gioco)
-**PR mergiate su main:** 105
+**Data:** 2026-06-10 (sessione "bot fedeli §8 + bilanciamento + UI")
+**Ultima build web:** `b152` (etichetta gialla in alto a sinistra nel gioco)
 **Sito live:** <https://tannoiser2.github.io/All-Bridge-Burning/>
 **Repo:** `Tannoiser2/All-Bridge-Burning` — locale: `~/Desktop/all-bridges-burning/`
+**Test:** 353/353 verdi (`tests/test_runner.gd`)
 
 ---
 
 ## 1. Cosa funziona ora
 
-Il gioco è **completo e giocabile a livello di interazione**, fedele al modulo Vassal.
+Il gioco è **completo e giocabile**, fedele al modulo Vassal e al regolamento
+(Living Rules 2023 + Solitaire Play Aid). Tutte le fazioni possono vincere.
 
-### Sulla mappa si vede:
-- Mappa Finlandia (3000×2350) con 13 spazi (8 province + 5 città) interattivi
-- **Pedine** delle 5 fazioni sui poligoni (Reds, Senate, Moderates + Powers Germans/Russians)
-- **Marker Control / Support** nelle caselle stampate "Uncontrol"/"Neutral" (disegnati a
-  dimensione 0.019, affiancati orizzontalmente, niente sovrapposizione)
-- **Tint province** col colore della fazione controllante (mask Vassal pixel-perfect)
-- **Marker Personality / News** (Moderates) sui poligoni
-- **Capability markers** on-map (Jaeger/Commander/Cannons/Trains) in Phase II
+### Sistema Non-player COMPLETO (§8.0 — riscrittura fedele)
+- **Mini-deck per fazione** (§8.2): Reds #48-53, Senato #54-59, Moderati #60-64,
+  Condition box (§8.2.1), esecuzione top-to-bottom (§8.2.3), pesca casuale.
+- **§8.1.2** No Resource Tracking (i bot non pagano; offsetting automatico §8.1.3).
+- **§8.1.3** Attack Strength fissa per i bot: Senato 7, Reds 5 (+modificatori).
+- **§8.1.4 COMPLETO**: ❶ marker "NP to play" → ❷ simbolo P = passa-per-giocare-il-
+  prossimo-Evento → ❸ procedura Capability (Treni sempre per il Senato; 1d6 vs
+  2×capability, Reds +2) → ❹ Evento con simbolo (i = tabella istruzioni, pieno =
+  priorità generali §8.1.7) → ❺ Cmd+SA / Lim Cmd → Pass.
+- **Tabella "Non-player Event Instructions" COMPLETA** (play-aid pag. 2): tutte le
+  righe #4-#45 — condizioni di gioco per fazione + esecuzione fedele ("per la
+  carta NP Terror/Rally/Attack/Politics", shift, Cellule per il Controllo, ecc.)
+  in `Events._np_instruction_effect`.
+- **Simboli P/i/pieni** estratti visivamente dalle 47 carte del Vassal →
+  `cards.json` campo `np` (33 carte), parsati in `CardDef.np_has()`.
+- **Germans flowchart §3.4** in Phase II; §6.5.2 Red Revolt! forzata alla 2ª
+  Propaganda se non ancora avvenuta.
 
-### Pannelli e tracce (TrackOverlay):
-- Traccia punteggio 0-30 con i marker VP/Resources delle fazioni
-- **Box Available Forces** (Senate/Reds/Moderates/German/Russian) con le pedine nei loro slot esatti
-- **Political Display** con cubi colorati + 3 badge Issue (Working/Reform/Social)
-- **Polarization Track** (0-10) con marker dedicato
-- **Sequence of Play** con cilindri Eligibility (R/S/M/G) nei box giusti
-- **Prisoners of War** box, **Capabilities** panel
-- Tag "Phase I/II" sulla card label + badge "PHASE II" nel SoP
+### Regole base corrette in questa sessione (erano bug)
+- **Terror §3.2.3**: rimuove pezzi (1, o 2 se Pol≥6) + Prigionieri — NON sposta
+  più il Supporto (era la causa principale dello squilibrio).
+- **Controllo §1.7**: Truppe dei Powers escluse (`counts_for_control=false`);
+  solo Reds/Senato controllano (`can_control`).
+- **Rally §3.2.1+§8.1.3**: 1 + modificatori positivi (Senato +1/Supporto, Reds
+  +1/Opposizione); sottrazioni auto-offsettate per i bot.
+- **Vittoria Moderati §7.2**: i Network su mappa ora contano (Issues risolte +
+  Network + 1, derivato dai primitivi in `ABBModule.issues_networks_expr`).
+- **Vittoria §6.1**: check all'INIZIO di ogni Propaganda (la partita può finire
+  alla 1ª-3ª, non solo alla 4ª). Log del Crisis Round leggibile fase per fase.
+- **§6.5.5 Senate Conscription**: 10 Cellule Senato Out of Play al setup, entrano
+  alla 1ª Propaganda (nuovo `GameState.out_of_play`).
+- **Capabilities**: i pending Jaeger/Commander si piazzano all'arrivo della
+  Phase II (prima restavano nel limbo); Prepared difensore = −2 all'Attack.
+- **«Concludi»** riconosce l'azione umana già eseguita (`mark_human_action`).
 
-### Regole implementate (fedeli al regolamento):
-- **Operazioni**: Rally, March, Attack, Terror, Activism (March/Attack gated a Phase II per le fazioni-giocatore)
-- **9 Attività Speciali**: Agitate, Ambush, Subvert, Crackdown, Coordinate, Dialogue, Foreign Relations, Tax, Negotiate
-- **Crisis Round (§6.0)**: Politics Phase §6.2 + Earnings + Powers §6.5.3 + Reset §6.5.4 + Personal Leadership §6.2.2
-- **Political Display §1.11**: 3 Issues × cubi per fazione, risoluzione con 1d6
-- **Politics Command §3.3.4** (Moderati), **Prisoners of War §6.5**, **Sabotage borders §3.2.5**
-- **Phase I/II**: Red Revolt! (#24) attiva la Phase II; Germans flowchart §3.4 (Landing/Reinforce/Attack/March + 1d6 roll)
-- **Capabilities +2 Attack Strength**, **News/Personality transfer §4.3.1**, **Polarization effects**
-- **Powers (Germans/Russians) sempre Bot**, no toggle UI
-- **Vittoria §7.2/§7.3** con tiebreak
-- **47/47 carte** con testo Unshaded/Shaded (OCR) + traduzione IT (Chiaro/Ombr.)
-- **PAC2 Bot**: 17 carte solitaire (49-65) + priority planner di fallback
+### UI (tutte coordinate esatte dal Vassal)
+- Marker Control (0.030) e Support/Oppose (0.024) — scale in cima a
+  `RegionView.gd` (`ABB_CTRL_SCALE`/`ABB_SUP_SCALE`), regolabili DAL VIVO coi
+  pulsanti `Control −/+ / Support −/+` nel pannello laterale.
+- Cubi del Political Display sulle posizioni Vassal esatte (arco della camera);
+  Issues sulle caselle stampate; Log compatto; art carte Propaganda.
 
----
-
-## 2. Cosa abbiamo fatto in questa sessione (PR 75-105)
-
-### Bug critico risolto — l'overlay che spariva
-Per ore il gioco mostrava la mappa e le pedine ma **mancavano risorse, forze disponibili,
-VP markers e tutto l'overlay**. Sembrava un problema di cache ma era un **bug vero**.
-
-La diagnosi (con un'etichetta diagnostica temporanea sullo schermo) ha rivelato:
-- `ovl:NULL` → il nodo `TrackOverlay` era **null**
-- `mapChildren:15` → mancava un figlio (il track overlay non era stato creato)
-- `mapPieces:18` → le pedine c'erano (RegionView funzionava)
-
-**Causa radice:** in `TrackOverlay.gd` avevo scritto
-`var pass_slot := ["pass_a","pass_b","pass_c"][min(i,2)]`. Indicizzare un array literal
-inline ritorna `Variant`, e il parser stretto (load progetto + export web) lo rifiuta con
-**"Cannot infer the type of pass_slot"** → lo script non si caricava → `TrackOverlay.new()`
-ritornava null → tutto l'overlay spariva. Le forme disegnate senza texture (cubi Political
-Display) restavano, le texture no → per questo "sparivano solo alcune cose".
-
-**Fix:** tipo esplicito `var pass_slot: String = [...][mini(...)]`. Verificato con `godot --import`.
-
-### Altri fix di questa sessione
-- **Marker Control/Support**: erano sovrapposti e troppo grandi. Ora disegnati con
-  `draw_texture_rect` a dimensione esplicita 0.019 (i TextureRect non rispettavano la size).
-  Posizioni misurate al pixel: le due caselle sono affiancate orizzontalmente.
-- **Aspect ratio mappa**: era hardcoded su Cuba Libre (0.7727) → marker disallineati.
-  Ora 0.7833 per ABB.
-- **Texture null-cache** in CLAssets: non cacha più i null (riprova finché GameRegistry è pronto).
-- **Available Forces**: estratti dal Vassal i 46 slot Cell + slot Admin/Network/Troops.
-- **SoP cylinders**: 21 slot esatti dal Vassal, allineati ai cerchi stampati.
-- **Bot**: rispetta le priorità PAC2 invece di uno scoring inventato; Germans flowchart §3.4.
-- **Eventi**: 47/47 carte con effetto programmato; traduzioni IT.
-- **Regole politiche complete**: Political Display, Politics Phase, Personal Leadership,
-  Prisoners, Sabotage, Capabilities +2 Attack.
-- **Pulizia repo**: committati i .import dei nuovi asset, ignorati i *.uid (Godot locale 4.6).
+### Bilanciamento (sim 300-500 partite, tutti bot, margini §7.3 a fine partita)
+- **Reds ~62-66% / Moderati ~28-31% / Senato ~5-7%** — il sistema NP è progettato
+  per il solitario (1 umano), non per 3 bot. Esperimenti (`sim_human_senate.gd`,
+  `sim_human_moderates.gd`): un Senato "umano" triplica le vittorie (15.6%,
+  TownPop 5.2 > soglia 3); i Moderati si vincono frenando i Reds, non accumulando.
+- NB: la sim NON applica il check §6.1 (vittoria anticipata) — nel gioco reale
+  molte vittorie arrivano prima.
 
 ---
 
-## 3. Cosa resta da fare (priorità)
+## 2. Cosa resta (priorità basse / rifiniture)
 
-### PRIORITÀ 1 — FIX DEI BOT (problema vero aperto)
-La simulazione (`sim_abb.gd`, 200 partite) mostra bot **rotti**:
-- **100% "none"**: nessuna fazione raggiunge mai la soglia di vittoria
-- **Admin/Network MAI costruiti** (`reds_admin: 0.00`, `moderates_network: 0.00`) → Reds
-  (serve Opposition+Admin≥11) e Moderates (serve Network) **non possono vincere**
-- **Dialogue (156/partita) e Crackdown (85/partita) SPAMMATI** — sono Attività Speciali,
-  non l'azione principale da ripetere all'infinito
-- **Terror quasi mai** (0.26/partita) → Reds non costruiscono Opposition
-- **Senato inonda la board** (18.7 Cell su 20) senza convertire in vittoria; piling su
-  Pohjanmaa (7.6) e Tampere (5.3)
-
-**Piano di fix in ordine:**
-1. `BotPAC2`: smettere di spammare Dialogue/Crackdown (sono SA che accompagnano un Comando)
-2. Reds: costruire Admin (rally mode "admin" con 2 Cell in spazio controllato) + usare Terror
-3. Moderates: costruire Network (Message/Rally)
-4. Senato: Rally mirato a controllare Town invece di spargere Cellule
-5. Rilanciare `sim_abb.gd` dopo ogni fix per misurare il miglioramento
-
-### PRIORITÀ 2 — Rifiniture
-- PAC2: implementare le sub-priorità fini dentro le carte (ora pick greedy)
-- News markers piazzati da più eventi; cleanup OCR residuo su pochi titoli carta
+1. **Agitation §6.4 interattiva per la fazione umana** durante la Propaganda
+   (oggi auto-risolta con le regole del play-aid NP anche per l'umano).
+2. **Simboli NP — verifiche puntuali**: #41 sulla carta appare rosso (Reds) ma la
+   riga della tabella è del Senato (tenuti entrambi); #7 Reds / #34 / #45 hanno la
+   "i" integrata dalla tabella (non rilevata sulla carta). Se un bot gioca/passa
+   in modo strano su una carta, ricontrollare quella.
+3. **Negotiate player-side** (§3.3.3): manca l'operazione per il giocatore umano
+   (il bot ce l'ha via carta #61). Emulata solo nella sim dei Moderati umani.
+4. LIMITI MODELLO dichiarati nei commenti: reachability #27/#29 approssimata,
+   #42 modellata come guadagno di Town Pop Control, Random Spaces Map = uniforme.
+5. Workflow deploy: warning Node.js 20 deprecato (azioni GitHub da aggiornare
+   entro giugno 2026 — non blocca).
 
 ---
 
-## 4. Note tecniche per ripartire
+## 3. Note tecniche per ripartire
 
 ### File chiave
 | File | Cosa contiene |
 | --- | --- |
-| `godot/scenes/Main.gd` | UI principale, `BUILD_VERSION` (etichetta build), layout, dispatcher click |
-| `godot/scenes/TrackOverlay.gd` | Disegna tracce/forze/Political Display/SoP/Prisoners |
-| `godot/scenes/RegionView.gd` | Poligono spazio, pedine, marker Control/Support (`_draw_abb_markers`) |
-| `godot/scenes/CLAssets.gd` | Caricamento texture (cache, no null-cache) |
-| `godot/games/all_bridges_burning/rules/Bot.gd` | Priority planner fallback + Germans flowchart |
-| `godot/games/all_bridges_burning/rules/BotPAC2.gd` | **Bot PAC2 — qui i fix bot** |
+| `godot/scenes/Main.gd` | UI, `BUILD_VERSION`, layout, dispatcher click, pulsanti tuning marker |
+| `godot/scenes/GameController.gd` | Flusso turni, bot dispatch, Propaganda+§6.1, P-pass §8.1.4 ❷ |
+| `godot/scenes/TrackOverlay.gd` | Tracce/forze/Political Display/SoP/Prisoners |
+| `godot/scenes/RegionView.gd` | Poligono spazio, pedine, marker (ABB_CTRL_SCALE/ABB_SUP_SCALE) |
+| `godot/games/all_bridges_burning/rules/Bot.gd` | §8.1.4/§8.1.5: event_choice, tabella istruzioni, P-pass, Germans |
+| `godot/games/all_bridges_burning/rules/NonPlayer{Reds,Senate,Moderates}.gd` | Carte NP §8.3/8.4/8.5 (FEDELI) |
+| `godot/games/all_bridges_burning/rules/Events.gd` | Effetti carte + `_np_instruction_effect` (tabella) |
 | `godot/games/all_bridges_burning/rules/Operations.gd` | Rally/March/Attack/Terror/Activism/Politics |
-| `godot/games/all_bridges_burning/rules/Crisis.gd` | Crisis Round (Politics/Earnings/Powers/Reset) |
-| `godot/games/all_bridges_burning/data/board_layout.json` | track, box, cell_slots, sop_slots |
-| `godot/games/all_bridges_burning/data/cards.json` | 47 carte + testi + traduzioni |
-| `godot/games/all_bridges_burning/data/pac2_deck.json` | 17 carte Bot PAC2 |
-| `godot/tests/sim_abb.gd` | **Simulazione bot — per misurare i fix** |
-| `godot/tests/test_runner.gd` | Test headless (Cuba + ABB) |
+| `godot/games/all_bridges_burning/rules/Crisis.gd` | Crisis Round §6.0 completo |
+| `godot/games/all_bridges_burning/ABBModule.gd` | Vittoria §7.2/§7.3, issues_networks_expr, setup, Out of Play |
+| `godot/games/all_bridges_burning/data/cards.json` | 47 carte + testi + traduzioni + simboli `np` |
+| `godot/tests/sim_abb.gd` | Sim bot-vs-bot con statistiche complete |
+| `godot/tests/sim_human_{senate,moderates}.gd` | Esperimenti fazione "umana" |
 
 ### Comandi
 ```bash
 # Import (SEMPRE prima di assumere che un problema sia cache — rivela i parse error)
-godot --headless --path godot --import
-
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --import
 # Test headless
-godot --headless --path godot -s res://tests/test_runner.gd
-
-# Simulazione bot (N partite)
-godot --headless --path godot -s res://tests/sim_abb.gd -- 500
-
-# Run UI locale
-godot --path godot
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot -s res://tests/test_runner.gd
+# Simulazione (N partite)
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot -s res://tests/sim_abb.gd -- 500
 ```
-(Su questo Mac: `/Applications/Godot.app/Contents/MacOS/Godot`. Nota: il Godot locale è
-4.6, la CI usa 4.3 — il 4.6 genera file `.uid` che NON vanno committati, sono gitignorati.)
+(Godot locale 4.6, CI 4.3 — i file `.uid` non vanno committati, sono gitignorati.)
 
 ### Trappole da ricordare (GOTCHA)
-1. **Type-inference (web export)**: MAI `var x := array_literal[index]` o assegnazioni `:=`
-   il cui valore è `Variant` → "Cannot infer type" → lo script NON si carica → cascata di
-   fallimenti a runtime (`Classe.new()` ritorna null). USA SEMPRE tipo esplicito:
-   `var x: String = [...][i]`. La CI "passa" lo stesso (l'export include script rotti), il
-   fallimento è solo a runtime. Diagnosi: `godot --import` mostra file:riga.
-2. **Const con array/dict literal**: il parser web rifiuta `const X = [...]`. Usa `var X: Array = [...]`.
-3. **Cache `.pck`**: `index.pck` ha nome fisso, GitHub Pages lo cachea → a volte "non vedi i
-   fix" dopo un deploy. L'etichetta build `bNNN` in alto a sinistra conferma la versione.
-   Per forzare: **finestra incognito**. Bumpare `BUILD_VERSION` in Main.gd a ogni fix UI.
-4. **Aspect ratio mappa**: ABB = 2350/3000; Cuba = 2040/2640. È selezionato su `game_id`.
-5. **Workflow PR**: ogni feature su branch → PR → squash merge → il deploy parte sul push a main.
+1. **Type-inference (parser strict/web)**: MAI `var x := espressione_Variant`
+   (es. array literal indicizzato, concat con var di loop non tipata) → "Cannot
+   infer type" → lo script NON si carica → cascata di null a runtime. Tipo
+   esplicito sempre. Diagnosi: `godot --import` mostra file:riga.
+2. **Const con array/dict literal**: il parser web rifiuta `const X = [...]`.
+   Usa `var X: Array = [...]`.
+3. **custom_minimum_size CLAMPA size**: un Control non scende mai sotto la sua
+   min-size — assegnare `size` più piccola viene silenziosamente ignorato.
+   (Causa storica dei marker "che non cambiavano mai", b144.)
+4. **Cache web RISOLTA (b145)**: il deploy rinomina `index.{js,wasm,pck}` in
+   `index.<sha8>.*` → ogni build si vede con refresh normale. L'etichetta `bNNN`
+   conferma la versione. Bumpare `BUILD_VERSION` a ogni modifica visibile.
+5. **Permessi Claude Code**: `.claude/settings.local.json` ha `defaultMode:
+   dontAsk` (gitignorato).
 
 ---
 
