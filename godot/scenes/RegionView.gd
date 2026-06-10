@@ -9,6 +9,12 @@ extends Control
 signal space_clicked(space_id: String)
 signal piece_dropped(from_id: String, to_id: String, faction: String, type: String)
 
+# Scala (frazione della larghezza mappa) dei marcatori nelle caselle stampate.
+# ABB: Control va dentro la sua casella (texture 94px su board 3829 ≈ 0.0245);
+# Support/Oppose più grande perché il cartiglio stampato è più ampio.
+const ABB_CTRL_SCALE := 0.024
+const ABB_SUP_SCALE := 0.030
+
 var space_id: String
 var space_def: SpaceDef
 var _poly_norm: PackedVector2Array = PackedVector2Array()
@@ -151,7 +157,7 @@ func relayout() -> void:
 	if GameRegistry.game_id == "all_bridges_burning":
 		if _ctrl_tr != null:
 			if _cbox.x >= 0:
-				var mkc: float = size.x * 0.027
+				var mkc: float = size.x * ABB_CTRL_SCALE
 				_ctrl_tr.size = Vector2(mkc, mkc)
 				_ctrl_tr.custom_minimum_size = _ctrl_tr.size
 				_ctrl_tr.position = Vector2(_cbox.x * size.x, _cbox.y * size.y) - _ctrl_tr.size * 0.5
@@ -160,7 +166,7 @@ func relayout() -> void:
 				_ctrl_tr.visible = false
 		if _sup_tr != null:
 			if _sbox.x >= 0:
-				var mks: float = size.x * 0.022
+				var mks: float = size.x * ABB_SUP_SCALE
 				_sup_tr.size = Vector2(mks, mks)
 				_sup_tr.custom_minimum_size = _sup_tr.size
 				_sup_tr.position = Vector2(_sbox.x * size.x, _sbox.y * size.y) - _sup_tr.size * 0.5

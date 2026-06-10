@@ -163,7 +163,7 @@ var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Specia
 ## Numero di build, in piccolo nell'angolo in alto a sinistra. Permanente:
 ## serve a confermare a colpo d'occhio quale versione il browser ha caricato
 ## (la cache HTTP del .pck è il motivo per cui a volte non vedi i fix).
-const BUILD_VERSION := "b133"
+const BUILD_VERSION := "b136"
 
 
 func _ready() -> void:
@@ -984,6 +984,8 @@ func _render_log() -> void:
 		if e["tr"].size() > 0:
 			var exp: bool = e.get("exp", false)
 			s += " [url=%d][font_size=10][color=#7fb0ff]%s[/color][/font_size][/url]\n" % [i, ("[-] logica" if exp else "[+] logica")]
+			# La riga "logica" (riga sopra) termina già con \n: nessun newline extra,
+			# altrimenti si crea una riga vuota fra le voci.
 			if exp:
 				var depth := 1   # livello base delle sotto-righe sotto una carta
 				for tl in e["tr"]:
@@ -1007,8 +1009,6 @@ func _render_log() -> void:
 						lvl = 0
 					var pad := "  ".repeat(lvl + extra)
 					s += "  [font_size=9][color=#9fb3c8]%s%s[/color][/font_size]\n" % [pad, line]
-			else:
-				s += "\n"
 		else:
 			# Voci SENZA "logica" (es. PASSA): vanno comunque a capo.
 			s += "\n"

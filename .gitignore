@@ -26,3 +26,6 @@ Materiale ABB/All_Bridges_Burning_*.vmod/
 
 # Godot: file UID generati da versioni 4.4+ in locale (CI usa 4.3, non li usa)
 *.uid
+
+# Impostazioni Claude Code personali (locali)
+.claude/settings.local.json
