@@ -32,11 +32,320 @@ func apply(number: int, side: String, faction: String, _params: Dictionary = {})
 		else:
 			log.append("Capacità %s già attiva." % title)
 		return {"ok": true, "log": log}
+	# Non-player Event Instructions (§8.1.4, play-aid pag. 2): quando un BOT
+	# gioca l'evento, l'esecuzione segue la tabella (spesso "per la carta NP X").
+	if String(state.roles.get(faction, "player")) == "bot" \
+			and _np_instruction_effect(number, side, faction, log):
+		return {"ok": true, "log": log}
 	# Effetti atomici per le carte più frequenti.
 	var handled := _apply_basic_effect(number, side, faction, log)
 	if not handled:
 		log.append("Evento %s [%s] non ancora implementato." % [title, side])
 	return {"ok": true, "log": log}
+
+
+# ---------------------------------------------------------------------------
+# Non-player Event Instructions (§8.1.4) — ESECUZIONE per i bot
+# ---------------------------------------------------------------------------
+
+## Esegue l'evento per il bot secondo la Event Instructions sheet. Ritorna true
+## se la riga della tabella copre (number, faction) e l'effetto è stato eseguito.
+func _np_instruction_effect(number: int, side: String, faction: String, log: Array[String]) -> bool:
+	match number:
+		4, 43:  # per la carta NP Terror (Senate #57 / Reds #51).
+			if faction == "senate": return _run_np_card("senate", 57, log)
+			if faction == "reds": return _run_np_card("reds", 51, log)
+		5, 6, 9:  # shift di uno spazio 1+ Pop (Senate → Supporto, Reds → Opposizione, Pop più alta).
+			if faction == "senate": return _shift_best_pop(1, log)
+			if faction == "reds": return _shift_best_pop(-1, log)
+		7:  # We Demand — Moderates: cubo per la carta Politics #64; Reds: Rally #48.
+			if faction == "moderates": return _run_np_card("moderates", 64, log)
+			if faction == "reds": return _run_np_card("reds", 48, log)
+		8:  # General Strike — S/R: Terror; M: Network dove più Cellule (Town prima).
+			if faction == "senate": return _run_np_card("senate", 57, log)
+			if faction == "reds": return _run_np_card("reds", 51, log)
+			if faction == "moderates": return _place_network_most_cells(log)
+		10:  # Weapons and Jaeger — Moderates: Cellule per la carta Rally #60.
+			if faction == "moderates": return _run_np_card("moderates", 60, log)
+		11:  # Weapons from Lenin? — procedura 1d6 della tabella.
+			return _lenin_procedure(log)
+		12:  # Food Supply — S/R: Terror.
+			if faction == "senate": return _run_np_card("senate", 57, log)
+			if faction == "reds": return _run_np_card("reds", 51, log)
+		13:  # Joblessness — S/R: Cellula ATTIVA per guadagnare Town Pop Control; M: cubo #64.
+			if faction in ["senate", "reds"]: return _place_active_cell_gain_town(faction, log)
+			if faction == "moderates": return _run_np_card("moderates", 64, log)
+		20:  # Tokoi's Chair — Controlla 1+ Pop, oppure rimuovi ultima Cellula nemica/Prepared.
+			if faction in ["senate", "reds"]:
+				if _place_active_cell_gain_town(faction, log): return true
+				return _remove_lone_enemy_cell(faction, log)
+		21:  # Worker's Halls — Reds: Amministrazione in Provincia con 1+ Cellule (meno Opposizione).
+			if faction == "reds": return _place_admin_province(log)
+		27:  # Major Reds Offensive — Senate: Attack #58; Reds: Attack #52 poi March #53.
+			if faction == "senate": return _run_np_card("senate", 58, log)
+			if faction == "reds":
+				if _run_np_card("reds", 52, log): return true
+				return _run_np_card("reds", 53, log)
+		29:  # War with Many Names — Senate: Rally (#54/#55); Moderates: Rally #60.
+			if faction == "senate":
+				var n := 55 if int(state.tracks.get("phase", 1)) >= 2 else 54
+				return _run_np_card("senate", n, log)
+			if faction == "moderates": return _run_np_card("moderates", 60, log)
+		32, 34, 35:  # Armistice / Political Arrests / Home Front — Moderates: Rally #60.
+			if faction == "moderates": return _run_np_card("moderates", 60, log)
+			if number == 35 and faction == "reds":  # Home Front Reds: shift dove NIENTE Admin Reds.
+				return _shift_best_pop(-1, log, true)
+		37:  # VATO — Senate: Helsinki se Neutrale, poi riduci più Opposizione; Reds: alza Opposizione.
+			if faction == "senate":
+				if state.spaces.has("helsinki") and int(state.space_state("helsinki").support) == 0:
+					return _shift_space("helsinki", 1, log)
+				return _shift_most_opposition(1, log)
+			if faction == "reds": return _shift_best_pop(-1, log)
+		39, 45:  # Parliament / Fate in the Balance — Moderates: Lim Cmd dal mazzo NP (blocca l'evento).
+			if faction == "moderates":
+				var r: Dictionary = ABBNonPlayerModerates.new(state, module).take_turn()
+				log.append_array(r.get("trace", []))
+				log.append("Moderati giocano la carta per bloccarla (Lim Cmd dal mazzo NP).")
+				return true
+		40:  # Battle of Tampere — Senate: rimuovi 1 Admin o 2 Cellule Reds; Reds: 2 Cellule Senate.
+			if faction == "senate": return _battle_removals("senate", log)
+			if faction == "reds": return _battle_removals("reds", log)
+		41:  # Battle of Lahti — Senate: Attack in Uusimaa (3+ Senate) o rimuovi 1 German (3+).
+			if faction == "senate": return _battle_of_lahti(log)
+		42:  # Battle of Viipuri — Senate: Cellula per guadagnare Town Pop Control.
+			if faction == "senate": return _place_active_cell_gain_town("senate", log)
+		44:  # Mannerheim — Reds: shift Helsinki verso l'Opposizione, altrimenti Rally lì.
+			if faction == "reds":
+				if state.spaces.has("helsinki") and int(state.space_state("helsinki").support) > -2:
+					return _shift_space("helsinki", -1, log)
+				var rr: Dictionary = ABBOperations.new(state, module).rally("reds", "helsinki", "cell")
+				if rr.get("ok", false):
+					log.append("Reds Rally a Helsinki (#44).")
+					return true
+	return false
+
+
+## Esegue la carta NP n per la fazione come effetto dell'evento.
+func _run_np_card(fid: String, n: int, log: Array[String]) -> bool:
+	var r: Dictionary = {}
+	match fid:
+		"reds": r = ABBNonPlayerReds.new(state, module)._exec_card(n)
+		"senate": r = ABBNonPlayerSenate.new(state, module)._exec_card(n)
+		"moderates": r = ABBNonPlayerModerates.new(state, module)._exec_card(n)
+	if bool(r.get("acted", false)):
+		log.append("Evento eseguito per la carta NP #%d:" % n)
+		for t in r.get("trace", []):
+			log.append("  %s" % t)
+		return true
+	return false
+
+
+func _shift_space(sid: String, delta: int, log: Array[String]) -> bool:
+	var st: SpaceState = state.space_state(sid)
+	var cur := int(st.support)
+	var nv := clampi(cur + delta, -2, 2)
+	if nv == cur:
+		return false
+	st.support = nv as CoinEnums.Support
+	state.recompute_control(sid)
+	log.append("Shift %s: Supporto %d → %d." % [sid, cur, nv])
+	return true
+
+
+## Shift sullo spazio 1+ Pop a Pop più alta con margine; skip_admin=true esclude
+## gli spazi con Amministrazione Reds (#35 Home Front).
+func _shift_best_pop(delta: int, log: Array[String], skip_admin: bool = false) -> bool:
+	var best := ""
+	var bp := 0
+	for sid in state.spaces.keys():
+		var sd: SpaceDef = state.game_def.space(sid)
+		if sd == null or sd.pop < 1:
+			continue
+		var st: SpaceState = state.space_state(sid)
+		if skip_admin and st.count("reds", "admin") > 0:
+			continue
+		var s := int(st.support)
+		if (delta > 0 and s >= 2) or (delta < 0 and s <= -2):
+			continue
+		if sd.pop > bp:
+			bp = sd.pop
+			best = String(sid)
+	return best != "" and _shift_space(best, delta, log)
+
+
+## Shift +1 dove c'è più Opposizione (per il Crackdown-evento del Senato, #37).
+func _shift_most_opposition(delta: int, log: Array[String]) -> bool:
+	var best := ""
+	var bo := 0
+	for sid in state.spaces.keys():
+		var st: SpaceState = state.space_state(sid)
+		if int(st.support) < 0 and -int(st.support) > bo:
+			bo = -int(st.support)
+			best = String(sid)
+	return best != "" and _shift_space(best, delta, log)
+
+
+## Cellula ATTIVA nella Town dove fid otterrebbe il Controllo (Pop più alta).
+func _place_active_cell_gain_town(fid: String, log: Array[String]) -> bool:
+	if state.available(fid, "cell") <= 0:
+		return false
+	var best := ""
+	var bp := 0
+	for sid in state.spaces.keys():
+		var sd: SpaceDef = state.game_def.space(sid)
+		if sd == null or sd.type != CoinEnums.SpaceType.CITY or sd.pop < 1:
+			continue
+		var st: SpaceState = state.space_state(sid)
+		if st.control == fid:
+			continue
+		var mine := st.count(fid, "cell") + st.count(fid, "admin")
+		var others := 0
+		for f in state.game_def.factions:
+			if f.id == fid or f.id in ["germans", "russians"]:
+				continue
+			others += st.count(f.id, "cell") + st.count(f.id, "admin") + st.count(f.id, "network")
+		if mine + 1 > others and sd.pop > bp:
+			bp = sd.pop
+			best = String(sid)
+	if best == "":
+		return false
+	state.space_state(best).add_piece(fid, "cell", 1, "active")
+	state.recompute_control(best)
+	log.append("Cellula %s ATTIVA a %s (Town Pop Control)." % [fid, best])
+	return true
+
+
+func _remove_lone_enemy_cell(fid: String, log: Array[String]) -> bool:
+	var enemy := "reds" if fid == "senate" else "senate"
+	for sid in state.spaces.keys():
+		var st: SpaceState = state.space_state(sid)
+		if st.count(enemy, "cell") == 1:
+			if st.count(enemy, "cell", "active") > 0:
+				st.remove_piece(enemy, "cell", 1, "active")
+			else:
+				st.remove_piece(enemy, "cell", 1, "underground")
+			state.recompute_control(String(sid))
+			log.append("Rimossa l'ultima Cellula %s a %s." % [enemy, sid])
+			return true
+	return false
+
+
+func _place_admin_province(log: Array[String]) -> bool:
+	if state.available("reds", "admin") <= 0:
+		return false
+	var best := ""
+	var bo := 99
+	for sid in state.spaces.keys():
+		var sd: SpaceDef = state.game_def.space(sid)
+		if sd == null or sd.type == CoinEnums.SpaceType.CITY:
+			continue
+		var st: SpaceState = state.space_state(sid)
+		if st.count("reds", "cell") >= 1 and st.count("reds", "admin") == 0:
+			var opp := -int(st.support)
+			if opp < bo:
+				bo = opp
+				best = String(sid)
+	if best == "":
+		return false
+	state.space_state(best).add_piece("reds", "admin", 1, "")
+	state.recompute_control(best)
+	log.append("Amministrazione Reds a %s (#21)." % best)
+	return true
+
+
+func _place_network_most_cells(log: Array[String]) -> bool:
+	if state.available("moderates", "network") <= 0:
+		return false
+	var best := ""
+	var bc := 0
+	for sid in state.spaces.keys():
+		var sd: SpaceDef = state.game_def.space(sid)
+		var st: SpaceState = state.space_state(sid)
+		if st.count("moderates", "network") > 0:
+			continue
+		var c := st.count("moderates", "cell")
+		# ⓐ priorità Town a parità di Cellule.
+		if c > bc or (c == bc and c > 0 and sd != null and sd.type == CoinEnums.SpaceType.CITY and best != "" and state.game_def.space(best).type != CoinEnums.SpaceType.CITY):
+			bc = c
+			best = String(sid)
+	if best == "" or bc == 0:
+		return false
+	state.space_state(best).add_piece("moderates", "network", 1, "")
+	state.recompute_control(best)
+	log.append("Network Moderati a %s (#8)." % best)
+	return true
+
+
+## #11 Weapons from Lenin?: 1d6 → 1-2 Vass.Russo +1; 3-4 Vass.Tedesco −1;
+## 5 se il Senato è player Vass.Tedesco +1, altrimenti ritira; 6 nessun effetto.
+func _lenin_procedure(log: Array[String]) -> bool:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	for _i in range(6):
+		var roll := rng.randi_range(1, 6)
+		if roll <= 2:
+			_adjust_vassal("russian", 1, log)
+			return true
+		if roll <= 4:
+			_adjust_vassal("german", -1, log)
+			return true
+		if roll == 5:
+			if String(state.roles.get("senate", "bot")) == "player":
+				_adjust_vassal("german", 1, log)
+				return true
+			continue  # ritira
+		log.append("#11: 1d6=6 → nessun effetto (Cmd al posto dell'evento).")
+		return true
+	return true
+
+
+func _battle_removals(fid: String, log: Array[String]) -> bool:
+	if fid == "senate":
+		# ❶ un'Amministrazione Reds, ❷ altrimenti 2 Cellule Reds dallo stack più grande.
+		for sid in state.spaces.keys():
+			var st: SpaceState = state.space_state(sid)
+			if st.count("reds", "admin") > 0:
+				st.remove_piece("reds", "admin", 1, "")
+				state.recompute_control(String(sid))
+				log.append("Rimossa Amministrazione Reds a %s (#40)." % sid)
+				return true
+	var enemy := "reds" if fid == "senate" else "senate"
+	var best := ""
+	var bc := 0
+	for sid in state.spaces.keys():
+		var c := state.space_state(sid).count(enemy, "cell")
+		if c > bc:
+			bc = c
+			best = String(sid)
+	if best == "" or bc < 2:
+		return false
+	var st2: SpaceState = state.space_state(best)
+	for _k in range(2):
+		if st2.count(enemy, "cell", "active") > 0:
+			st2.remove_piece(enemy, "cell", 1, "active")
+		elif st2.count(enemy, "cell", "underground") > 0:
+			st2.remove_piece(enemy, "cell", 1, "underground")
+	state.recompute_control(best)
+	log.append("Rimosse 2 Cellule %s a %s (#40)." % [enemy, best])
+	return true
+
+
+func _battle_of_lahti(log: Array[String]) -> bool:
+	if not state.spaces.has("uusimaa"):
+		return false
+	var uu: SpaceState = state.space_state("uusimaa")
+	if uu.count("senate", "cell") >= 3:
+		var r: Dictionary = ABBOperations.new(state, module).attack("senate", "uusimaa")
+		if r.get("ok", false):
+			log.append("Senate Attack in Uusimaa (#41): tiro %d vs forza %d." % [int(r.get("roll", 0)), int(r.get("strength", 0))])
+			return true
+		return false
+	if uu.count("germans", "troops") >= 3:
+		uu.remove_piece("germans", "troops", 1, "")
+		state.recompute_control("uusimaa")
+		log.append("Rimossa 1 Truppa Tedesca da Uusimaa (#41).")
+		return true
+	return false
 
 
 ## Effetti atomici per carte con effetto semplice (Resources / Polarization /
