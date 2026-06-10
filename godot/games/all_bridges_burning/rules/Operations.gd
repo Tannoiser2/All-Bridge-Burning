@@ -95,6 +95,14 @@ func attack(fid: String, sid: String, rng_seed: int = -1) -> Dictionary:
 	var strength: int = st.count(fid, "cell") + st.count(fid, "troops")
 	if strength <= 0:
 		return _err("nessun pezzo attaccante")
+	# §8.1.3 (eccezioni Non-player): per i BOT la forza d'Attack non è il
+	# conteggio dei pezzi ma un valore base FISSO — Senato 7, Reds 5 — a cui
+	# si sommano/sottraggono i modificatori (Capability, Prepared difensore).
+	if String(state.roles.get(fid, "player")) == "bot":
+		if fid == "senate":
+			strength = 7
+		elif fid == "reds":
+			strength = 5
 	# §5.3 Capability bonuses: +2 Attack Strength per Jaeger/Commander/Cannons/Trains.
 	strength += _capability_attack_bonus(fid, st)
 	# §3.2.4: marker Prepared del DIFENSORE → −2 alla forza d'attacco.
