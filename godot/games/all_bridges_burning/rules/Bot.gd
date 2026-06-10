@@ -69,6 +69,12 @@ func event_choice(faction_id: String, card_number: int) -> Dictionary:
 	if card_number == 24 and faction_id == "reds" and int(state.tracks.get("phase", 1)) < 2:
 		return {"play": true, "play_event": true, "side": "unshaded",
 			"trace": ["Red Revolt! → attiva Phase II"]}
+	# §8.1.4 punto 1 — marker "NP to play": la fazione ha Passato apposta per
+	# giocare questo Evento (simbolo P): ora lo gioca, e il marker si rimuove.
+	if int(state.tracks.get("np_to_play_" + faction_id, -1)) == card_number:
+		state.tracks["np_to_play_" + faction_id] = -1
+		return {"play": true, "play_event": true, "side": _np_favorable_side(faction_id),
+			"trace": ["§8.1.4 ❶: gioca l'Evento #%d marcato \"NP to play\" (simbolo P)" % card_number]}
 	# §8.1.4 Event Instructions (Solitaire Play Aid pag. 2): eventi con una
 	# condizione NP chiara di "Play if ...". Gli altri eventi NON si giocano: il
 	# bot ripiega su Comando (Select Cmd+SA) — comportamento di default.
@@ -76,6 +82,12 @@ func event_choice(faction_id: String, card_number: int) -> Dictionary:
 	if ei.get("play", false):
 		return {"play": true, "play_event": true, "side": String(ei.get("side", "unshaded")),
 			"trace": ["§8.1.4 Event Instructions #%d → gioca (%s)" % [card_number, ei.get("side", "unshaded")]]}
+	# §8.1.4 punto 4 — simbolo PIENO ("e") sulla carta: la fazione gioca l'Evento
+	# senza istruzioni speciali (priorità generali §8.1.7).
+	var cdef: CardDef = state.game_def.card(card_number)
+	if cdef != null and cdef.np_has(faction_id, "e"):
+		return {"play": true, "play_event": true, "side": _np_favorable_side(faction_id),
+			"trace": ["§8.1.4 ❹: simbolo pieno su #%d → gioca (%s)" % [card_number, _np_favorable_side(faction_id)]]}
 	var side := _capability_side_for(faction_id, card_number)
 	if side == "":
 		return {"play": false, "play_event": false, "side": "unshaded",
@@ -235,6 +247,21 @@ func _event_play_decision(fid: String, card_number: int) -> Dictionary:
 			if fid == "moderates" and _any_issue_resolved():
 				return {"play": true, "side": s_side}
 	return no_play
+
+
+## §8.1.4 punto 2 — il PROSSIMO Evento ha il simbolo P per la fazione?
+## In tal caso il Non-player Passa ora per giocarlo al prossimo turno
+## (il chiamante marca la carta con "np_to_play_<fid>").
+func should_pass_to_play(faction_id: String, next_card_number: int) -> bool:
+	if next_card_number <= 0:
+		return false
+	var cdef: CardDef = state.game_def.card(next_card_number)
+	return cdef != null and cdef.np_has(faction_id, "P")
+
+
+## Lato favorevole alla fazione (convenzione ABB: Reds → shaded, altri → unshaded).
+func _np_favorable_side(faction_id: String) -> String:
+	return "shaded" if faction_id == "reds" else "unshaded"
 
 
 ## La carta NP n agirebbe ora? (prova su una COPIA dello stato — niente effetti).

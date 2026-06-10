@@ -141,6 +141,11 @@ func draw_next() -> int:
 		state.current_card = -1
 	else:
 		state.current_card = state.draw_deck.pop_front()
+	# Pulisci i marker "NP to play" stantii (riferiti a carte ormai passate).
+	for fid in ["reds", "senate", "moderates"]:
+		var key: String = "np_to_play_" + String(fid)
+		if int(state.tracks.get(key, -1)) > 0 and int(state.tracks[key]) != state.current_card:
+			state.tracks[key] = -1
 	_start_card_sequence()
 	emit_signal("state_changed")
 	return state.current_card
@@ -292,6 +297,16 @@ func _bot_take_pending() -> void:
 	var can_op := seq.is_legal(A.OPERATION)
 	var can_lim := seq.is_legal(A.LIMITED_OPERATION)
 	var can_event := seq.is_legal(A.EVENT) and state.current_card > 0
+	# §8.1.4 ❷ — il PROSSIMO Evento ha il simbolo P per questa fazione: Passa ora
+	# per giocarlo al prossimo turno (marker "NP to play").
+	if GameRegistry.game_id == "all_bridges_burning" and bot != null:
+		var nxt := next_card()
+		if nxt > 0 and bot.should_pass_to_play(fid, nxt):
+			state.tracks["np_to_play_" + fid] = nxt
+			emit_signal("bot_decision", "%s -> PASSA per giocare il prossimo Evento (#%d)" % [fname, nxt],
+				fid, ["§8.1.4 ❷: il prossimo Evento ha il simbolo P per %s — marcato \"NP to play\"." % fname])
+			seq.act_pass(); _count("pass"); _count("pass#" + fid)
+			return
 	# Tabella NP Eligibility (C8.5.2): decide il TIPO di azione.
 	var decision := _np_eligibility_decision(fid)
 	if decision == "event" and not can_event:

@@ -20,6 +20,16 @@ var shaded: String = ""             ## testo ombreggiato dell'Evento
 var translation: String = ""        ## traduzione italiana sintetica (Chiaro:/Ombr.:)
 var history: String = ""            ## descrizione storica dal Playbook
 
+## Simboli Non-player stampati sulla carta (ABB §8.1.4): faction_id → stringa
+## con "P" (Pass per giocare il prossimo Evento), "i" (gioca con istruzioni),
+## "e" (simbolo pieno: gioca senza istruzioni, priorità generali §8.1.7).
+var np: Dictionary = {}
+
+
+## La carta ha il simbolo `sym` ("P"/"i"/"e") per la fazione?
+func np_has(faction_id: String, sym: String) -> bool:
+	return String(np.get(faction_id, "")).contains(sym)
+
 
 func _init(p_number: int = 0, p_title: String = "") -> void:
 	number = p_number
@@ -38,4 +48,7 @@ static func from_dict(d: Dictionary) -> CardDef:
 	c.shaded = String(d.get("shaded", ""))
 	c.translation = String(d.get("it", d.get("translation", "")))
 	c.history = String(d.get("history", ""))
+	var np_d: Dictionary = d.get("np", {})
+	for k in np_d.keys():
+		c.np[String(k)] = String(np_d[k])
 	return c
