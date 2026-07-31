@@ -188,6 +188,26 @@ func relayout() -> void:
 func refresh(state: GameState) -> void:
 	var st: SpaceState = state.space_state(space_id)
 	_control = st.control
+	# Tooltip informativo: Pop, Supporto, Controllo e pezzi presenti.
+	if GameRegistry.game_id == "all_bridges_burning":
+		var sup_names := {2: "Supporto Attivo", 1: "Supporto Passivo", 0: "Neutrale",
+			-1: "Opposizione Passiva", -2: "Opposizione Attiva"}
+		var lines: Array = ["%s — Pop %d" % [space_def.name, space_def.pop]]
+		lines.append(String(sup_names.get(int(st.support), "?")) 			+ ("  ·  Controllo: %s" % (_control if _control != "" else "nessuno")))
+		for fid in ["reds", "senate", "moderates", "germans", "russians"]:
+			var parts: Array = []
+			for pt in [["cell", "underground", "Cell.Cland."], ["cell", "active", "Cell.Attive"],
+					["troops", "", "Truppe"], ["admin", "", "Admin"], ["network", "", "Network"]]:
+				var c := st.count(fid, pt[0], pt[1])
+				if c > 0:
+					parts.append("%d %s" % [c, pt[2]])
+			if parts.size() > 0:
+				lines.append("%s: %s" % [fid, ", ".join(PackedStringArray(parts))])
+		for mk in [["terror", "Terror"], ["news", "News"], ["personality", "Personality"],
+				["prepared_senate", "Prepared S"], ["prepared_reds", "Prepared R"]]:
+			if st.marker(mk[0]) > 0:
+				lines.append("%s ×%d" % [mk[1], st.marker(mk[0])])
+		tooltip_text = "\n".join(PackedStringArray(lines))
 	for c in _stack.get_children():
 		c.queue_free()
 

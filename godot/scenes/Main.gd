@@ -164,7 +164,7 @@ var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Specia
 ## Numero di build, in piccolo nell'angolo in alto a sinistra. Permanente:
 ## serve a confermare a colpo d'occhio quale versione il browser ha caricato
 ## (la cache HTTP del .pck è il motivo per cui a volte non vedi i fix).
-const BUILD_VERSION := "b156"
+const BUILD_VERSION := "b157"
 
 
 func _ready() -> void:
@@ -521,6 +521,9 @@ func _build_side_panel() -> PanelContainer:
 	_card_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_card_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
 	_card_img.custom_minimum_size = Vector2(150, 200)
+	_card_img.mouse_filter = Control.MOUSE_FILTER_STOP
+	_card_img.tooltip_text = "Clicca per ingrandire"
+	_card_img.gui_input.connect(func(e): _card_zoom_input(e, _card_img))
 	col_cur.add_child(_card_img)
 	cards_row.add_child(col_cur)
 	var col_next := VBoxContainer.new()
@@ -533,6 +536,9 @@ func _build_side_panel() -> PanelContainer:
 	_next_card_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
 	_next_card_img.custom_minimum_size = Vector2(150, 200)
 	_next_card_img.modulate = Color(1, 1, 1, 0.75)
+	_next_card_img.mouse_filter = Control.MOUSE_FILTER_STOP
+	_next_card_img.tooltip_text = "Clicca per ingrandire"
+	_next_card_img.gui_input.connect(func(e): _card_zoom_input(e, _next_card_img))
 	col_next.add_child(_next_card_img)
 	cards_row.add_child(col_next)
 
@@ -648,7 +654,45 @@ const ANIM_SZ := 26.0
 const ANIM_DUR := 0.9
 
 
+var _endgame_shown := false
+
+## Schermata di fine partita: classifica con margini (una volta sola).
+func _show_endgame_dialog() -> void:
+	if _endgame_shown:
+		return
+	_endgame_shown = true
+	var vs: Dictionary = GameController.module.victory_status(GameController.state)
+	var names := {"reds": "Reds", "senate": "Senato (Whites)", "moderates": "Moderati",
+		"germans": "Germania", "russians": "Russia"}
+	var order: Array = ["reds", "senate", "moderates"]
+	order.sort_custom(func(a, b): return int(vs[a]["margin"]) > int(vs[b]["margin"]))
+	var txt := "🏆 Vince: %s\n\nClassifica (valore/soglia · margine):\n" % names.get(GameController.winner, GameController.winner)
+	var pos := 1
+	for fid in order:
+		var v: Dictionary = vs[fid]
+		txt += "  %d. %s — %d/%d (%+d)\n" % [pos, names[fid], int(v["value"]), int(v["threshold"]), int(v["margin"])]
+		pos += 1
+	txt += "\nVassallaggi: Tedesco %d · Russo %d · Polarization %d\nPropaganda giocate: %d/4" % [
+		int(GameController.state.tracks.get("vassalage_german", 0)),
+		int(GameController.state.tracks.get("vassalage_russian", 0)),
+		int(GameController.state.tracks.get("polarization", 0)),
+		GameController.propaganda_played]
+	var dlg := AcceptDialog.new()
+	dlg.title = "Fine partita"
+	dlg.dialog_text = txt
+	dlg.ok_button_text = "Chiudi"
+	add_child(dlg)
+	dlg.popup_centered()
+	dlg.confirmed.connect(func(): dlg.queue_free())
+	dlg.canceled.connect(func(): dlg.queue_free())
+
+
 func _refresh() -> void:
+	if GameRegistry.game_id == "all_bridges_burning":
+		if GameController.game_over:
+			_show_endgame_dialog()
+		else:
+			_endgame_shown = false
 	_animate_moves()
 	for sid in _space_views.keys():
 		_space_views[sid].refresh(GameController.state)
@@ -876,9 +920,14 @@ func _select_faction(fid: String) -> void:
 func _rebuild_action_buttons(fid: String) -> void:
 	for c in _op_btns.get_children():
 		c.queue_free()
+	var abb_ph1 := _is_abb() and int(GameController.state.tracks.get("phase", 1)) < 2
 	for op in GameController.game_def.faction(fid).operations:
 		var ob: Button = _mk_btn(OP_NAMES.get(op, op), _start_op.bind(op))
 		ob.tooltip_text = OP_DESC.get(op, "")
+		# ABB: March/Attack sono Phase II per le fazioni giocatore (§3.2.4/§3.2.5).
+		if abb_ph1 and op in ["march", "attack"]:
+			ob.disabled = true
+			ob.tooltip_text = "Disponibile solo in Phase II (dopo Red Revolt!)"
 		_op_btns.add_child(ob)
 	for c in _sa_btns.get_children():
 		c.queue_free()
@@ -897,6 +946,9 @@ func _rebuild_action_buttons(fid: String) -> void:
 		else:
 			var sb: Button = _mk_btn(SA_NAMES.get(sa, sa), _do_special.bind(sa))
 			sb.tooltip_text = SA_DESC.get(sa, "")
+			if abb_ph1 and sa == "coordinate":
+				sb.disabled = true
+				sb.tooltip_text = "Disponibile solo in Phase II (§4.2.4)"
 			_sa_btns.add_child(sb)
 
 
@@ -960,6 +1012,32 @@ func _victory_text() -> String:
 	if vg + pol > 5:
 		line2 += "  [color=#e67e22]⚠ Ted.+Pol>5: Senato azzerato[/color]"
 	return "🏆 " + " · ".join(PackedStringArray(parts)) + "\n[font_size=10][color=#9fb3c8]%s[/color][/font_size]" % line2
+
+
+var _card_zoom_popup: PopupPanel = null
+
+## Click su una miniatura carta → popup con l'immagine grande (chiudi con click/Esc).
+func _card_zoom_input(e: InputEvent, img: TextureRect) -> void:
+	if not (e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT):
+		return
+	if img.texture == null:
+		return
+	if _card_zoom_popup == null:
+		_card_zoom_popup = PopupPanel.new()
+		add_child(_card_zoom_popup)
+		var tr := TextureRect.new()
+		tr.name = "zoomtex"
+		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		_card_zoom_popup.add_child(tr)
+		_card_zoom_popup.popup_hide.connect(func(): pass)
+	var tex: TextureRect = _card_zoom_popup.get_node("zoomtex")
+	tex.texture = img.texture
+	var vp := get_viewport_rect().size
+	var h := vp.y * 0.9
+	var w := h * float(img.texture.get_width()) / float(img.texture.get_height())
+	tex.custom_minimum_size = Vector2(w, h)
+	_card_zoom_popup.popup_centered(Vector2(w + 16, h + 16))
 
 
 func _refresh_side() -> void:

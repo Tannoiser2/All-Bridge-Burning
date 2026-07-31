@@ -21,6 +21,7 @@ concurrency:
 
 env:
   GODOT_VERSION: "4.3-stable"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
   build:
