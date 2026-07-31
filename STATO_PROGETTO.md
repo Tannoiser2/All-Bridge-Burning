@@ -1,7 +1,7 @@
 # Stato del progetto — All Bridges Burning (Digital Edition)
 
 **Data:** 2026-06-10 (sessione "bot fedeli §8 + bilanciamento + UI + mazzo §2.4")
-**Ultima build web:** `b156` (etichetta gialla in alto a sinistra nel gioco)
+**Ultima build web:** `b157` (etichetta gialla in alto a sinistra nel gioco)
 **Sito live:** <https://tannoiser2.github.io/All-Bridge-Burning/>
 **Repo:** `Tannoiser2/All-Bridge-Burning` — locale: `~/Desktop/all-bridges-burning/`
 **Test:** 353/353 verdi (`tests/test_runner.gd`)
@@ -71,6 +71,14 @@ Il gioco è **completo e giocabile**, fedele al modulo Vassal e al regolamento
   evidenziati; **Coordinamento** (§4.2.4, Senato, Phase II) piazza il marker
   Coordinate (consumato dal bot German al turno successivo) — prima entrambi
   crashavano per il player (b156). Tuning marker rimosso (b155, scale const).
+- **Eventi COMPLETI anche per il player umano** (b157): chiusi tutti i 21
+  effetti stub (_apply_extended_effect in Events.gd) — dove serve scegliere
+  uno spazio la scelta è automatica con priorità §8.1.7 e loggata (LIMITE
+  MODELLO). Censimento: 0 stub residui.
+- **GUI b157**: dialog di FINE PARTITA (vincitore+classifica+tracciati);
+  click sulla carta → ingrandimento; tooltip informativi sugli spazi
+  (Pop/Supporto/Controllo/pezzi/marker); March/Attack/Coordinate disabilitati
+  in Phase I con motivo nel tooltip. CI su Node 24.
 
 ### Bilanciamento (sim 300-500 partite, tutti bot, margini §7.3 a fine partita)
 - **Reds ~62-66% / Moderati ~28-31% / Senato ~5-7%** — il sistema NP è progettato
@@ -82,23 +90,20 @@ Il gioco è **completo e giocabile**, fedele al modulo Vassal e al regolamento
 
 ---
 
-## 2. Cosa resta (priorità basse / rifiniture)
+## 2. Cosa resta (tutto opzionale, rifiniture)
 
-1. **Agitation §6.4 interattiva per la fazione umana** durante la Propaganda
-   (oggi auto-risolta con le regole del play-aid NP anche per l'umano).
-2. **Simboli NP — verifiche puntuali**: #41 sulla carta appare rosso (Reds) ma la
-   riga della tabella è del Senato (tenuti entrambi); #7 Reds / #34 / #45 hanno la
-   "i" integrata dalla tabella (non rilevata sulla carta). Se un bot gioca/passa
-   in modo strano su una carta, ricontrollare quella.
-3. **21 effetti evento stub per il player umano** (i bot sono coperti dalla
-   tabella NP): unshaded #2,4,5,9,20,28,30,36 · shaded #3,7,12,25,27,31,32,
-   33,34,38,39,44,45. Anche: Retreat §3.2.4 del difensore umano (ora sempre
-   Engage); scelta umana in Red Revolt §2.4.1; Coordinate senza scelta di
-   dettaglio dell'azione tedesca (marker+log, LIMITE MODELLO).
-4. LIMITI MODELLO dichiarati nei commenti: reachability #27/#29 approssimata,
-   #42 modellata come guadagno di Town Pop Control, Random Spaces Map = uniforme.
-5. Workflow deploy: warning Node.js 20 deprecato (azioni GitHub da aggiornare
-   entro giugno 2026 — non blocca).
+1. **Scelte manuali** dove ora c'è l'auto-scelta loggata (§8.1.7):
+   Agitation §6.4 del player nella Propaganda; Retreat §3.2.4 del difensore
+   umano (ora sempre Engage); opzione Red Revolt §2.4.1 per Reds umano;
+   spazio-bersaglio degli effetti evento; dettaglio azione tedesca con
+   Coordinate.
+2. **Simboli NP — verifiche puntuali**: #41 rosso sulla carta ma riga tabella
+   del Senato (tenuti entrambi); #7 Reds / #34 / #45 con "i" integrata dalla
+   tabella. Ricontrollare solo se un bot si comporta in modo strano lì.
+3. LIMITI MODELLO dichiarati nei commenti: reachability #27/#29 approssimata,
+   #42 come guadagno di Town Pop Control, Random Spaces Map §8.4 uniforme
+   (manca la tabella 2 dadi con frecce), Train come track globale (non marker
+   mobile sulle ferrovie §1.2.2).
 
 ---
 
