@@ -92,6 +92,21 @@ func foreign_relations(power: String, delta: int) -> Dictionary:
 	return _ok({"new_value": state.tracks[key]})
 
 
+## Coordinate (§4.2.4, SOLO Senato, Phase II): piazza il marker Coordinate sul
+## cilindro tedesco — la PROSSIMA azione tedesca del flowchart è decisa dal
+## Senato. LIMITE MODELLO: il bot German consuma il marker loggandolo; le
+## scelte di dettaglio restano quelle del flowchart.
+func coordinate(fid: String) -> Dictionary:
+	if fid != "senate":
+		return _err("Coordinate: solo il Senato (§4.2.4)")
+	if int(state.tracks.get("phase", 1)) < 2:
+		return _err("Coordinate disponibile solo in Phase II")
+	if int(state.tracks.get("coordinate_marker", 0)) == 1:
+		return _err("marker Coordinate già piazzato")
+	state.tracks["coordinate_marker"] = 1
+	return _ok()
+
+
 # Common
 func tax(fid: String, sid: String) -> Dictionary:
 	if not _has_cell(fid, sid):

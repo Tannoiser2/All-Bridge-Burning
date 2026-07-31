@@ -27,7 +27,7 @@ const OP_NAMES := {
 	"assault": "Assalto", "rally": "Rally", "march": "Marcia",
 	"attack": "Attacco", "terror": "Terrorismo", "build": "Costruzione",
 	# All Bridges Burning (rally/march/attack/terror condivisi)
-	"message": "Messaggio", "activism": "Attivismo",
+	"message": "Messaggio", "activism": "Attivismo", "negotiate": "Negoziato",
 }
 # Cosa permette di fare ogni Operazione (sintesi mostrata nel banner).
 const OP_DESC := {
@@ -60,8 +60,8 @@ const SA_DESC := {
 	# ABB
 	"agitate": "Reds: spendi 1 Risorsa per spostare Supporto verso Opposition (serve Cellula).",
 	"crackdown": "Senate: rimuovi 1 Terror marker, sposta Supporto verso Senate.",
-	"coordinate": "Senate: muovi 1 Truppa Russa/Tedesca verso spazio adiacente.",
-	"negotiate": "Senate/Moderates: +1 Vassalage Tedesca.",
+	"coordinate": "Senato (§4.2.4, Phase II): piazza il marker Coordinate — la prossima azione Tedesca è guidata dal Senato.",
+	"negotiate": "Moderati (§3.3.3): Attiva una tua Cellula Clandestina, Disattiva 1 nemico Attivo, Polarization −1 (1 Risorsa per spazio).",
 	"dialogue": "Moderates: sposta Supporto/Opposizione verso Neutral.",
 	"foreign_relations": "Moderates: cambia Vassalage Tedesca o Russa.",
 	"tax": "Incassa Risorse pari alla Popolazione dello spazio con tua Cellula.",
@@ -99,6 +99,7 @@ var _map: TextureRect
 var _bar: VBoxContainer
 var _side: PanelContainer
 var _track_overlay: TrackOverlay
+var _victory_label: RichTextLabel
 var _card_img: TextureRect
 var _next_card_img: TextureRect
 var _zoom := 1.0
@@ -163,7 +164,7 @@ var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Specia
 ## Numero di build, in piccolo nell'angolo in alto a sinistra. Permanente:
 ## serve a confermare a colpo d'occhio quale versione il browser ha caricato
 ## (la cache HTTP del .pck è il motivo per cui a volte non vedi i fix).
-const BUILD_VERSION := "b155"
+const BUILD_VERSION := "b156"
 
 
 func _ready() -> void:
@@ -497,6 +498,15 @@ func _build_side_panel() -> PanelContainer:
 	var vb := VBoxContainer.new()
 	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(vb)
+
+	# Pannello VITTORIA: margini delle 3 fazioni + Vassalaggi/Polarization, live.
+	_victory_label = RichTextLabel.new()
+	_victory_label.bbcode_enabled = true
+	_victory_label.fit_content = true
+	_victory_label.scroll_active = false
+	_victory_label.add_theme_font_size_override("normal_font_size", 12)
+	_victory_label.add_theme_font_size_override("bold_font_size", 12)
+	vb.add_child(_victory_label)
 
 	# Carte: corrente e prossima (Upcoming), affiancate
 	var cards_row := HBoxContainer.new()
@@ -926,8 +936,36 @@ func _card_image_number(card_num: int) -> int:
 	return card_num
 
 
+## Testo del pannello Vittoria (§7.2/§7.3): valore/soglia e margine per fazione,
+## più Vassalaggi+Polarization con l'avviso di azzeramento (Vass+Pol > 5).
+func _victory_text() -> String:
+	var st: GameState = GameController.state
+	var vs: Dictionary = GameController.module.victory_status(st)
+	var pol := int(st.tracks.get("polarization", 0))
+	var vg := int(st.tracks.get("vassalage_german", 0))
+	var vr := int(st.tracks.get("vassalage_russian", 0))
+	var cols := {"reds": "#e74c3c", "senate": "#ecf0f1", "moderates": "#5dade2"}
+	var names := {"reds": "Reds", "senate": "Senato", "moderates": "Moderati"}
+	var parts: Array = []
+	for fid in ["reds", "senate", "moderates"]:
+		var v: Dictionary = vs[fid]
+		var m := int(v["margin"])
+		var mtxt := "%+d" % m
+		if m > 0:
+			mtxt = "[color=#2ecc71]%s[/color]" % mtxt
+		parts.append("[color=%s][b]%s[/b][/color] %d/%d (%s)" % [cols[fid], names[fid], int(v["value"]), int(v["threshold"]), mtxt])
+	var line2 := "Vass. Ted. %d · Russo %d · Polarization %d" % [vg, vr, pol]
+	if vr + pol > 5:
+		line2 += "  [color=#e67e22]⚠ Russo+Pol>5: Reds azzerati[/color]"
+	if vg + pol > 5:
+		line2 += "  [color=#e67e22]⚠ Ted.+Pol>5: Senato azzerato[/color]"
+	return "🏆 " + " · ".join(PackedStringArray(parts)) + "\n[font_size=10][color=#9fb3c8]%s[/color][/font_size]" % line2
+
+
 func _refresh_side() -> void:
 	var s: GameState = GameController.state
+	if _victory_label != null and GameRegistry.game_id == "all_bridges_burning":
+		_victory_label.text = _victory_text()
 	var cc: int = s.current_card
 	_card_img.texture = CLAssets.card(_card_image_number(cc)) if cc >= 0 else null
 	var nc: int = GameController.next_card()
@@ -1904,7 +1942,7 @@ func _enemy_present(faction: String, st: SpaceState) -> bool:
 
 ## Operazioni che usano la pipeline ABB semplificata (Cuba-shaped per le altre).
 ## Non si può usare `const` con array letterali nel parser web di Godot 4.3.
-var _ABB_OPS: Array = ["rally", "march", "attack", "terror", "message", "activism"]
+var _ABB_OPS: Array = ["rally", "march", "attack", "terror", "message", "activism", "negotiate"]
 
 
 func _is_abb() -> bool:
@@ -1946,6 +1984,11 @@ func _abb_op_targets(fid: String, op_id: String) -> Array:
 			"terror", "activism":
 				if GameController.state.space_state(sid).count(fid, "cell") > 0:
 					out.append(sid)
+			"negotiate":
+				var stn: SpaceState = GameController.state.space_state(sid)
+				if stn.count("moderates", "cell", "underground") > 0 \
+						and (stn.count("reds", "cell", "active") > 0 or stn.count("senate", "cell", "active") > 0):
+					out.append(sid)
 			_:
 				out.append(sid)
 	return out
@@ -1985,6 +2028,8 @@ func _abb_execute_op_on_space(sid: String) -> void:
 			res = GameController.ops.terror(fid, sid)
 		"activism":
 			res = GameController.ops.activism(fid, sid)
+		"negotiate":
+			res = GameController.ops.negotiate(fid, sid)
 		_:
 			res = {"ok": false, "error": "op ABB non supportata: " + op_id}
 	_abb_log_op(op_id, sid, res)
@@ -2031,7 +2076,7 @@ func _abb_end_op() -> void:
 
 var _ABB_SAS: Array = [
 	"agitate", "ambush", "subvert", "crackdown", "dialogue", "tax",
-	"negotiate", "coordinate", "foreign_relations",
+	"coordinate", "foreign_relations",
 ]
 
 ## SA che chiedono di cliccare uno spazio bersaglio. Le altre si eseguono
@@ -2044,23 +2089,14 @@ var _ABB_SAS_SINGLE_SPACE: Array = [
 
 func _abb_start_special(sa: String) -> void:
 	# SA senza target: esegui subito.
-	if sa == "negotiate":
-		var res: Dictionary = GameController.specials.negotiate(_cur_faction)
-		_abb_log_sa(sa, "", res)
+	if sa == "coordinate":
+		var res: Dictionary = GameController.specials.coordinate(_cur_faction)
+		_abb_log_sa(sa, "marker sul cilindro Tedesco", res)
 		return
 	if sa == "foreign_relations":
 		# Placeholder: +1 Vassalage Tedesca. Future PR: UI per scelta power+delta.
 		var fr_res: Dictionary = GameController.specials.foreign_relations("germans", 1)
 		_abb_log_sa(sa, "germans +1", fr_res)
-		return
-	# Coordinate: 2-step from→to.
-	if sa == "coordinate":
-		_pending_sa = sa
-		_mode = "abb_sa_coord_from"
-		_clear_highlights()
-		for sid in _abb_sa_coord_origins():
-			_space_views[sid].set_highlight(true)
-		_instr.text = "%s — clicca uno spazio con Truppa Russa/Tedesca." % SA_NAMES.get(sa, sa)
 		return
 	# SA su 1 spazio: highlight e attendi click.
 	if sa in _ABB_SAS_SINGLE_SPACE:

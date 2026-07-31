@@ -285,6 +285,44 @@ func politics(fid: String, cube_color: String) -> Dictionary:
 	return _ok({"cost": cost, "cube": cube_color})
 
 
+## Negotiate (§3.3.3, COMANDO dei soli Moderati): in uno spazio con Cellula
+## Moderati Clandestina e Cellula nemica Attiva, paga 1 Risorsa; ATTIVA la
+## Cellula Moderati, DISATTIVA fino a 1 Cellula nemica Attiva, e riduce la
+## Polarization di 1 per nemico disattivato (facoltativo per il player: qui
+## sempre, è ciò che si desidera nel 99% dei casi).
+func negotiate(fid: String, sid: String) -> Dictionary:
+	if fid != "moderates":
+		return _err("Negotiate: solo i Moderati (§3.3.3)")
+	if not state.spaces.has(sid):
+		return _err("spazio sconosciuto: %s" % sid)
+	var st: SpaceState = state.space_state(sid)
+	if st.count("moderates", "cell", "underground") <= 0:
+		return _err("serve una Cellula Moderati CLANDESTINA in %s" % sid)
+	var has_enemy_active := st.count("reds", "cell", "active") > 0 or st.count("senate", "cell", "active") > 0
+	if not has_enemy_active:
+		return _err("serve una Cellula nemica ATTIVA in %s" % sid)
+	if state.tracks_resources(fid):
+		if state.get_resources(fid) < 1:
+			return _err("risorse insufficienti (serve 1 per spazio)")
+		state.resources[fid] -= 1
+	# Attiva la Cellula Moderati
+	st.remove_piece("moderates", "cell", 1, "underground")
+	st.add_piece("moderates", "cell", 1, "active")
+	# Disattiva fino a 1 nemico Attivo
+	var deact := ""
+	for f in ["reds", "senate"]:
+		if st.count(f, "cell", "active") > 0:
+			st.remove_piece(f, "cell", 1, "active")
+			st.add_piece(f, "cell", 1, "underground")
+			deact = f
+			break
+	var pol_before := int(state.tracks.get("polarization", 0))
+	if deact != "":
+		state.tracks["polarization"] = maxi(0, pol_before - 1)
+	state.recompute_control(sid)
+	return _ok({"deactivated": deact, "polarization": state.tracks.get("polarization", 0)})
+
+
 ## Terror (§3.2.3): poni un Terror marker e RIMUOVI pezzi nemici (fino a 1, o 2 se
 ## Polarization ≥ 6). NON sposta il Supporto/Opposizione — quello è compito di
 ## Agitate (§3.2.2) / Agitation (§6.4.2). Serve una Cellula ATTIVA della fazione.

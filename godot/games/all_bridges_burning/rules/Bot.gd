@@ -20,6 +20,10 @@ func take_turn(faction_id: String, _allow_special: bool = true, _limited: bool =
 	var fdef: FactionDef = state.game_def.faction(faction_id)
 	if fdef == null or fdef.operations.is_empty():
 		return {"action": "pass", "trace": ["pass: no ops"]}
+	# §4.2.4: il marker Coordinate si consuma con l'azione tedesca che guida.
+	if faction_id == "germans" and int(state.tracks.get("coordinate_marker", 0)) == 1:
+		state.tracks["coordinate_marker"] = 0
+		trace.append("Coordinate (§4.2.4): azione tedesca guidata dal Senato — marker rimosso.")
 	# 1. Prova PAC2 (solo per Reds/Senate/Moderates, le 3 fazioni con bot deck).
 	if use_pac2 and faction_id in ["reds", "senate", "moderates"]:
 		var pac2 := ABBBotPAC2.new(state, module, _pac2_dice_seed)
