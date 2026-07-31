@@ -1,7 +1,7 @@
 # Stato del progetto — All Bridges Burning (Digital Edition)
 
 **Data:** 2026-06-10 (sessione "bot fedeli §8 + bilanciamento + UI + mazzo §2.4")
-**Ultima build web:** `b154` (etichetta gialla in alto a sinistra nel gioco)
+**Ultima build web:** `b156` (etichetta gialla in alto a sinistra nel gioco)
 **Sito live:** <https://tannoiser2.github.io/All-Bridge-Burning/>
 **Repo:** `Tannoiser2/All-Bridge-Burning` — locale: `~/Desktop/all-bridges-burning/`
 **Test:** 353/353 verdi (`tests/test_runner.gd`)
@@ -64,6 +64,13 @@ Il gioco è **completo e giocabile**, fedele al modulo Vassal e al regolamento
   pulsanti `Control −/+ / Support −/+` nel pannello laterale.
 - Cubi del Political Display sulle posizioni Vassal esatte (arco della camera);
   Issues sulle caselle stampate; Log compatto; art carte Propaganda.
+- **Pannello Vittoria live** (b156) in cima al pannello laterale: valore/soglia
+  e margine delle 3 fazioni + Vassallaggi/Polarization con avviso ⚠ quando
+  Vass+Pol>5 azzera una vittoria (§7.2).
+- **Negoziato** = Comando dei Moderati (§3.3.3, Operations.negotiate) coi target
+  evidenziati; **Coordinamento** (§4.2.4, Senato, Phase II) piazza il marker
+  Coordinate (consumato dal bot German al turno successivo) — prima entrambi
+  crashavano per il player (b156). Tuning marker rimosso (b155, scale const).
 
 ### Bilanciamento (sim 300-500 partite, tutti bot, margini §7.3 a fine partita)
 - **Reds ~62-66% / Moderati ~28-31% / Senato ~5-7%** — il sistema NP è progettato
@@ -83,8 +90,11 @@ Il gioco è **completo e giocabile**, fedele al modulo Vassal e al regolamento
    riga della tabella è del Senato (tenuti entrambi); #7 Reds / #34 / #45 hanno la
    "i" integrata dalla tabella (non rilevata sulla carta). Se un bot gioca/passa
    in modo strano su una carta, ricontrollare quella.
-3. **Negotiate player-side** (§3.3.3): manca l'operazione per il giocatore umano
-   (il bot ce l'ha via carta #61). Emulata solo nella sim dei Moderati umani.
+3. **21 effetti evento stub per il player umano** (i bot sono coperti dalla
+   tabella NP): unshaded #2,4,5,9,20,28,30,36 · shaded #3,7,12,25,27,31,32,
+   33,34,38,39,44,45. Anche: Retreat §3.2.4 del difensore umano (ora sempre
+   Engage); scelta umana in Red Revolt §2.4.1; Coordinate senza scelta di
+   dettaglio dell'azione tedesca (marker+log, LIMITE MODELLO).
 4. LIMITI MODELLO dichiarati nei commenti: reachability #27/#29 approssimata,
    #42 modellata come guadagno di Town Pop Control, Random Spaces Map = uniforme.
 5. Workflow deploy: warning Node.js 20 deprecato (azioni GitHub da aggiornare
