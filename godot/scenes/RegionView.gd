@@ -373,7 +373,8 @@ func _set_flash(v: float) -> void:
 
 
 func _draw() -> void:
-	var outline := Color("f1c40f") if _highlight else Color(1, 1, 1, 0.35)
+	# Spazio valido: ottone del tema con un filo scuro sotto (si legge anche sulla neve).
+	var outline := CoinTheme.HILITE if _highlight else Color(1, 1, 1, 0.35)
 	var width := 3.0 if _highlight else 1.0
 	# Città/EC: cerchio
 	if _circle.z >= 0.0:
@@ -385,6 +386,8 @@ func _draw() -> void:
 		if _flash > 0.0:
 			var fc := _flash_color; fc.a = _flash * 0.55
 			draw_circle(c, r, fc)
+		if _highlight:
+			draw_arc(c, r, 0, TAU, 48, CoinTheme.HILITE_UNDER, width + 3.0 + _flash * 4.0)
 		draw_arc(c, r, 0, TAU, 48, outline, width + _flash * 4.0)
 		return
 	# Province: poligono
@@ -407,6 +410,8 @@ func _draw() -> void:
 		var fc2 := _flash_color; fc2.a = _flash * 0.45
 		draw_colored_polygon(poly, fc2)
 	var line := poly + PackedVector2Array([poly[0]])
+	if _highlight:
+		draw_polyline(line, CoinTheme.HILITE_UNDER, width + 3.0 + _flash * 4.0)
 	draw_polyline(line, outline, width + _flash * 4.0)
 	_draw_abb_markers()
 	_draw_abb_sabotaged_borders()

@@ -32,6 +32,7 @@ func _initialize() -> void:
 	_test_abb_terror_phase_ii_news()
 	_test_abb_personality_transfer()
 	_test_abb_attack_march_phase_gate()
+	_test_abb_one_command_per_turn()
 	_test_game_def()
 	_test_setup_forces()
 	_test_setup_tracks()
@@ -554,6 +555,78 @@ func _test_abb_germans_phase_gate() -> void:
 # ---------------------------------------------------------------------------
 # Helper di asserzione
 # ---------------------------------------------------------------------------
+
+## Regola di turno (UI COIN): un solo Comando e una sola Attività speciale per turno,
+## niente Passa/Evento dopo aver agito, Annulla che ripristina anche la scelta.
+func _test_abb_one_command_per_turn() -> void:
+	print("\n[ABB: un Comando e un'Attività speciale per turno]")
+	var root: Node = (Engine.get_main_loop() as SceneTree).root
+	var reg = root.get_node_or_null("GameRegistry")
+	var gc = root.get_node_or_null("GameController")
+	if reg == null or gc == null:
+		_check("GameRegistry/GameController disponibili (autoload)", false)
+		return
+	# Nel runner headless gli autoload non hanno ancora eseguito _ready: inizializza.
+	if reg.manifest == null:
+		reg._ready()
+	if reg.game_id != "all_bridges_burning":
+		_check("gioco attivo All Bridges Burning", false)
+		return
+	# Il mazzo è casuale: si ricomincia finché la 1ª Fazione di turno è giocabile
+	# (la carta può mettere la Germania in testa all'ordine).
+	var fid := ""
+	for _try in range(30):
+		gc.new_game()
+		fid = gc.seq.pending_faction() if gc.seq != null else ""
+		if fid in ["reds", "senate", "moderates"] and gc.seq.is_first_slot():
+			break
+	_check("una Fazione giocabile è di turno", fid in ["reds", "senate", "moderates"])
+	for f in ["reds", "senate", "moderates"]:
+		gc.set_role(f, "player" if f == fid else "bot")
+	var state: GameState = gc.state
+	state.resources[fid] = 20
+	_check("1ª Fazione: Comando + Att. speciale legale",
+		gc.seq.is_legal(CoinEnums.ActionType.OPERATION_WITH_SPECIAL))
+	var spaces: Array = ["helsinki", "tampere", "turku"]
+	var r1: Dictionary = gc.abb_operation("rally", fid, spaces[0])
+	_check("Primo Rally eseguito", r1.get("ok", false))
+	_eq("Comando del turno registrato", gc.turn_op(), "rally")
+	_check("Un altro Comando nello stesso turno è rifiutato",
+		not gc.abb_operation("terror", fid, spaces[1]).get("ok", true))
+	_check("Lo stesso Comando non torna in uno spazio già usato",
+		not gc.abb_operation("rally", fid, spaces[0]).get("ok", true))
+	_check("Lo stesso Comando prosegue in un altro spazio",
+		gc.abb_operation("rally", fid, spaces[1]).get("ok", false))
+	_check("Dopo un Comando non si può Passare", not gc.seq_pass())
+	_check("Dopo un Comando non si gioca l'Evento", not gc.play_event("unshaded").get("ok", true))
+	# Attività speciale: la prima è ammessa, la seconda no (Tassazione dove c'è una Cellula).
+	var tax_sid := ""
+	for sid in state.spaces.keys():
+		if state.space_state(sid).count(fid, "cell") > 0 and gc.game_def.space(sid).pop > 0:
+			tax_sid = sid
+			break
+	if fid != "moderates" and tax_sid != "":
+		_check("Prima Attività speciale ammessa", gc.abb_special("tax", fid, tax_sid).get("ok", false))
+		_check("Seconda Attività speciale rifiutata", gc.special_block_reason() != "")
+		_check("Rifiuto anche da abb_special", not gc.abb_special("tax", fid, tax_sid).get("ok", true))
+		_check("Il Comando si può riprendere dopo l'Att. speciale",
+			gc.abb_operation("rally", fid, spaces[2]).get("ok", false))
+	else:
+		_check("Prima Attività speciale ammessa (Dialogo/Rel. Estere)",
+			gc.abb_special("foreign_relations", fid, "", {"power": "germans", "delta": 1}).get("ok", false))
+		_check("Seconda Attività speciale rifiutata", gc.special_block_reason() != "")
+	# Anteprima su copia: non tocca la partita.
+	var snap := JSON.stringify(state.to_dict())
+	gc.abb_preview("op", "rally", fid, spaces[2])
+	_check("L'anteprima non modifica lo stato", JSON.stringify(state.to_dict()) == snap)
+	# Annulla: torna a prima dell'ultima azione e ripristina la scelta del turno.
+	gc.undo_last()
+	_eq("Annulla: il Comando del turno resta Rally", gc.turn_op(), "rally")
+	_check("Concludi turno registra l'azione", gc.end_turn())
+	_eq("Nuovo turno: nessun Comando scelto", gc.turn_op(), "")
+	_check("Nuovo turno: nessuna Att. speciale svolta", not gc.turn_special_done())
+	gc.new_game()
+
 
 func _check(name: String, cond: bool) -> void:
 	if cond:
