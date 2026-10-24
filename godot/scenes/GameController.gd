@@ -24,6 +24,12 @@ var seq: SequenceOfPlay
 var _turn_did_op := false
 var _turn_did_special := false
 var _turn_did_event := false
+## Regola di turno: UN solo Comando (Operazione) e UNA sola Attività speciale per turno.
+## Il Comando si può eseguire a riprese (stesso Comando, spazi nuovi), mai due volte
+## nello stesso spazio; l'Attività speciale una volta sola.
+var _turn_op := ""
+var _turn_op_spaces: Array = []
+var _turn_sa := ""
 
 ## Annulla (undo) a un livello: istantanea catturata prima dell'ultima azione eseguita.
 var _undo: Dictionary = {}
@@ -249,6 +255,9 @@ func _reset_turn_flags() -> void:
 	_turn_did_op = false
 	_turn_did_special = false
 	_turn_did_event = false
+	_turn_op = ""
+	_turn_op_spaces = []
+	_turn_sa = ""
 
 
 ## Stato della sequenza per la UI: chi è di turno, slot, azioni legali, conclusione.
@@ -286,6 +295,8 @@ func play_event(side: String, params: Dictionary = {}) -> Dictionary:
 	var n: int = state.current_card
 	if n <= 0:
 		return {"ok": false, "error": "Nessuna carta Evento corrente"}
+	if _turn_did_op or _turn_did_special:
+		return {"ok": false, "error": "In questo turno hai già svolto un Comando o un'Attività speciale: niente Evento"}
 	var fid := seq.pending_faction()
 	var p := params.duplicate()
 	p["faction"] = fid
@@ -300,6 +311,9 @@ func play_event(side: String, params: Dictionary = {}) -> Dictionary:
 ## La Fazione di turno Passa.
 func seq_pass() -> bool:
 	if seq == null or seq.pending_faction() == "":
+		return false
+	if _turn_did_op or _turn_did_special:
+		emit_signal("action_logged", "! Hai già agito in questo turno: non puoi più Passare, usa 'Concludi turno'", "")
 		return false
 	var fid := seq.pending_faction()
 	if not seq.act_pass():
@@ -347,11 +361,14 @@ func bot_act_pending() -> bool:
 
 const _OP_IT := {"train": "Addestramento", "garrison": "Guarnigione", "sweep": "Perlustrazione",
 	"assault": "Assalto", "rally": "Riorganizzazione", "march": "Marcia", "attack": "Attacco",
-	"terror": "Terrorismo", "construct": "Costruzione", "build": "Costruzione"}
+	"terror": "Terrorismo", "construct": "Costruzione", "build": "Costruzione",
+	"message": "Messaggio", "activism": "Attivismo", "negotiate": "Negoziato"}
 const _SA_IT := {"transport": "Trasporto", "air_strike": "Attacco Aereo", "reprisal": "Rappresaglia",
 	"infiltrate": "Infiltrazione", "ambush": "Imboscata", "kidnap": "Sequestro",
 	"subvert": "Sovversione", "assassinate": "Assassinio", "profit": "Profitto",
-	"muscle": "Muscle", "bribe": "Corruzione"}
+	"muscle": "Muscle", "bribe": "Corruzione",
+	"agitate": "Agitazione", "crackdown": "Repressione", "coordinate": "Coordinamento",
+	"dialogue": "Dialogo", "foreign_relations": "Relazioni Estere", "tax": "Tassazione"}
 
 ## Conteggio azioni (per statistiche/simulazioni).
 var stats: Dictionary = {}
@@ -719,14 +736,28 @@ func current_card_text() -> String:
 
 ## Esegue un'Operazione per id e ne propaga il risultato/log.
 ## Cattura un'istantanea dello stato per consentire l'Annulla dell'ultima azione.
-func _capture_undo() -> void:
+func _capture_undo(label: String = "") -> void:
 	_undo = {
 		"state": state.to_dict(),
 		"seq": seq.snapshot() if seq != null else {},
 		"did_op": _turn_did_op,
 		"did_special": _turn_did_special,
 		"did_event": _turn_did_event,
+		"turn_op": _turn_op,
+		"turn_op_spaces": _turn_op_spaces.duplicate(),
+		"turn_sa": _turn_sa,
+		"label": label,
 	}
+
+
+## Azioni annullabili (l'Annulla è a un livello: 0 o 1).
+func undo_depth() -> int:
+	return 0 if _undo.is_empty() else 1
+
+
+## Descrizione dell'azione che "Annulla" disferebbe ("" se nessuna).
+func undo_label() -> String:
+	return String(_undo.get("label", "")) if not _undo.is_empty() else ""
 
 
 func can_undo() -> bool:
@@ -743,6 +774,9 @@ func undo_last() -> bool:
 	_turn_did_op = bool(_undo["did_op"])
 	_turn_did_special = bool(_undo["did_special"])
 	_turn_did_event = bool(_undo["did_event"])
+	_turn_op = String(_undo.get("turn_op", ""))
+	_turn_op_spaces = (_undo.get("turn_op_spaces", []) as Array).duplicate()
+	_turn_sa = String(_undo.get("turn_sa", ""))
 	_undo = {}
 	state.recompute_all_control()
 	module._refresh_victory_tracks(state)
@@ -762,8 +796,147 @@ func mark_human_action(kind: String) -> void:
 		"event": _turn_did_event = true
 
 
+# ---------------------------------------------------------------------------
+# Regola di turno: un Comando e un'Attività speciale (stato per la UI)
+# ---------------------------------------------------------------------------
+
+## Comando (Operazione) già eseguito in questo turno ("" se nessuno).
+func turn_op() -> String:
+	return _turn_op
+
+
+func turn_special_done() -> bool:
+	return _turn_did_special
+
+
+func turn_event_done() -> bool:
+	return _turn_did_event
+
+
+## Spazi già scelti per il Comando di questo turno.
+func turn_op_spaces() -> Array:
+	return _turn_op_spaces.duplicate()
+
+
+## Perché questo Comando non si può (più) svolgere in questo turno ("" = si può).
+## Una Fazione fa UN Comando: lo si può eseguire a riprese (anche prima e dopo
+## l'Attività speciale), ma sempre lo stesso e mai due volte nello stesso spazio.
+func op_block_reason(op_id: String, params: Dictionary = {}) -> String:
+	if _turn_did_event:
+		return "In questo turno hai già giocato l'Evento"
+	if _turn_op != "" and op_id != _turn_op:
+		return "In questo turno hai già scelto %s: puoi solo proseguirlo" % _OP_IT.get(_turn_op, _turn_op)
+	if _turn_op != "" and seq_is_limited_only():
+		return "Comando Limitato: un solo spazio, già usato"
+	for sid in params.get("spaces", []):
+		if _turn_op_spaces.has(sid):
+			var sd := game_def.space(String(sid))
+			return "%s è già stato scelto per questo Comando" % (sd.name if sd != null else String(sid))
+	return ""
+
+
+## Perché non si può svolgere un'Attività speciale ("" = si può): una sola per turno,
+## e solo se la casella "Comando + Attività speciale" è legale per la Fazione di turno.
+func special_block_reason() -> String:
+	if _turn_did_event:
+		return "In questo turno hai già giocato l'Evento"
+	if _turn_did_special:
+		return "In questo turno hai già svolto un'Attività speciale (%s)" % _SA_IT.get(_turn_sa, _turn_sa)
+	if seq != null and seq.pending_faction() != "" \
+			and not seq.is_legal(CoinEnums.ActionType.OPERATION_WITH_SPECIAL):
+		return "In questa casella della sequenza non è ammessa un'Attività speciale"
+	return ""
+
+
+# ---------------------------------------------------------------------------
+# All Bridges Burning: Comandi e Attività speciali del giocatore umano
+# ---------------------------------------------------------------------------
+
+## Esegue un Comando ABB su UNO spazio (march: `args` = {from, to, count}) per la
+## Fazione `fid`, applicando la regola di turno e catturando l'Annulla.
+func abb_operation(op_id: String, fid: String, sid: String, args: Dictionary = {}) -> Dictionary:
+	var space_key: Array = [] if op_id == "march" else [sid]
+	var why := op_block_reason(op_id, {"spaces": space_key})
+	if why != "":
+		return {"ok": false, "error": why}
+	_capture_undo(op_id)
+	var res: Dictionary = _abb_dispatch_op(ops, op_id, fid, sid, args)
+	if bool(res.get("ok", false)):
+		_turn_did_op = true
+		_turn_op = op_id
+		for k in space_key:
+			if not _turn_op_spaces.has(k):
+				_turn_op_spaces.append(k)
+	else:
+		_undo = {}
+	return res
+
+
+## Esegue un'Attività speciale ABB (`args`: power/delta per Relazioni Estere).
+func abb_special(sa_id: String, fid: String, sid: String, args: Dictionary = {}) -> Dictionary:
+	var why := special_block_reason()
+	if why != "":
+		return {"ok": false, "error": why}
+	_capture_undo(sa_id)
+	var res: Dictionary = _abb_dispatch_special(specials, sa_id, fid, sid, args)
+	if bool(res.get("ok", false)):
+		_turn_did_special = true
+		_turn_sa = sa_id
+	else:
+		_undo = {}
+	return res
+
+
+## Simula un Comando/Att.Speciale ABB su una COPIA dello stato (non tocca la partita):
+## serve all'evidenziazione degli spazi validi e all'anteprima del costo.
+## Restituisce {ok, error, cost}.
+func abb_preview(kind: String, id: String, fid: String, sid: String, args: Dictionary = {}) -> Dictionary:
+	var copy := GameState.from_dict(game_def, state.to_dict())
+	copy.roles = roles.duplicate()
+	var before := copy.get_resources(fid)
+	var res: Dictionary
+	if kind == "op":
+		res = _abb_dispatch_op(GameRegistry.create_operations(copy, module), id, fid, sid, args)
+	else:
+		res = _abb_dispatch_special(GameRegistry.create_specials(copy, module), id, fid, sid, args)
+	var out := {"ok": bool(res.get("ok", false)), "error": String(res.get("error", "")), "cost": 0}
+	if out["ok"]:
+		out["cost"] = maxi(0, before - copy.get_resources(fid))
+	return out
+
+
+func _abb_dispatch_op(o, op_id: String, fid: String, sid: String, args: Dictionary) -> Dictionary:
+	match op_id:
+		"rally": return o.rally(fid, sid, String(args.get("mode", "cell")))
+		"march": return o.march(fid, String(args.get("from", "")), String(args.get("to", sid)),
+				String(args.get("type", "cell")), int(args.get("count", 1)))
+		"attack": return o.attack(fid, sid)
+		"terror": return o.terror(fid, sid)
+		"activism": return o.activism(fid, sid)
+		"negotiate": return o.negotiate(fid, sid)
+	return {"ok": false, "error": "Comando non disponibile: %s" % _OP_IT.get(op_id, op_id)}
+
+
+func _abb_dispatch_special(sp, sa_id: String, fid: String, sid: String, args: Dictionary) -> Dictionary:
+	match sa_id:
+		"agitate": return sp.agitate(sid)
+		"tax": return sp.tax(fid, sid)
+		"dialogue": return sp.dialogue(sid)
+		"ambush": return sp.ambush(sid)
+		"subvert": return sp.subvert(sid)
+		"crackdown": return sp.crackdown(sid)
+		"coordinate": return sp.coordinate(fid)
+		"foreign_relations": return sp.foreign_relations(String(args.get("power", "germans")), int(args.get("delta", 1)))
+	return {"ok": false, "error": "Attività speciale sconosciuta: %s" % sa_id}
+
+
 func run_operation(op_id: String, params: Dictionary) -> Dictionary:
-	_capture_undo()
+	var why := op_block_reason(op_id, params)
+	if why != "":
+		var eo := {"ok": false, "error": why, "log": []}
+		_emit_result(eo)
+		return eo
+	_capture_undo(op_id)
 	var res: Dictionary
 	match op_id:
 		"train": res = ops.train(params)
@@ -778,6 +951,10 @@ func run_operation(op_id: String, params: Dictionary) -> Dictionary:
 		_: res = {"ok": false, "error": "Operazione sconosciuta: %s" % op_id, "log": []}
 	if res.get("ok", false):
 		_turn_did_op = true
+		_turn_op = op_id
+		for sid in params.get("spaces", []):
+			if not _turn_op_spaces.has(sid):
+				_turn_op_spaces.append(sid)
 	else:
 		_undo = {}   # azione fallita: niente da annullare
 	_emit_result(res)
@@ -811,10 +988,16 @@ func can_special(sa_id: String, params: Dictionary) -> bool:
 
 
 func run_special(sa_id: String, params: Dictionary) -> Dictionary:
-	_capture_undo()
+	var why := special_block_reason()
+	if why != "":
+		var es := {"ok": false, "error": why, "log": []}
+		_emit_result(es)
+		return es
+	_capture_undo(sa_id)
 	var res = _dispatch_special(specials, sa_id, params)
 	if res.get("ok", false):
 		_turn_did_special = true
+		_turn_sa = sa_id
 	else:
 		_undo = {}   # azione fallita: niente da annullare
 	_emit_result(res)
@@ -822,7 +1005,7 @@ func run_special(sa_id: String, params: Dictionary) -> Dictionary:
 
 
 func run_event(number: int, side: String, faction: String, params: Dictionary = {}) -> Dictionary:
-	_capture_undo()
+	_capture_undo("Evento")
 	var res = events.apply(number, side, faction, params)
 	if res.get("ok", true):
 		_turn_did_event = true

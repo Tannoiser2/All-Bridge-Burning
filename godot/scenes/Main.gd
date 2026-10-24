@@ -1,10 +1,13 @@
 extends Control
 
-## Scena principale: mappa interattiva + pannelli (fazioni, tracciati, log) + barra azioni
-## con flusso guidato (selezione spazi / drag-and-drop dei pezzi).
+## Scena principale (schema COIN comune): barra superiore con le Fazioni, mappa con
+## comandi di vista, registro sotto la mappa e PANNELLO AZIONE a destra (Fazione di
+## turno, istruzioni, Comando, Attività speciale, Evento, tasto Esegui contestuale).
+##
+## All Bridges Burning ha il suo flusso (Comandi su spazi scelti → "Esegui"); il flusso
+## di Cuba Libre resta più sotto per l'export alternativo dello stesso motore.
 
-# Centri normalizzati (0..1) degli spazi sull'immagine della mappa reale.
-# Stimati dalla mappa; facilmente ritoccabili.
+# Centri normalizzati (0..1) degli spazi di Cuba Libre (export alternativo).
 const LAYOUT := {
 	"pinar_del_rio": Vector2(0.085, 0.47),
 	"ec_pinar_habana": Vector2(0.15, 0.33),
@@ -29,42 +32,42 @@ const OP_NAMES := {
 	# All Bridges Burning (rally/march/attack/terror condivisi)
 	"message": "Messaggio", "activism": "Attivismo", "negotiate": "Negoziato",
 }
-# Cosa permette di fare ogni Operazione (sintesi mostrata nel banner).
+# Cosa permette di fare ogni Comando/Operazione (mostrato sotto i tasti quando è scelto).
 const OP_DESC := {
 	"train": "Clicca uno spazio per piazzare cubi (riclicca per +1, fino a 4); un altro click cicla a Base (da 2 cubi) o Azione Civica (1 sola Att. speciale per Addestramento).",
 	"garrison": "Sposta cubi verso Città/EC (trascina); attiva le Guerriglie negli EC. Clicca un EC per un Assalto gratuito lì.",
 	"sweep": "Sposta Truppe negli spazi adiacenti e attiva 1 Guerriglia clandestina nemica per ogni Truppa/Polizia.",
 	"assault": "Rimuovi pezzi nemici scoperti (1 per Truppa, o per Polizia in Città): prima le Guerriglie Attive, poi le Basi.",
-	"rally": "Clicca uno spazio per piazzare Guerriglie; riclicca per cambiare azione (Base = sostituisci 2 Guerriglie con 1 Base; Clandestine = gira sotto, dove hai una Base).",
-	"march": "Sposta Guerriglie/cubi in spazi adiacenti; chi entra dove ci sono nemici o Polizia diventa Attivo.",
-	"attack": "Tira per rimuovere pezzi nemici (1 ogni 2 Guerriglie); con l'Imboscata colpisci senza tiro.",
-	"terror": "Con una Guerriglia clandestina: poni Terrore e sposta il Supporto verso l'Opposizione (o Sabotaggio su LoC/EC).",
 	"build": "Sindacato (5 Risorse/spazio): clicca per un nuovo Casinò chiuso; riclicca per aprirne uno già chiuso, dove possibile.",
-	# ABB
-	"message": "Moderates: sposta News markers e gira Cellule.",
-	"activism": "Moderates: sposta Supporto/Opposizione verso Neutral; aumenta Polarization.",
+	# All Bridges Burning
+	"rally": "Rally (§3.2.1): piazza Cellule negli spazi scelti (+1 per Supporto/Opposizione amica); riclicca per Amministrazione/Network.",
+	"march": "Marcia (§3.2.5, Fase II): clicca uno spazio con tue Cellule clandestine, poi uno adiacente; ripeti per spostarne altre. Chi entra dove c'è il nemico si Attiva.",
+	"attack": "Attacco (§3.2.4, Fase II): 1d6 contro la forza d'Attacco negli spazi scelti (1 Risorsa per spazio).",
+	"terror": "Terrorismo (§3.2.3): serve una tua Cellula Attiva; poni Terror e rimuovi 1 pezzo nemico (2 con Polarizzazione ≥ 6). Polarizzazione +1.",
+	"activism": "Attivismo (§3.2.2): con una Cellula amica, gira una Cellula nemica Attiva (o attiva una tua). Polarizzazione −1.",
+	"negotiate": "Negoziato (§3.3.3): Attiva una tua Cellula clandestina e Disattiva 1 Cellula nemica Attiva; Polarizzazione −1 (1 Risorsa per spazio).",
+	"message": "Messaggio (Moderati): sposta i News e gira le Cellule. Non ancora implementato nel motore.",
 }
-# Cosa permette di fare ogni Attività Speciale (sintesi mostrata nel banner).
+# Cosa permette di fare ogni Attività Speciale.
 const SA_DESC := {
 	"transport": "Sposta fino a 3 Truppe da una Città o da una Base verso un qualsiasi spazio.",
 	"air_strike": "Rimuovi 1 Guerriglia Attiva (o, se assente, 1 Base) in una Provincia/EC. Vietato durante l'Embargo.",
 	"reprisal": "In uno spazio a Controllo Govt: poni Terrore, riduci l'Opposizione e sposta 1 Guerriglia in uno spazio adiacente.",
 	"infiltrate": "Rimpiazza 1 cubo del Governo con una Guerriglia 26J in uno spazio senza Supporto (serve una clandestina 26J lì o adiacente).",
-	"ambush": "In uno spazio scelto per l'Attacco: colpisci senza tiro rimuovendo 2 pezzi nemici (anche Basi).",
 	"kidnap": "Trasferisci Risorse/Denaro dal Governo al 26J e chiudi 1 Casinò; servono più Guerriglie 26J che Polizia.",
-	"subvert": "In una Provincia a Controllo DR: aggiungi Risorse pari alla Popolazione e rendi lo spazio Neutrale.",
 	"assassinate": "Rimuovi 1 pezzo nemico (anche una Base) dove le Guerriglie DR superano la Polizia.",
 	"profit": "Accumula 1 Denaro in 1-2 spazi con un Casinò aperto.",
 	"muscle": "Sposta 1-2 Polizia (verso Città) o Truppe (verso Provincia/EC) in uno spazio con Casinò aperto o EC.",
 	"bribe": "Spendi 3 Risorse del Sindacato per rimuovere fino a 2 cubi/Guerriglie nemici (o 1 Base) in uno spazio.",
-	# ABB
-	"agitate": "Reds: spendi 1 Risorsa per spostare Supporto verso Opposition (serve Cellula).",
-	"crackdown": "Senate: rimuovi 1 Terror marker, sposta Supporto verso Senate.",
-	"coordinate": "Senato (§4.2.4, Phase II): piazza il marker Coordinate — la prossima azione Tedesca è guidata dal Senato.",
-	"negotiate": "Moderati (§3.3.3): Attiva una tua Cellula Clandestina, Disattiva 1 nemico Attivo, Polarization −1 (1 Risorsa per spazio).",
-	"dialogue": "Moderates: sposta Supporto/Opposizione verso Neutral.",
-	"foreign_relations": "Moderates: cambia Vassalage Tedesca o Russa.",
-	"tax": "Incassa Risorse pari alla Popolazione dello spazio con tua Cellula.",
+	# All Bridges Burning
+	"agitate": "Agitazione (Reds): spendi 1 Risorsa per spostare il Supporto verso l'Opposizione dove hai una Cellula.",
+	"ambush": "Imboscata (Reds): con una Cellula clandestina, rimuovi fino a 2 pezzi nemici senza tiro (la Cellula si Attiva).",
+	"subvert": "Sovversione (Reds): con una Cellula clandestina, rimuovi 1 Cellula del Senato o dei Moderati.",
+	"crackdown": "Repressione (Senato): togli 1 Terror e sposta il Supporto verso il Senato dove hai una Cellula.",
+	"coordinate": "Coordinamento (Senato, §4.2.4, Fase II): piazza il marker Coordinate — la prossima azione tedesca è guidata dal Senato.",
+	"dialogue": "Dialogo (Moderati): sposta Supporto/Opposizione di un passo verso il Neutrale dove hai una Cellula.",
+	"foreign_relations": "Relazioni Estere (Moderati): sposta il Vassallaggio tedesco o russo di un passo.",
+	"tax": "Tassazione: incassa Risorse pari alla Popolazione di uno spazio con una tua Cellula.",
 }
 # Att.Speciali con scelte multiple: ogni variante è un tasto distinto col suo bersaglio valido.
 const SA_VARIANTS := {
@@ -82,52 +85,23 @@ const SA_VARIANTS := {
 		{"id": "bribe:guerrillas_flip", "label": "Corruzione (gira Guerriglie)", "p": {"action": "guerrillas_flip"}},
 		{"id": "bribe:base", "label": "Corruzione (rimuovi Base)", "p": {"action": "base"}},
 	],
+	"foreign_relations": [
+		{"id": "foreign_relations:germans+", "label": "Rel. Estere: Germania +1", "p": {"power": "germans", "delta": 1}},
+		{"id": "foreign_relations:germans-", "label": "Rel. Estere: Germania −1", "p": {"power": "germans", "delta": -1}},
+		{"id": "foreign_relations:russians+", "label": "Rel. Estere: Russia +1", "p": {"power": "russians", "delta": 1}},
+		{"id": "foreign_relations:russians-", "label": "Rel. Estere: Russia −1", "p": {"power": "russians", "delta": -1}},
+	],
 }
-# Tipo di flusso per ogni Operazione.
+# Tipo di flusso per ogni Operazione (Cuba Libre).
 const OP_KIND := {
 	"train": "space_list", "assault": "space_list", "rally": "space_list",
 	"attack": "space_list", "terror": "space_list", "build": "space_list",
 	"sweep": "moves", "garrison": "moves", "march": "moves",
-	# ABB
-	"message": "moves", "activism": "space_list",
 }
-
-var _space_views: Dictionary = {}     # space_id -> SpaceView
-var _board: ScrollContainer
-var _map_wrap: Control
-var _map: TextureRect
-var _bar: VBoxContainer
-var _side: PanelContainer
-var _track_overlay: TrackOverlay
-var _victory_label: RichTextLabel
-var _card_img: TextureRect
-var _next_card_img: TextureRect
-var _zoom := 1.0
-var _card_label: RichTextLabel
-var _faction_label: RichTextLabel
-var _log: RichTextLabel
-var _instr: Label
-var _turn_banner: Label
-var _btn_end: Button
-var _btn_pass: Button
-var _btn_bot: Button
-var _btn_auto: Button
-var _auto_bot := false                 # se true, i Bot giocano da soli; altrimenti aspettano il consenso
-var _role_btns: Dictionary = {}        # fid -> Button (toggle Giocatore/Bot)
-var _btn_coordinate: Button = null      # ABB: Senato Coordina Germans (§4.2.4)
-var _btn_ev_u: Button
-var _btn_ev_s: Button
-
-# Stato del flusso azione
-var _mode := "idle"                  # idle | select_spaces | moves
-var _limited := false                 # turno limitato a 1 spazio, niente Att.Speciale
-var _op_btns: HBoxContainer
-var _sa_btns: HBoxContainer
 
 const PIECE_NAMES := {
 	"troops": "Truppa", "police": "Polizia", "guerrilla": "Guerriglia",
 	"base": "Base", "casino": "Casinò",
-	# ABB
 	"cell": "Cellula", "admin": "Amministrazione", "network": "Network",
 }
 const SA_NAMES := {
@@ -141,56 +115,120 @@ const SA_NAMES := {
 	"dialogue": "Dialogo", "foreign_relations": "Relazioni Estere",
 	"tax": "Tassazione",
 }
-var _cur_faction := "government"
-var _cur_action := ""
+const ACTION_NAMES := {
+	0: "Passa", 1: "Comando", 2: "Comando + Att. speciale", 3: "Comando Limitato", 4: "Evento",
+}
+
+## Numero di build, accanto al titolo del registro (striscia in basso). Permanente: serve a
+## confermare a colpo d'occhio quale versione il browser ha caricato (cache del .pck).
+const BUILD_VERSION := "b158"
+
+const PANEL_W := 352.0
+const GAP := 10.0
+
+# --- Struttura della scena ---
+var _space_views: Dictionary = {}     # space_id -> RegionView
+var _board: ScrollContainer
+var _map_frame: Panel                 # cornice d'ottone attorno alla mappa
+var _map_wrap: Control
+var _map: TextureRect
+var _top: TopBar                      # barra superiore (Fazioni, Potenze, carte, comandi)
+var _strip: BottomStrip               # striscia inferiore (registro + carta in gioco)
+var _panel: PanelContainer            # pannello azione (colonna di destra)
+var _log: LogView
+var _track_overlay: TrackOverlay
+var _moves_overlay: MovesOverlay      # frecce degli spostamenti in coda
+var _zoom := 1.0
+var _view_ready := false
+var _zoom_box: PanelContainer
+var _zoom_lbl: Label
+var _confirm_new: ConfirmationDialog
+var _auto_bot := false                # se true, i Bot giocano da soli
+
+# --- Pannello azione ---
+var _head: PanelContainer
+var _head_tok: TextureRect
+var _head_name: Label
+var _head_sub: Label
+var _head_stamp: Label
+var _banner: PanelContainer
+var _turn_banner: Label
+var _instr: Label
+var _op_btns: GridContainer
+var _op_btn_map: Dictionary = {}      # op_id -> Button
+var _op_desc: Label
+var _sa_btns: GridContainer
+var _sa_btn_map: Dictionary = {}      # sa_id (con variante) -> Button
+var _sa_desc: Label
+var _cur_img: TextureRect
+var _next_img: TextureRect
+var _ev_title: Label
+var _btn_ev_u: Button
+var _btn_ev_s: Button
+var _event_side := ""                 # "", "unshaded", "shaded": Evento scelto, da eseguire
+var _preview: TipLabel
+var _btn_clear: Button
+var _btn_exec: Button
+var _btn_pass: Button
+var _btn_end: Button
+var _btn_bot: Button = null           # (comando "Gioca Bot" vive nella barra superiore)
+
+# --- Stato del flusso azione ---
+var _mode := "idle"
+var _limited := false                 # Comando Limitato: 1 spazio, niente Att.Speciale
+var _cur_faction := "reds"
+var _cur_action := ""                 # Comando (Operazione) in preparazione
 var _selected: Array = []
-var _rally_choice: Dictionary = {}     # sid -> "place"/"extra"/"base"/"flip" (Riorganizzazione)
-var _train_plan: Dictionary = {}       # sid -> {kind:"cubes"/"base"/"civic", n:int} (Addestramento)
-var _build_choice: Dictionary = {}     # sid -> "new"/"open" (Costruzione Sindacato)
-var _garrison_ec := ""                # EC scelto per l'Assalto gratuito della Guarnigione
-var _reprisal_from := ""              # spazio Rappresaglia in attesa dello spostamento opzionale
-var _attack_target: Dictionary = {}    # sid -> fazione bersaglio preferita (Attacco)
-var _sa_move_to := ""                 # destinazione Trasporto/Muscle in attesa del numero
-var _sa_move_count := 0                # numero di cubi da spostare (Trasporto/Muscle)
-var _sa_spaces: Array = []             # Casinò scelti per il Profitto (multi-selezione)
-var _profit_mode := "cash"            # "cash" | "convert"
-var _pending_moves: Array = []
-var _pending_sa := ""                 # Att.Speciale in attesa di bersaglio
-var _sa_from := ""                    # origine (per Trasporto/Muscle)
-var _resume_mode := "idle"            # modalità Operazione da riprendere dopo l'Att.Speciale
-var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Speciale corrente
+var _pending_moves: Array = []        # [{from, to, count, type}]
+var _pending_sa := ""                 # Att.Speciale in preparazione
+var _resume_mode := "idle"            # modalità Operazione da riprendere dopo l'Att.Speciale (Cuba)
 
+# Cuba Libre: dettagli del flusso (export alternativo).
+var _rally_choice: Dictionary = {}
+var _train_plan: Dictionary = {}
+var _build_choice: Dictionary = {}
+var _garrison_ec := ""
+var _reprisal_from := ""
+var _attack_target: Dictionary = {}
+var _sa_move_to := ""
+var _sa_move_count := 0
+var _sa_spaces: Array = []
+var _profit_mode := "cash"
+var _sa_from := ""
+var _sa_valid: Array = []
 
-## Numero di build, in piccolo nell'angolo in alto a sinistra. Permanente:
-## serve a confermare a colpo d'occhio quale versione il browser ha caricato
-## (la cache HTTP del .pck è il motivo per cui a volte non vedi i fix).
-const BUILD_VERSION := "b157"
+# All Bridges Burning: dettagli del flusso.
+var _abb_rally_mode: Dictionary = {}  # sid -> "cell" | "admin" | "network"
+var _abb_march_from := ""
+var _abb_sa_target := ""
+
+# --- Animazioni ---
+var _prev_fp: Dictionary = {}
+var _anim_layer: Control
+var _prev_pc: Dictionary = {}
+var _avail_box: Dictionary = {}
+const ANIM_SZ := 26.0
+const ANIM_DUR := 0.9
+var _endgame_shown := false
 
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	# La fazione "corrente" di default è la prima del gioco attivo (era hardcoded
-	# a "government" per Cuba Libre; per altri moduli leggiamo dal GameDef).
+	# Tema "dispaccio 1918": vale per la scena, i menu a tendina e le finestre.
+	theme = CoinTheme.dark_theme()
+	get_window().theme = CoinTheme.dark_theme()
 	if GameController.game_def != null and not GameController.game_def.factions.is_empty():
 		_cur_faction = GameController.game_def.factions[0].id
+	# Su schermi touch (iPad): canvas logico più piccolo = testi e bersagli più grandi.
+	if DisplayServer.is_touchscreen_available():
+		get_window().content_scale_size = Vector2i(1180, 650)
 	_build_ui()
-	var vl := Label.new()
-	vl.text = BUILD_VERSION
-	vl.add_theme_font_size_override("font_size", 13)
-	vl.add_theme_color_override("font_color", Color(1, 1, 0, 0.85))
-	vl.add_theme_color_override("font_outline_color", Color.BLACK)
-	vl.add_theme_constant_override("outline_size", 4)
-	vl.position = Vector2(6, 2)
-	vl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vl.z_index = 4096
-	add_child(vl)
+	_strip.set_version(BUILD_VERSION)
 	GameController.state_changed.connect(_refresh)
-	GameController.action_logged.connect(_on_log)
-	GameController.bot_decision.connect(_on_bot_decision)
+	GameController.action_logged.connect(_log.add_line)
+	GameController.bot_decision.connect(_log.add_decision)
 	get_viewport().size_changed.connect(_layout_board)
 	_rebuild_action_buttons(_cur_faction)
-	# Aggiorna l'etichetta con build + auto-test texture (deferred così
-	# l'autoload GameRegistry e gli asset sono sicuramente pronti).
 	# Driver automatico delle Fazioni Bot (gioca da sole al loro turno).
 	var bot_timer := Timer.new()
 	bot_timer.wait_time = 1.0
@@ -199,8 +237,11 @@ func _ready() -> void:
 	bot_timer.timeout.connect(_auto_bot_tick)
 	bot_timer.start()
 	_refresh()
-	# Il layout va calcolato quando la finestra ha la sua dimensione reale (non a 0).
 	_layout_board.call_deferred()
+
+
+func _is_abb() -> bool:
+	return GameRegistry.game_id == "all_bridges_burning"
 
 
 # ---------------------------------------------------------------------------
@@ -209,26 +250,36 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var bg := ColorRect.new()
-	bg.color = Color("12161c")
+	bg.color = CoinTheme.BG
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
-	# Barra azioni in alto (va a capo automaticamente: niente troncamento)
-	_bar = _build_action_bar()
-	add_child(_bar)
-	_bar.resized.connect(_layout_board)
+	_top = TopBar.new()
+	_top.role_toggle_requested.connect(_toggle_role)
+	_top.undo_requested.connect(_on_undo_action)
+	_top.auto_bot_toggled.connect(_toggle_auto_bot)
+	_top.menu_id_pressed.connect(_on_game_menu)
+	_top.bot_turn_requested.connect(func(): GameController.bot_act_pending())
+	add_child(_top)
 
-	# Area mappa scrollabile (per lo zoom/pan)
+	# Cornice della mappa (ottone) e area scrollabile per zoom/pan.
+	_map_frame = Panel.new()
+	var fsb := CoinTheme.flat(CoinTheme.BG)
+	fsb.set_border_width_all(2)
+	fsb.border_color = CoinTheme.BRASS.darkened(0.25)
+	fsb.set_corner_radius_all(3)
+	fsb.expand_margin_left = 3
+	fsb.expand_margin_right = 3
+	fsb.expand_margin_top = 3
+	fsb.expand_margin_bottom = 3
+	_map_frame.add_theme_stylebox_override("panel", fsb)
+	_map_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_map_frame)
 	_board = ScrollContainer.new()
-	_board.position = Vector2(8, 96)
 	add_child(_board)
-
-	# Wrapper che definisce l'area scrollabile (= mappa * zoom); il nodo mappa viene scalato.
 	_map_wrap = Control.new()
 	_map_wrap.mouse_filter = Control.MOUSE_FILTER_PASS
 	_board.add_child(_map_wrap)
-
-	# Sfondo: immagine reale della mappa
 	_map = TextureRect.new()
 	_map.texture = CLAssets.map()
 	_map.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -267,27 +318,36 @@ func _build_ui() -> void:
 		_map.add_child(rv)
 		_space_views[sid] = rv
 
-	# Overlay dei segnalini sui tracciati (sopra la mappa)
 	_track_overlay = TrackOverlay.new()
 	_track_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_map.add_child(_track_overlay)
-
-	# Overlay frecce degli spostamenti in coda (anteprima del trascinamento)
 	_moves_overlay = MovesOverlay.new()
 	_moves_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_moves_overlay.z_index = 40
+	_moves_overlay.color = CoinTheme.BRASS_HI
 	_map.add_child(_moves_overlay)
-
-	# Layer per le animazioni dei pezzi che si spostano (sopra tutto, non interattivo)
 	_anim_layer = Control.new()
 	_anim_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_anim_layer.z_index = 50
 	_map.add_child(_anim_layer)
 	_avail_box = _load_avail_boxes()
 
-	# Pannello laterale (destra)
-	_side = _build_side_panel()
-	add_child(_side)
+	_build_zoom_box()
+
+	_strip = BottomStrip.new()
+	_log = _strip.log_view
+	add_child(_strip)
+
+	_panel = _build_action_panel()
+	add_child(_panel)
+
+	_confirm_new = ConfirmationDialog.new()
+	_confirm_new.title = "Nuova partita"
+	_confirm_new.dialog_text = "Iniziare una nuova partita?\nLa partita in corso andrà persa."
+	_confirm_new.ok_button_text = "Nuova partita"
+	_confirm_new.cancel_button_text = "Annulla"
+	_confirm_new.confirmed.connect(_on_new_game)
+	add_child(_confirm_new)
 
 	resized.connect(_layout_board)
 	_layout_board()
@@ -299,277 +359,304 @@ func _load_regions() -> Dictionary:
 	return data.get("regions", {}) if typeof(data) == TYPE_DICTIONARY else {}
 
 
-func _btn_style(bg: Color, border: Color) -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color = bg
-	s.set_corner_radius_all(7)
-	s.set_border_width_all(1)
-	s.border_color = border
-	s.content_margin_left = 8.0
-	s.content_margin_right = 8.0
-	s.content_margin_top = 3.0
-	s.content_margin_bottom = 3.0
-	return s
-
-
 func _mk_btn(text: String, cb: Callable) -> Button:
 	var b := TipButton.new()
 	b.text = text
 	b.pressed.connect(cb)
-	# Aspetto da vero bottone: box arrotondato con bordo e stati hover/pressed.
-	b.add_theme_stylebox_override("normal", _btn_style(Color("2b3442"), Color("4a5666")))
-	b.add_theme_stylebox_override("hover", _btn_style(Color("3a4759"), Color("6f8197")))
-	b.add_theme_stylebox_override("pressed", _btn_style(Color("1d242e"), Color("4a5666")))
-	b.add_theme_stylebox_override("disabled", _btn_style(Color("222831"), Color("333b46")))
-	b.add_theme_color_override("font_color", Color("e6edf3"))
-	b.add_theme_color_override("font_hover_color", Color("ffffff"))
-	b.add_theme_color_override("font_disabled_color", Color("5b6571"))
-	b.add_theme_font_size_override("font_size", 12)
+	CoinTheme.style_button(b)
 	return b
 
 
-## Evidenzia un tasto con uno sfondo colorato (per il tasto "Esegui").
-func _accent_btn(b: Button, bg: Color, border: Color) -> void:
-	b.add_theme_stylebox_override("normal", _btn_style(bg, border))
-	b.add_theme_stylebox_override("hover", _btn_style(bg.lightened(0.12), border))
-	b.add_theme_stylebox_override("pressed", _btn_style(bg.darkened(0.18), border))
-	b.add_theme_color_override("font_color", Color("ffffff"))
+## Comandi di vista sopra la mappa: zoom e inquadratura.
+func _build_zoom_box() -> void:
+	_zoom_box = PanelContainer.new()
+	_zoom_box.add_theme_stylebox_override("panel", CoinTheme.dark_box())
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 2)
+	_zoom_box.add_child(h)
+	var minus := _mk_btn("−", func(): _zoom_at(1.0 / 1.25))
+	minus.tooltip_text = "Riduci (rotellina o −)"
+	minus.custom_minimum_size = Vector2(36, 34)
+	h.add_child(minus)
+	_zoom_lbl = CoinTheme.label("100%", CoinTheme.TEXT, 14)
+	_zoom_lbl.custom_minimum_size = Vector2(48, 0)
+	_zoom_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_zoom_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	h.add_child(_zoom_lbl)
+	var plus := _mk_btn("+", func(): _zoom_at(1.25))
+	plus.tooltip_text = "Ingrandisci (rotellina o +)"
+	plus.custom_minimum_size = Vector2(36, 34)
+	h.add_child(plus)
+	var fit := _mk_btn("Finlandia" if _is_abb() else "Isola", _view_island)
+	fit.tooltip_text = "Inquadra gli spazi della mappa" if _is_abb() else "Inquadra Cuba"
+	h.add_child(fit)
+	var whole := _mk_btn("Tutta", func(): _set_zoom(1.0))
+	whole.tooltip_text = "Mostra tutta la plancia, con tracciati, Political Display e forze disponibili (0)"
+	h.add_child(whole)
+	add_child(_zoom_box)
 
 
-## Gruppo verticale: etichetta centrata sopra, contenuto (tasti) sotto.
-func _labeled_group(title: String, content: Control) -> VBoxContainer:
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 1)
-	var l := Label.new()
-	l.text = title
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.add_theme_color_override("font_color", Color("9fb3c8"))
-	l.add_theme_font_size_override("font_size", 11)
-	v.add_child(l)
-	v.add_child(content)
-	return v
-
-
-func _mk_label(text: String) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.add_theme_color_override("font_color", Color("9fb3c8"))
-	l.add_theme_font_size_override("font_size", 12)
-	return l
-
-
-func _build_action_bar() -> VBoxContainer:
-	var bar := VBoxContainer.new()
-	bar.position = Vector2(8, 6)
-	bar.add_theme_constant_override("separation", 3)
-
-	# --- Banner di turno (in alto, colorato per Fazione) ---
-	_turn_banner = Label.new()
-	_turn_banner.add_theme_font_size_override("font_size", 18)
-	_turn_banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	bar.add_child(_turn_banner)
-
-	# --- Riga 1: AZIONI DI TURNO (tasti: Operazioni, Att.Speciali, Evento, Passa) ---
-	var row1 := HFlowContainer.new()
-	row1.add_theme_constant_override("h_separation", 5)
-	row1.add_theme_constant_override("v_separation", 3)
-	bar.add_child(row1)
-
-	# Gruppo Operazione (tasti operazioni + Esegui)
-	_op_btns = HBoxContainer.new()
-	_op_btns.add_theme_constant_override("separation", 3)
-	var op_box := HBoxContainer.new()
-	op_box.add_theme_constant_override("separation", 3)
-	op_box.add_child(_op_btns)
-	var btn_exec := _mk_btn("Esegui", _on_execute)
-	_accent_btn(btn_exec, Color("2e7d46"), Color("57c97e"))   # sfondo verde, risalta
-	op_box.add_child(btn_exec)
-	row1.add_child(_labeled_group("Operazione", op_box))
-
-	row1.add_child(VSeparator.new())
-	# Gruppo Attività Speciale
-	_sa_btns = HBoxContainer.new()
-	_sa_btns.add_theme_constant_override("separation", 3)
-	row1.add_child(_labeled_group("Attività Speciale", _sa_btns))
-
-	row1.add_child(VSeparator.new())
-	# Gruppo Evento
-	var ev_box := HBoxContainer.new()
-	ev_box.add_theme_constant_override("separation", 3)
-	_btn_ev_u = _mk_btn("- chiaro", func(): _on_event("unshaded"))
-	ev_box.add_child(_btn_ev_u)
-	_btn_ev_s = _mk_btn("- ombr.", func(): _on_event("shaded"))
-	ev_box.add_child(_btn_ev_s)
-	row1.add_child(_labeled_group("Evento", ev_box))
-
-	row1.add_child(VSeparator.new())
-	# Gruppo Turno
-	var turn_box := HBoxContainer.new()
-	turn_box.add_theme_constant_override("separation", 3)
-	_btn_end = _mk_btn("Concludi", func(): _on_execute_and_end())
-	_btn_end.add_theme_color_override("font_color", Color("a3e635"))
-	turn_box.add_child(_btn_end)
-	_btn_pass = _mk_btn("Passa", func(): GameController.seq_pass())
-	turn_box.add_child(_btn_pass)
-	turn_box.add_child(_mk_btn("Annulla", _on_cancel))
-	# ABB only: bottone "Coordina Germans" (§4.2.4) per il Senato in Phase II.
-	if GameRegistry.game_id == "all_bridges_burning":
-		_btn_coordinate = _mk_btn("Coord. Germ.", _on_coordinate_germans)
-		_btn_coordinate.tooltip_text = "Senato decide l'azione dei Germans questo turno (§4.2.4)"
-		turn_box.add_child(_btn_coordinate)
-	row1.add_child(_labeled_group("Turno", turn_box))
-
-	# Gruppo Ruoli (Giocatore/Bot). ABB: Reds/Senate/Moderates su una sola riga;
-	# Cuba: 2 colonne classiche (4 fazioni → 2x2).
-	var roles_grid := GridContainer.new()
-	roles_grid.columns = 3 if GameRegistry.game_id == "all_bridges_burning" else 2
-	roles_grid.add_theme_constant_override("h_separation", 3)
-	roles_grid.add_theme_constant_override("v_separation", 2)
-	for f in GameController.game_def.factions:
-		var fid: String = f.id
-		# In ABB i Powers (Germans/Russians) sono SEMPRE bot: nessun toggle.
-		if GameRegistry.game_id == "all_bridges_burning" and fid in ["germans", "russians"]:
-			continue
-		var rb := _mk_btn("", _toggle_role.bind(fid))
-		rb.add_theme_font_size_override("font_size", 11)
-		_role_btns[fid] = rb
-		roles_grid.add_child(rb)
-	row1.add_child(_labeled_group("Ruoli", roles_grid))
-	_update_role_btns()
-
-	# --- Riga 2: PARTITA / VISTA ---
-	var row2 := HFlowContainer.new()
-	row2.add_theme_constant_override("h_separation", 5)
-	row2.add_theme_constant_override("v_separation", 3)
-	bar.add_child(row2)
-
-	_btn_bot = _mk_btn(" Gioca la fazione di turno", func(): GameController.bot_act_pending())
-	row2.add_child(_btn_bot)
-	_btn_auto = _mk_btn("Auto-Bot: OFF", _toggle_auto_bot)
-	row2.add_child(_btn_auto)
-	row2.add_child(_mk_btn("Tutti i Bot (questa carta)", _on_all_bots))
-	row2.add_child(_mk_btn("Auto: tutta la partita", func(): GameController.run_full_game_paced()))
-	row2.add_child(_mk_btn("Nuova Partita", _on_new_game))
-	row2.add_child(VSeparator.new())
-	row2.add_child(_mk_label("Velocità:"))
-	var spd := OptionButton.new()
-	for it in [["Lento", 1.8], ["Medio", 1.1], ["Veloce", 0.7]]:
-		spd.add_item(it[0])
-		spd.set_item_metadata(spd.item_count - 1, it[1])
-	spd.select(1)
-	spd.item_selected.connect(func(i): GameController.pace_delay = float(spd.get_item_metadata(i)))
-	row2.add_child(spd)
-	row2.add_child(VSeparator.new())
-	row2.add_child(_mk_label("Vista:"))
-	row2.add_child(_mk_btn("Zoom +", func(): _set_zoom(_zoom * 1.25)))
-	row2.add_child(_mk_btn("Zoom -", func(): _set_zoom(_zoom / 1.25)))
-	row2.add_child(_mk_btn("Adatta", func(): _set_zoom(1.0)))
-
-	# Istruzione di passo (sotto le righe)
-	_instr = Label.new()
-	_instr.add_theme_color_override("font_color", Color("f1c40f"))
-	_instr.add_theme_font_size_override("font_size", 10)
-	_instr.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_instr.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# Contenitore ad altezza FISSA: così la barra non cambia altezza e la mappa
-	# resta sempre adattata (le istruzioni lunghe vengono troncate, non spingono il board).
-	var instr_box := Control.new()
-	instr_box.custom_minimum_size = Vector2(0, 38)
-	instr_box.clip_contents = true
-	instr_box.add_child(_instr)
-	bar.add_child(instr_box)
-	return bar
-
-
-## Esegui l'operazione (se selezionata e non ancora eseguita) e concludi il turno.
-func _on_execute_and_end() -> void:
-	if _cur_action != "" and _mode != "idle":
-		_on_execute()
-	GameController.end_turn()
-
-
-func _build_side_panel() -> PanelContainer:
+## Pannello azione: Fazione e istruzioni in testa, poi Comando, Attività speciale,
+## Evento con le carte, e in fondo il tasto Esegui contestuale con Passa e Concludi.
+func _build_action_panel() -> PanelContainer:
 	var pc := PanelContainer.new()
+	pc.theme = CoinTheme.paper_theme()
+	pc.add_theme_stylebox_override("panel", CoinTheme.paper_box(0.0))
 	pc.clip_contents = true
-	# Contenuto scrollabile: niente più nulla che esce dal riquadro.
+	var outer := VBoxContainer.new()
+	outer.add_theme_constant_override("separation", 0)
+	pc.add_child(outer)
+
+	# Intestazione nel colore della Fazione di turno.
+	_head = PanelContainer.new()
+	outer.add_child(_head)
+	var hh := HBoxContainer.new()
+	hh.add_theme_constant_override("separation", 10)
+	_head.add_child(hh)
+	_head_tok = TextureRect.new()
+	_head_tok.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_head_tok.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_head_tok.custom_minimum_size = Vector2(30, 38)
+	hh.add_child(_head_tok)
+	var hv := VBoxContainer.new()
+	hv.add_theme_constant_override("separation", -3)
+	hv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hh.add_child(hv)
+	_head_name = CoinTheme.label("", Color.WHITE, 25, CoinTheme.display())
+	_head_name.clip_text = true
+	hv.add_child(_head_name)
+	_head_sub = CoinTheme.label("", Color(1, 1, 1, 0.85), 14)
+	_head_sub.clip_text = true
+	hv.add_child(_head_sub)
+	_head_stamp = CoinTheme.label("", Color.WHITE, 12, CoinTheme.typewriter_bold())
+	var stamp_sb := StyleBoxFlat.new()
+	stamp_sb.bg_color = Color(0, 0, 0, 0)
+	stamp_sb.set_border_width_all(2)
+	stamp_sb.border_color = Color.WHITE
+	stamp_sb.content_margin_left = 6
+	stamp_sb.content_margin_right = 6
+	stamp_sb.content_margin_top = 1
+	stamp_sb.content_margin_bottom = 1
+	_head_stamp.add_theme_stylebox_override("normal", stamp_sb)
+	_head_stamp.rotation_degrees = -6.0
+	_head_stamp.resized.connect(func(): _head_stamp.pivot_offset = _head_stamp.size * 0.5)
+	_head_stamp.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hh.add_child(_head_stamp)
+
+	# Istruzioni di turno, subito sotto la Fazione: cosa fare adesso.
+	_banner = InstrBox.new()
+	var bsb := CoinTheme.flat(CoinTheme.PAPER_DARK, 0)
+	bsb.content_margin_left = 14
+	bsb.content_margin_right = 14
+	bsb.content_margin_top = 7
+	bsb.content_margin_bottom = 7
+	bsb.border_width_bottom = 1
+	bsb.border_color = Color("c9c0a8")
+	_banner.add_theme_stylebox_override("panel", bsb)
+	_banner.mouse_filter = Control.MOUSE_FILTER_STOP
+	_banner.mouse_entered.connect(func(): _banner.tooltip_text = "%s\n%s" % [_turn_banner.text, _instr.text])
+	var bv := VBoxContainer.new()
+	bv.add_theme_constant_override("separation", 1)
+	bv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_banner.add_child(bv)
+	_turn_banner = CoinTheme.label("", CoinTheme.INK, 15, CoinTheme.ui_heavy())
+	_turn_banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_turn_banner.max_lines_visible = 2
+	bv.add_child(_turn_banner)
+	_instr = CoinTheme.label("", CoinTheme.INK, 12, CoinTheme.typewriter())
+	_instr.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_instr.max_lines_visible = 2
+	bv.add_child(_instr)
+	outer.add_child(_banner)
+
+	# Corpo scorrevole (schermi bassi), con il blocco "Esegui" sempre in fondo.
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	pc.add_child(scroll)
-	var vb := VBoxContainer.new()
-	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(vb)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	outer.add_child(scroll)
+	var m := MarginContainer.new()
+	m.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	m.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	for side in ["left", "right"]:
+		m.add_theme_constant_override("margin_" + side, 14)
+	m.add_theme_constant_override("margin_top", 8)
+	m.add_theme_constant_override("margin_bottom", 4)
+	scroll.add_child(m)
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 5)
+	m.add_child(body)
 
-	# Pannello VITTORIA: margini delle 3 fazioni + Vassalaggi/Polarization, live.
-	_victory_label = RichTextLabel.new()
-	_victory_label.bbcode_enabled = true
-	_victory_label.fit_content = true
-	_victory_label.scroll_active = false
-	_victory_label.add_theme_font_size_override("normal_font_size", 12)
-	_victory_label.add_theme_font_size_override("bold_font_size", 12)
-	vb.add_child(_victory_label)
+	body.add_child(CoinTheme.section_title("Comando" if _is_abb() else "Operazione"))
+	_op_btns = GridContainer.new()
+	_op_btns.columns = 2
+	_op_btns.add_theme_constant_override("h_separation", 6)
+	_op_btns.add_theme_constant_override("v_separation", 6)
+	body.add_child(_op_btns)
+	_op_desc = CoinTheme.label("", CoinTheme.INK_DIM, 12, CoinTheme.typewriter())
+	_op_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_op_desc.max_lines_visible = 3
+	_op_desc.visible = false
+	body.add_child(_op_desc)
 
-	# Carte: corrente e prossima (Upcoming), affiancate
-	var cards_row := HBoxContainer.new()
-	cards_row.add_theme_constant_override("separation", 6)
-	vb.add_child(cards_row)
-	var col_cur := VBoxContainer.new()
-	var lbl_cur := Label.new()
-	lbl_cur.text = "Corrente"
-	lbl_cur.add_theme_color_override("font_color", Color("f1c40f"))
-	col_cur.add_child(lbl_cur)
-	_card_img = TextureRect.new()
-	_card_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_card_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
-	_card_img.custom_minimum_size = Vector2(150, 200)
-	_card_img.mouse_filter = Control.MOUSE_FILTER_STOP
-	_card_img.tooltip_text = "Clicca per ingrandire"
-	_card_img.gui_input.connect(func(e): _card_zoom_input(e, _card_img))
-	col_cur.add_child(_card_img)
-	cards_row.add_child(col_cur)
-	var col_next := VBoxContainer.new()
-	var lbl_next := Label.new()
-	lbl_next.text = "Prossima"
-	lbl_next.add_theme_color_override("font_color", Color("9fb3c8"))
-	col_next.add_child(lbl_next)
-	_next_card_img = TextureRect.new()
-	_next_card_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_next_card_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
-	_next_card_img.custom_minimum_size = Vector2(150, 200)
-	_next_card_img.modulate = Color(1, 1, 1, 0.75)
-	_next_card_img.mouse_filter = Control.MOUSE_FILTER_STOP
-	_next_card_img.tooltip_text = "Clicca per ingrandire"
-	_next_card_img.gui_input.connect(func(e): _card_zoom_input(e, _next_card_img))
-	col_next.add_child(_next_card_img)
-	cards_row.add_child(col_next)
+	var sa_title := HBoxContainer.new()
+	sa_title.add_child(CoinTheme.section_title("Attività speciale"))
+	var opt := CoinTheme.label(" (facoltativa)", CoinTheme.INK_DIM, 13)
+	opt.size_flags_vertical = Control.SIZE_SHRINK_END
+	sa_title.add_child(opt)
+	body.add_child(sa_title)
+	_sa_btns = GridContainer.new()
+	_sa_btns.columns = 2
+	_sa_btns.add_theme_constant_override("h_separation", 6)
+	_sa_btns.add_theme_constant_override("v_separation", 6)
+	body.add_child(_sa_btns)
+	_sa_desc = CoinTheme.label("", CoinTheme.INK_DIM, 12, CoinTheme.typewriter())
+	_sa_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_sa_desc.max_lines_visible = 3
+	_sa_desc.visible = false
+	body.add_child(_sa_desc)
 
-	_card_label = RichTextLabel.new()
-	_card_label.bbcode_enabled = true
-	_card_label.fit_content = true
-	_card_label.add_theme_font_size_override("normal_font_size", 12)
-	_card_label.custom_minimum_size = Vector2(330, 48)
-	vb.add_child(_card_label)
-	vb.add_child(HSeparator.new())
+	# Evento: carta corrente, titolo con i due lati, prossima carta in piccolo.
+	body.add_child(CoinTheme.section_title("Evento"))
+	var cards := HBoxContainer.new()
+	cards.add_theme_constant_override("separation", 8)
+	body.add_child(cards)
+	_cur_img = _card_thumb(Vector2(64, 90), "Carta corrente: clicca per ingrandire")
+	cards.add_child(_cur_img)
+	var cv := VBoxContainer.new()
+	cv.add_theme_constant_override("separation", 5)
+	cv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cards.add_child(cv)
+	_ev_title = CoinTheme.label("", CoinTheme.INK, 18, CoinTheme.display())
+	_ev_title.clip_text = true
+	_ev_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_ev_title.mouse_filter = Control.MOUSE_FILTER_PASS
+	cv.add_child(_ev_title)
+	_btn_ev_u = _mk_btn("Chiaro", func(): _pick_event("unshaded"))
+	_btn_ev_u.tooltip_text = "Scegli il lato chiaro (non ombreggiato) dell'Evento, poi 'Esegui'"
+	_btn_ev_s = _mk_btn("Ombreggiato", func(): _pick_event("shaded"))
+	_btn_ev_s.tooltip_text = "Scegli il lato ombreggiato dell'Evento, poi 'Esegui'"
+	for eb in [_btn_ev_u, _btn_ev_s]:
+		eb.custom_minimum_size = Vector2(0, 30)
+		eb.add_theme_font_size_override("font_size", 14)
+		cv.add_child(eb)
+	var nv := VBoxContainer.new()
+	nv.add_theme_constant_override("separation", 0)
+	nv.alignment = BoxContainer.ALIGNMENT_END
+	cards.add_child(nv)
+	var nl := CoinTheme.label("Prossima", CoinTheme.INK_DIM, 12)
+	nl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	nv.add_child(nl)
+	_next_img = _card_thumb(Vector2(50, 70), "Prossima carta: clicca per ingrandire")
+	_next_img.modulate = Color(1, 1, 1, 0.85)
+	nv.add_child(_next_img)
 
-	var log_title := Label.new()
-	log_title.text = "Log"
-	vb.add_child(log_title)
+	# Fondo fisso: anteprima, Esegui contestuale, Passa / Concludi turno.
+	var foot_m := MarginContainer.new()
+	for side in ["left", "right"]:
+		foot_m.add_theme_constant_override("margin_" + side, 14)
+	foot_m.add_theme_constant_override("margin_top", 6)
+	foot_m.add_theme_constant_override("margin_bottom", 12)
+	outer.add_child(foot_m)
+	var foot := VBoxContainer.new()
+	foot.add_theme_constant_override("separation", 7)
+	foot_m.add_child(foot)
+	var prow := HBoxContainer.new()
+	prow.add_theme_constant_override("separation", 6)
+	foot.add_child(prow)
+	_preview = TipLabel.new()
+	_preview.add_theme_font_override("font", CoinTheme.ui_heavy())
+	_preview.add_theme_font_size_override("font_size", 15)
+	_preview.add_theme_color_override("font_color", CoinTheme.INK)
+	_preview.mouse_filter = Control.MOUSE_FILTER_STOP
+	_preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_preview.clip_text = true
+	_preview.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	prow.add_child(_preview)
+	_btn_clear = _mk_btn("Annulla scelta", _on_cancel_selection)
+	_btn_clear.tooltip_text = "Scarta la scelta in preparazione, senza toccare le azioni già eseguite (Esc)"
+	_btn_clear.add_theme_font_size_override("font_size", 13)
+	_btn_clear.custom_minimum_size = Vector2(0, 30)
+	prow.add_child(_btn_clear)
 
-	# Log con altezza fissa, sempre visibile e scrollabile; righe "[+] logica" espandibili.
-	_log = RichTextLabel.new()
-	_log.bbcode_enabled = true
-	_log.scroll_following = true
-	_log.scroll_active = true
-	_log.custom_minimum_size = Vector2(340, 260)
-	# Testo del log piccolo (override di tema = affidabile, non dipende dal bbcode).
-	for fs in ["normal_font_size", "bold_font_size", "italics_font_size", "bold_italics_font_size", "mono_font_size"]:
-		_log.add_theme_font_size_override(fs, 11)
-	# Spaziatura compatta tra le righe del log.
-	_log.add_theme_constant_override("line_separation", 2)
-	_log.meta_clicked.connect(_on_log_meta)
-	vb.add_child(_log)
+	_btn_exec = _mk_btn("Esegui", _on_execute)
+	_btn_exec.tooltip_text = "Applica la scelta preparata (Invio)"
+	CoinTheme.primary_button(_btn_exec)
+	_btn_exec.custom_minimum_size = Vector2(0, 50)
+	_btn_exec.clip_text = true
+	foot.add_child(_btn_exec)
 
-	pc.custom_minimum_size = Vector2(380, 0)
+	var row_a := GridContainer.new()
+	row_a.columns = 2
+	row_a.add_theme_constant_override("h_separation", 8)
+	foot.add_child(row_a)
+	_btn_pass = _mk_btn("Passa", func(): GameController.seq_pass())
+	_btn_pass.tooltip_text = "La Fazione passa e guadagna Risorse"
+	_btn_end = _mk_btn("Concludi turno", func(): _on_execute_and_end())
+	_btn_end.tooltip_text = "Esegui (se serve) e chiudi il turno della Fazione (Spazio)"
+	for b in [_btn_pass, _btn_end]:
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.custom_minimum_size = Vector2(0, 40)
+		row_a.add_child(b)
+	# "Concludi turno" pieno d'inchiostro: chiude ogni turno.
+	CoinTheme.accent_button(_btn_end, CoinTheme.INK, CoinTheme.INK, CoinTheme.PAPER)
 	return pc
+
+
+func _card_thumb(sz: Vector2, tip: String) -> TextureRect:
+	var r := TextureRect.new()
+	r.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	r.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	r.custom_minimum_size = sz
+	r.mouse_filter = Control.MOUSE_FILTER_STOP
+	r.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	r.tooltip_text = tip
+	r.gui_input.connect(func(e):
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and r.texture != null:
+			_show_card_zoom(r.texture))
+	return r
+
+
+## Carta ingrandita sopra tutto (clic per chiudere).
+func _show_card_zoom(tex: Texture2D) -> void:
+	if tex == null:
+		return
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.8)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.z_index = 100
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	var big := TextureRect.new()
+	big.texture = tex
+	big.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	big.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	big.set_anchors_preset(Control.PRESET_FULL_RECT)
+	big.offset_left = 30
+	big.offset_top = 30
+	big.offset_right = -30
+	big.offset_bottom = -30
+	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dim.add_child(big)
+	var hint := CoinTheme.label("clicca per chiudere", CoinTheme.TEXT_DIM, 12)
+	hint.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	hint.offset_top = -24
+	dim.add_child(hint)
+	dim.gui_input.connect(func(e):
+		if e is InputEventMouseButton and e.pressed:
+			dim.queue_free())
+	add_child(dim)
+
+
+# ---------------------------------------------------------------------------
+# Layout, zoom e viste
+# ---------------------------------------------------------------------------
+
+func _map_aspect() -> float:
+	return 2350.0 / 3000.0 if _is_abb() else 2040.0 / 2640.0
+
+
+## Riquadro (normalizzato) che contiene gli spazi giocabili: la vista "Finlandia"/"Isola".
+func _focus_rect() -> Rect2:
+	return Rect2(0.03, 0.075, 0.74, 0.85) if _is_abb() else Rect2(0.0, 0.12, 1.0, 0.72)
 
 
 func _set_zoom(z: float) -> void:
@@ -577,102 +664,209 @@ func _set_zoom(z: float) -> void:
 	_layout_board()
 
 
-func _layout_board() -> void:
-	if _bar == null or _board == null:
+## Zoom mantenendo fermo il punto della mappa sotto il pivot (mouse/pinch).
+func _zoom_at(factor: float, screen_pos: Vector2 = Vector2(-1, -1)) -> void:
+	if _board == null:
 		return
-	# Larghezza minima del pannello laterale (log/carte); può crescere oltre.
-	var min_side := 360.0
-	# La barra azioni occupa la larghezza utile e va a capo; il board parte sotto.
-	_bar.size.x = maxf(300.0, size.x - 16.0)
-	var top: float = _bar.get_combined_minimum_size().y + 16.0
-	var avail_h := maxf(200.0, size.y - top - 8.0)
-	# La mappa (landscape) si adatta all'area disponibile lasciando spazio al pannello.
-	# Aspect dipende dal modulo attivo: Cuba 2640×2040, ABB 3000×2350.
-	var aspect := 2350.0 / 3000.0 if GameRegistry.game_id == "all_bridges_burning" else 2040.0 / 2640.0
-	var max_map_w := maxf(300.0, size.x - 16.0 - min_side - 8.0)
-	var mw0 := max_map_w
+	var local := screen_pos - _board.global_position
+	if screen_pos.x < 0 or local.x < 0 or local.y < 0 or local.x > _board.size.x or local.y > _board.size.y:
+		local = _board.size * 0.5
+	var old_zoom := _zoom
+	var target := clampf(_zoom * factor, 0.5, 4.0)
+	if is_equal_approx(target, old_zoom):
+		return
+	var map_pt := (Vector2(_board.scroll_horizontal, _board.scroll_vertical) + local - _map.position) / old_zoom
+	_zoom = target
+	_layout_board()
+	var off := _map.position
+	_board.scroll_horizontal = int(map_pt.x * _zoom + off.x - local.x)
+	_board.scroll_vertical = int(map_pt.y * _zoom + off.y - local.y)
+
+
+func _layout_board() -> void:
+	if _top == null or _board == null or _strip == null or _panel == null:
+		return
+	var W := size.x
+	var H := size.y
+	var compact := W < 1300.0
+	_top.set_compact(compact)
+	_strip.set_compact(compact)
+	_top.position = Vector2.ZERO
+	_top.size = Vector2(W, TopBar.HEIGHT)
+	var top := TopBar.HEIGHT + GAP
+	var panel_w := PANEL_W if not compact else 316.0
+	var left := 12.0
+	var map_w := maxf(300.0, W - left - GAP - panel_w - 12.0)
+	var strip_h := BottomStrip.HEIGHT if not compact else 112.0
+	var map_h := maxf(200.0, H - top - GAP - strip_h - 12.0)
+	_panel.position = Vector2(W - 12.0 - panel_w, top)
+	_panel.size = Vector2(panel_w, H - top - 12.0)
+	_strip.position = Vector2(left, top + map_h + GAP)
+	_strip.size = Vector2(map_w, strip_h)
+	_board.position = Vector2(left, top)
+	_board.size = Vector2(map_w, map_h)
+	_map_frame.position = _board.position
+	_map_frame.size = _board.size
+	var zb := _zoom_box.get_combined_minimum_size()
+	_zoom_box.position = Vector2(left + map_w - zb.x - 10.0, top + 10.0)
+	_zoom_box.size = zb
+	# Dimensione base (zoom=1) = tutta la plancia nel riquadro; lo zoom è una SCALA.
+	var aspect := _map_aspect()
+	var mw0 := map_w
 	var mh0 := mw0 * aspect
-	if mh0 > avail_h:
-		mh0 = avail_h
+	if mh0 > map_h:
+		mh0 = map_h
 		mw0 = mh0 / aspect
-	# Pannello laterale di larghezza comoda (né troppo stretto né esageratamente largo);
-	# la mappa e il pannello stanno attaccati e il blocco è centrato, così l'eventuale
-	# spazio extra diventa due piccoli margini bilanciati invece di un vuoto tra i due.
-	var max_side := 470.0
-	var side_w := clampf(size.x - 16.0 - mw0 - 8.0, min_side, max_side)
-	var block_w := mw0 + 8.0 + side_w
-	var lm := maxf(8.0, (size.x - block_w) * 0.5)
-	_board.position = Vector2(lm, top)
-	_board.size = Vector2(mw0, avail_h)
-	_side.position = Vector2(lm + mw0 + 8.0, top)
-	_side.size = Vector2(side_w, avail_h)
-	# Dimensione base (zoom=1); lo zoom è applicato come SCALA al nodo mappa, così tutto
-	# (mappa, pedine, segnalini) scala in modo uniforme. Il wrapper definisce l'area scrollabile.
 	var base := Vector2(mw0, mh0)
-	if _map != null:
-		_map.custom_minimum_size = base
-		_map.size = base
-		_map.scale = Vector2(_zoom, _zoom)
-	if _map_wrap != null:
-		_map_wrap.custom_minimum_size = base * _zoom
-		_map_wrap.size = base * _zoom
+	if not _view_ready and map_w > 300.0:
+		_view_ready = true
+		_view_island.call_deferred()
+	var scaled := base * _zoom
+	_map.custom_minimum_size = base
+	_map.size = base
+	_map.scale = Vector2(_zoom, _zoom)
+	_map.position = ((_board.size - scaled) * 0.5).max(Vector2.ZERO)
+	_map_wrap.custom_minimum_size = scaled.max(_board.size)
+	_map_wrap.size = scaled.max(_board.size)
+	_zoom_lbl.text = "%d%%" % roundi(_zoom * 100.0)
 	for sid in _space_views.keys():
 		var rv: RegionView = _space_views[sid]
 		rv.position = Vector2.ZERO
 		rv.size = base
 		rv.relayout()
-	if _track_overlay != null:
-		_track_overlay.position = Vector2.ZERO
-		_track_overlay.size = base
-		_track_overlay.queue_redraw()
-	if _anim_layer != null:
-		_anim_layer.position = Vector2.ZERO
-		_anim_layer.size = base
-	if _moves_overlay != null:
-		_moves_overlay.position = Vector2.ZERO
-		_moves_overlay.size = base
-		_update_moves_overlay()
+	_track_overlay.position = Vector2.ZERO
+	_track_overlay.size = base
+	_track_overlay.queue_redraw()
+	_anim_layer.position = Vector2.ZERO
+	_anim_layer.size = base
+	_moves_overlay.position = Vector2.ZERO
+	_moves_overlay.size = base
+	_update_moves_overlay()
 
 
+## Inquadra gli spazi giocabili (Finlandia / Cuba) facendoli entrare tutti.
+func _view_island() -> void:
+	if _board == null or _board.size.x <= 0.0:
+		return
+	var aspect := _map_aspect()
+	var mw0 := _board.size.x
+	var mh0 := mw0 * aspect
+	if mh0 > _board.size.y:
+		mh0 = _board.size.y
+		mw0 = mh0 / aspect
+	var fr := _focus_rect()
+	_zoom = clampf(minf(_board.size.x / (mw0 * fr.size.x), _board.size.y / (mh0 * fr.size.y)), 0.5, 4.0)
+	_layout_board()
+	var c := (fr.position + fr.size * 0.5) * Vector2(mw0, mh0) * _zoom + _map.position
+	await get_tree().process_frame
+	_board.scroll_horizontal = int(maxf(0.0, c.x - _board.size.x * 0.5))
+	_board.scroll_vertical = int(maxf(0.0, c.y - _board.size.y * 0.5))
+
+
+## Scorciatoie: Esc annulla la scelta, Invio esegue, Spazio conclude il turno,
+## Ctrl+Z disfa, +/-/0 regolano la vista.
+func _unhandled_input(event: InputEvent) -> void:
+	if not (event is InputEventKey) or not event.pressed or event.echo:
+		return
+	match event.keycode:
+		KEY_ESCAPE:
+			_on_cancel_selection()
+		KEY_ENTER, KEY_KP_ENTER:
+			_on_execute()
+		KEY_SPACE:
+			_on_execute_and_end()
+		KEY_Z:
+			if event.ctrl_pressed or event.meta_pressed:
+				_on_undo_action()
+			else:
+				return
+		KEY_PLUS, KEY_EQUAL, KEY_KP_ADD:
+			_zoom_at(1.25)
+		KEY_MINUS, KEY_KP_SUBTRACT:
+			_zoom_at(1.0 / 1.25)
+		KEY_0, KEY_KP_0:
+			_set_zoom(1.0)
+		_:
+			return
+	get_viewport().set_input_as_handled()
+
+
+var _touch_pts: Dictionary = {}
+
+
+## Zoom da rotellina (sull'area mappa), gesto magnify (trackpad) e pinch (touch).
+func _input(event: InputEvent) -> void:
+	if _board == null:
+		return
+	var board_rect := Rect2(_board.global_position, _board.size)
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP and board_rect.has_point(event.position):
+			_zoom_at(1.15, event.position)
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and board_rect.has_point(event.position):
+			_zoom_at(1.0 / 1.15, event.position)
+			get_viewport().set_input_as_handled()
+	elif event is InputEventMagnifyGesture:
+		if board_rect.has_point(event.position):
+			_zoom_at(event.factor, event.position)
+			get_viewport().set_input_as_handled()
+	elif event is InputEventScreenTouch:
+		if event.pressed:
+			_touch_pts[event.index] = event.position
+		else:
+			_touch_pts.erase(event.index)
+	elif event is InputEventScreenDrag and _touch_pts.has(event.index):
+		if _touch_pts.size() == 2:
+			var other := Vector2.ZERO
+			for i in _touch_pts:
+				if i != event.index:
+					other = _touch_pts[i]
+			var d_old: float = (_touch_pts[event.index] as Vector2).distance_to(other)
+			_touch_pts[event.index] = event.position
+			var d_new: float = (event.position as Vector2).distance_to(other)
+			if d_old > 8.0 and d_new > 8.0:
+				_zoom_at(d_new / d_old, (event.position + other) * 0.5)
+				get_viewport().set_input_as_handled()
+		else:
+			_touch_pts[event.index] = event.position
 
 
 # ---------------------------------------------------------------------------
 # Aggiornamento viste
 # ---------------------------------------------------------------------------
 
-const ACTION_NAMES := {
-	0: "Passa", 1: "Operazione", 2: "Op+Att.Speciale", 3: "Op Limitata", 4: "Evento",
-}
+func _refresh() -> void:
+	if GameController.game_over:
+		_show_endgame_dialog()
+	else:
+		_endgame_shown = false
+	_animate_moves()
+	for sid in _space_views.keys():
+		_space_views[sid].refresh(GameController.state)
+	if _track_overlay != null:
+		_track_overlay.queue_redraw()
+	_flash_changes()
+	_refresh_turn_banner()
+	_refresh_event_box()
+	_top.refresh()
+	_strip.refresh()
 
-
-var _prev_fp: Dictionary = {}
-var _anim_layer: Control                  # layer per le animazioni dei pezzi
-var _moves_overlay: MovesOverlay          # frecce degli spostamenti in coda
-var _prev_pc: Dictionary = {}             # conteggi precedenti "sid|faction|type" -> n
-var _avail_box: Dictionary = {}           # faction -> centro (normalizzato) del box Forze Disponibili
-const ANIM_SZ := 26.0
-const ANIM_DUR := 0.9
-
-
-var _endgame_shown := false
 
 ## Schermata di fine partita: classifica con margini (una volta sola).
 func _show_endgame_dialog() -> void:
-	if _endgame_shown:
+	if _endgame_shown or not _is_abb():
 		return
 	_endgame_shown = true
 	var vs: Dictionary = GameController.module.victory_status(GameController.state)
-	var names := {"reds": "Reds", "senate": "Senato (Whites)", "moderates": "Moderati",
-		"germans": "Germania", "russians": "Russia"}
 	var order: Array = ["reds", "senate", "moderates"]
 	order.sort_custom(func(a, b): return int(vs[a]["margin"]) > int(vs[b]["margin"]))
-	var txt := "🏆 Vince: %s\n\nClassifica (valore/soglia · margine):\n" % names.get(GameController.winner, GameController.winner)
+	var txt := "Vince: %s\n\nClassifica (valore/soglia · margine):\n" % CoinTheme.faction_label(GameController.winner)
 	var pos := 1
 	for fid in order:
 		var v: Dictionary = vs[fid]
-		txt += "  %d. %s — %d/%d (%+d)\n" % [pos, names[fid], int(v["value"]), int(v["threshold"]), int(v["margin"])]
+		txt += "  %d. %s — %d/%d (%+d)\n" % [pos, CoinTheme.faction_label(fid), int(v["value"]), int(v["threshold"]), int(v["margin"])]
 		pos += 1
-	txt += "\nVassallaggi: Tedesco %d · Russo %d · Polarization %d\nPropaganda giocate: %d/4" % [
+	txt += "\nVassallaggi: tedesco %d · russo %d · Polarizzazione %d\nPropaganda giocate: %d/4" % [
 		int(GameController.state.tracks.get("vassalage_german", 0)),
 		int(GameController.state.tracks.get("vassalage_russian", 0)),
 		int(GameController.state.tracks.get("polarization", 0)),
@@ -687,30 +881,962 @@ func _show_endgame_dialog() -> void:
 	dlg.canceled.connect(func(): dlg.queue_free())
 
 
-func _refresh() -> void:
-	if GameRegistry.game_id == "all_bridges_burning":
-		if GameController.game_over:
-			_show_endgame_dialog()
-		else:
-			_endgame_shown = false
-	_animate_moves()
-	for sid in _space_views.keys():
-		_space_views[sid].refresh(GameController.state)
-	if _track_overlay != null:
-		_track_overlay.queue_redraw()
-	_flash_changes()
-	_refresh_turn_banner()
-	_refresh_side()
-	if not _role_btns.is_empty():
-		_update_role_btns()
-	if _btn_coordinate != null:
-		var ph := int(GameController.state.tracks.get("phase", 1))
-		_btn_coordinate.disabled = ph < 2
-		var active: bool = int(GameController.state.tracks.get("coordinate_marker", 0)) > 0
-		_btn_coordinate.text = "Coord. Germ. ✓" if active else "Coord. Germ."
-		var col := Color("ff6b6b") if active else Color("8aa0b3")
-		_btn_coordinate.add_theme_color_override("font_color", col)
+## I 4 numeri delle carte Propaganda (cards.json), in ordine di Round.
+var _PROP_CARDS: Array = [22, 23, 46, 47]
 
+
+## Numero carta per l'IMMAGINE: la Propaganda (sentinel 0) diventa quella specifica.
+func _card_image_number(card_num: int) -> int:
+	if card_num == 0 and _is_abb():
+		return int(_PROP_CARDS[clampi(GameController.propaganda_played, 0, 3)])
+	return card_num
+
+
+## Carte e titolo dell'Evento (corrente e prossima).
+func _refresh_event_box() -> void:
+	var s: GameState = GameController.state
+	var cc: int = s.current_card
+	_cur_img.texture = CLAssets.card(_card_image_number(cc)) if cc >= 0 else null
+	var nc: int = GameController.next_card()
+	_next_img.texture = CLAssets.card(_card_image_number(nc)) if nc >= 0 else null
+	if cc > 0:
+		var c: CardDef = GameController.game_def.card(cc)
+		var tag := ""
+		if c.is_capability:
+			tag = " · Capacità"
+		elif c.is_momentum:
+			tag = " · Momentum"
+		_ev_title.text = "%d · %s" % [c.number, c.title]
+		_ev_title.tooltip_text = "%s%s\n\n%s" % [c.title, tag, c.translation]
+		_cur_img.tooltip_text = "%s%s\n\n%s\n\n(clicca per ingrandire)" % [c.title, tag, c.translation]
+	elif cc == 0:
+		_ev_title.text = "Propaganda"
+		_ev_title.tooltip_text = ""
+	else:
+		_ev_title.text = "Mazzo esaurito"
+		_ev_title.tooltip_text = ""
+
+
+## Intestazione del pannello: Fazione di turno, posto nella sequenza, Risorse, ruolo.
+func _refresh_panel_header(fid: String, sub: String, stamp: String) -> void:
+	var col := CoinTheme.faction(fid) if fid != "" else CoinTheme.INK
+	var hsb := CoinTheme.flat(col, 0)
+	hsb.content_margin_left = 14
+	hsb.content_margin_right = 14
+	hsb.content_margin_top = 8
+	hsb.content_margin_bottom = 8
+	hsb.corner_radius_top_left = 2
+	hsb.corner_radius_top_right = 2
+	hsb.border_width_bottom = 3
+	hsb.border_color = col.darkened(0.25) if fid != "" else CoinTheme.BRASS
+	_head.add_theme_stylebox_override("panel", hsb)
+	var fg := CoinTheme.faction_fg(fid) if fid != "" else CoinTheme.PAPER
+	_head_tok.texture = CLAssets.res_token(fid) if fid != "" else null
+	_head_tok.visible = fid != ""
+	_head_name.text = CoinTheme.faction_label(fid) if fid != "" else "In attesa"
+	_head_name.add_theme_color_override("font_color", fg)
+	_head_sub.text = sub
+	_head_sub.add_theme_color_override("font_color", CoinTheme.faction_fg_dim(fid) if fid != "" else CoinTheme.TEXT_DIM)
+	_head_stamp.text = stamp
+	_head_stamp.visible = stamp != ""
+	_head_stamp.add_theme_color_override("font_color", fg)
+	(_head_stamp.get_theme_stylebox("normal") as StyleBoxFlat).border_color = fg
+
+
+## Evidenzia la scelta in corso e dà al tasto Esegui il nome di ciò che eseguirà.
+func _mark_op_button() -> void:
+	var op_on: String = _cur_action if _mode != "idle" and _cur_action != "" else ""
+	var sa_on: String = _pending_sa
+	var fcol := CoinTheme.faction_ink(_cur_faction)
+	for op in _op_btn_map:
+		var b: Button = _op_btn_map[op]
+		if op == op_on:
+			CoinTheme.accent_button(b, fcol, fcol)
+		else:
+			CoinTheme.style_button(b)
+	for sa in _sa_btn_map:
+		var sb: Button = _sa_btn_map[sa]
+		if sa == sa_on:
+			CoinTheme.accent_button(sb, fcol, fcol)
+		else:
+			CoinTheme.style_button(sb)
+	for pair in [[_btn_ev_u, "unshaded"], [_btn_ev_s, "shaded"]]:
+		var eb: Button = pair[0]
+		if _event_side == pair[1]:
+			CoinTheme.accent_button(eb, CoinTheme.INK, CoinTheme.INK, CoinTheme.PAPER)
+		else:
+			CoinTheme.style_button(eb)
+	var label := "Esegui"
+	if sa_on != "":
+		label = "Esegui %s" % _sa_label(sa_on)
+	elif op_on != "":
+		label = "Esegui %s" % OP_NAMES.get(op_on, op_on)
+	elif _event_side != "":
+		label = "Esegui Evento %s" % ("chiaro" if _event_side == "unshaded" else "ombreggiato")
+	_btn_exec.text = label
+	_sa_desc.visible = sa_on != "" and _sa_desc.text != ""
+	_op_desc.visible = op_on != "" and _op_desc.text != ""
+
+
+## Scelta del lato dell'Evento: si esegue poi con "Esegui" (o "Concludi turno").
+func _pick_event(side: String) -> void:
+	if _event_side == side:
+		_event_side = ""
+	else:
+		_clear_pending()
+		_event_side = side
+		_instr.text = "Evento %s scelto: premi 'Esegui' per giocarlo (chiude il turno della Fazione)." % \
+			("chiaro" if side == "unshaded" else "ombreggiato")
+	_refresh_turn_banner()
+
+
+## Esegui la scelta preparata (se c'è) e concludi il turno della Fazione.
+func _on_execute_and_end() -> void:
+	if _event_side != "":
+		_on_execute()   # l'Evento chiude già il turno della Fazione
+		return
+	if _pending_sa != "" or (_cur_action != "" and _mode != "idle"):
+		if not _on_execute():
+			return   # esecuzione fallita: l'errore è mostrato, il turno resta aperto
+	GameController.end_turn()
+
+
+func _set_btn(b: Button, on: bool) -> void:
+	if b != null:
+		b.disabled = not on
+
+
+## C'è qualcosa in preparazione (spazi scelti, spostamenti, Att.Speciale)?
+func _has_pending_choice() -> bool:
+	return _pending_sa != "" or (_cur_action != "" and _mode != "idle")
+
+
+func _refresh_turn_banner() -> void:
+	if _btn_exec == null:
+		return
+	var st := GameController.seq_status()
+	var card: int = GameController.state.current_card
+	var turn_active: bool = st.get("active", false) and String(st.get("pending", "")) != ""
+	# Cambio di Fazione PRIMA di abilitare i tasti appena ricreati.
+	if turn_active and String(st["pending"]) != _cur_faction:
+		_select_faction(String(st["pending"]))
+	_set_btn(_btn_end, turn_active)
+	_set_btn(_btn_clear, _mode != "idle" or _pending_sa != "" or not _selected.is_empty() \
+		or not _pending_moves.is_empty() or _event_side != "")
+	_set_btn(_btn_exec, turn_active and (_has_pending_choice() or _event_side != "" \
+		or (not _is_abb() and _mode in ["sa_move_confirm", "sa_profit"])))
+	_top.set_undo(GameController.undo_depth(), GameController.undo_label())
+	_refresh_preview()
+	_mark_op_button()
+	var legal: Array = st.get("legal", [])
+	var event_ok := turn_active and legal.has(CoinEnums.ActionType.EVENT) and card > 0
+	_set_btn(_btn_ev_u, event_ok)
+	_set_btn(_btn_ev_s, event_ok)
+	if not event_ok:
+		_event_side = ""
+	var lim := GameController.seq_is_limited_only()
+	var sa_legal := turn_active and legal.has(CoinEnums.ActionType.OPERATION_WITH_SPECIAL)
+	var ph := int(GameController.state.tracks.get("phase", 1))
+	# Un solo Comando e una sola Attività speciale per turno: scelto (o svolto) un
+	# Comando, gli altri si bloccano; si può solo proseguire quello.
+	var done_op: String = GameController.turn_op()
+	var prep_op: String = _cur_action if _mode != "idle" and _cur_action != "" else ""
+	var lock_op := prep_op if prep_op != "" else done_op
+	var lim_used := lim and done_op != ""
+	for op in _op_btn_map:
+		var ob: Button = _op_btn_map[op]
+		var why := _op_unavailable(op, ph)
+		var locked: bool = lock_op != "" and op != lock_op
+		ob.disabled = not turn_active or GameController.turn_event_done() or lim_used \
+			or locked or _event_side != "" or why != ""
+		if why != "":
+			ob.tooltip_text = why
+		elif locked:
+			ob.tooltip_text = "In questo turno il Comando è %s" % OP_NAMES.get(lock_op, lock_op)
+		else:
+			ob.tooltip_text = OP_DESC.get(op, "")
+	var sa_done := GameController.turn_special_done()
+	for sa in _sa_btn_map:
+		var sb: Button = _sa_btn_map[sa]
+		var why_sa := _sa_unavailable(sa, ph)
+		sb.disabled = not turn_active or not sa_legal or lim or sa_done \
+			or (_pending_sa != "" and sa != _pending_sa) or _event_side != "" or why_sa != ""
+		var base_tip := "%s\n%s" % [_sa_label(sa), SA_DESC.get(_sa_base(sa), "")]
+		if why_sa != "":
+			sb.tooltip_text = why_sa
+		elif turn_active and (not sa_legal or lim):
+			sb.tooltip_text = "%s\n\nIn questa casella della sequenza non è ammessa un'Attività speciale." % base_tip
+		else:
+			sb.tooltip_text = base_tip
+	# Evento: solo se in questo turno non si è ancora fatto nulla.
+	if done_op != "" or sa_done or prep_op != "" or _pending_sa != "":
+		_set_btn(_btn_ev_u, false)
+		_set_btn(_btn_ev_s, false)
+	_set_btn(_btn_pass, turn_active and done_op == "" and not sa_done)
+
+	if not turn_active:
+		_turn_banner.add_theme_color_override("font_color", CoinTheme.INK)
+		_refresh_panel_header("", "Nessuna Fazione di turno", "")
+		if GameController.game_over:
+			if GameController.winner != "":
+				_turn_banner.text = "Partita conclusa — vince %s" % CoinTheme.faction_label(GameController.winner)
+				_turn_banner.add_theme_color_override("font_color", CoinTheme.faction_ink(GameController.winner))
+			else:
+				_turn_banner.text = "Partita conclusa"
+		elif card == -1:
+			_turn_banner.text = "Mazzo esaurito"
+		else:
+			_turn_banner.text = ""
+		_banner.visible = _turn_banner.text != "" or _instr.text != ""
+		return
+	var pending: String = st["pending"]
+	_turn_banner.add_theme_color_override("font_color", CoinTheme.faction_ink(pending))
+	var slot := "1ª" if st.get("first_slot", true) else "2ª"
+	var s: GameState = GameController.state
+	var res_txt := ("Risorse %d" % s.get_resources(pending)) if s.tracks_resources(pending) else "Risorse —"
+	var lim_txt := " · Limitato" if lim else ""
+	_refresh_panel_header(pending, "%s Fazione · %s%s" % [slot, res_txt, lim_txt],
+		"IN AZIONE" if GameController.is_player(pending) else "BOT")
+	_banner.visible = true
+	if _mode == "idle" and _pending_sa == "":
+		_op_desc.text = ""
+	var step := ""
+	if _pending_sa != "":
+		step = "Att. speciale %s: %s" % [_sa_label(_pending_sa),
+			"premi 'Esegui'" if _abb_sa_target != "" or not _sa_needs_space(_pending_sa) else "clicca lo spazio bersaglio evidenziato"]
+	elif _mode == "idle":
+		var acts: Array = []
+		for a in legal:
+			acts.append(ACTION_NAMES.get(int(a), str(a)))
+		step = "scegli un Comando, un'Attività speciale o l'Evento (possibili: %s)" % ", ".join(acts)
+		if done_op != "" or sa_done:
+			var parts: Array = []
+			if done_op != "":
+				parts.append("%s svolto: puoi proseguirlo in altri spazi" % OP_NAMES.get(done_op, done_op))
+			if not sa_done and sa_legal and not lim:
+				parts.append("aggiungere un'Attività speciale")
+			elif sa_done:
+				parts.append("Attività speciale svolta")
+			step = "%s, oppure 'Concludi turno'" % ", ".join(parts)
+	elif _mode in ["moves", "abb_march_from", "abb_march_to"]:
+		step = "%s: %d spostamenti in coda, poi 'Esegui' o 'Concludi turno'" % [
+			OP_NAMES.get(_cur_action, _cur_action), _pending_moves.size()]
+	else:
+		step = "clicca gli spazi evidenziati (scelti: %d), poi 'Esegui' o 'Concludi turno'" % _selected.size()
+	_turn_banner.text = step.substr(0, 1).to_upper() + step.substr(1)
+
+
+## Motivo per cui un Comando non è disponibile in assoluto ("" = disponibile).
+func _op_unavailable(op: String, ph: int) -> String:
+	if not _is_abb():
+		return ""
+	if op in ["march", "attack"] and ph < 2:
+		return "%s: disponibile solo in Fase II (dopo Red Revolt!, §3.2.4/§3.2.5)" % OP_NAMES.get(op, op)
+	if op == "message":
+		return "Messaggio: non ancora implementato nel motore"
+	return ""
+
+
+## Motivo per cui un'Attività speciale non è disponibile in assoluto ("" = disponibile).
+func _sa_unavailable(sa: String, ph: int) -> String:
+	if _is_abb() and sa == "coordinate":
+		if ph < 2:
+			return "Coordinamento: disponibile solo in Fase II (§4.2.4)"
+		if int(GameController.state.tracks.get("coordinate_marker", 0)) > 0:
+			return "Coordinamento: il marker è già sul cilindro tedesco"
+	return ""
+
+
+## Anteprima del Comando in preparazione: costo in Risorse ed esito previsto,
+## calcolati simulando l'azione su una copia dello stato (non tocca la partita).
+func _refresh_preview() -> void:
+	if _preview == null:
+		return
+	var fid := _cur_faction
+	var s: GameState = GameController.state
+	var targets: Array = []   # [{kind, id, sid, args}]
+	if _is_abb() and _pending_sa != "" and (_abb_sa_target != "" or not _sa_needs_space(_pending_sa)):
+		targets.append({"kind": "sa", "id": _sa_base(_pending_sa), "sid": _abb_sa_target, "args": _sa_variant_p(_pending_sa)})
+	elif _is_abb() and _cur_action == "march":
+		for mv in _pending_moves:
+			targets.append({"kind": "op", "id": "march", "sid": mv["to"], "args": mv})
+	elif _is_abb() and _cur_action != "":
+		for sid in _selected:
+			targets.append({"kind": "op", "id": _cur_action, "sid": sid, "args": {"mode": _abb_rally_mode.get(sid, "cell")}})
+	if targets.is_empty():
+		_preview.text = "—"
+		_preview.add_theme_color_override("font_color", CoinTheme.INK_FAINT)
+		_preview.tooltip_text = ""
+		return
+	var cost := 0
+	for t in targets:
+		var r: Dictionary = GameController.abb_preview(String(t["kind"]), String(t["id"]), fid, String(t["sid"]), t["args"])
+		if not r.get("ok", false):
+			_preview.text = "⚠ non eseguibile"
+			_preview.add_theme_color_override("font_color", CoinTheme.WARN_INK)
+			_preview.tooltip_text = String(r.get("error", ""))
+			return
+		cost += int(r.get("cost", 0))
+	if not s.tracks_resources(fid):
+		_preview.text = "costo — (Bot)"
+		_preview.add_theme_color_override("font_color", CoinTheme.INK_DIM)
+		_preview.tooltip_text = "Le Fazioni Bot non pagano Risorse (§8.1.2)"
+		return
+	var have := s.get_resources(fid)
+	_preview.text = "costo %d / %d" % [cost, have]
+	_preview.add_theme_color_override("font_color", CoinTheme.OK_INK if cost <= have else CoinTheme.ERR_INK)
+	_preview.tooltip_text = "Costo previsto in Risorse (ogni spazio simulato da solo)"
+
+
+func _select_faction(fid: String) -> void:
+	_cur_faction = fid
+	_rebuild_action_buttons(fid)
+	_clear_pending()
+
+
+## Ricrea i tasti dei Comandi e delle Attività speciali per la Fazione data:
+## un tasto per ogni Attività speciale e per ogni sua variante (niente tendine).
+func _rebuild_action_buttons(fid: String) -> void:
+	for c in _op_btns.get_children():
+		c.queue_free()
+	_op_btn_map.clear()
+	var fdef: FactionDef = GameController.game_def.faction(fid)
+	if fdef == null:
+		return
+	for op in fdef.operations:
+		var ob: Button = _mk_btn(OP_NAMES.get(op, op), _start_op.bind(op))
+		ob.tooltip_text = OP_DESC.get(op, "")
+		ob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		ob.custom_minimum_size = Vector2(0, 38)
+		ob.add_theme_font_size_override("font_size", 16)
+		_op_btns.add_child(ob)
+		_op_btn_map[op] = ob
+	for c in _sa_btns.get_children():
+		c.queue_free()
+	_sa_btn_map.clear()
+	for sa in fdef.special_activities:
+		var ids: Array = []
+		if SA_VARIANTS.has(sa):
+			for v in SA_VARIANTS[sa]:
+				ids.append(String(v["id"]))
+		else:
+			ids.append(String(sa))
+		for id in ids:
+			var sb: Button = _mk_btn(_sa_label(id), _do_special.bind(id))
+			sb.custom_minimum_size = Vector2(0, 32)
+			sb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			sb.clip_text = true
+			sb.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+			sb.add_theme_font_size_override("font_size", 14)
+			_sa_btns.add_child(sb)
+			_sa_btn_map[id] = sb
+
+
+## Messaggio di ERRORE nella riga istruzioni: ceralacca, poi torna all'inchiostro.
+func _err(text: String) -> void:
+	_instr.text = text
+	_banner.visible = true
+	_instr.add_theme_color_override("font_color", CoinTheme.ERR_INK)
+	var tw := create_tween()
+	tw.tween_interval(2.5)
+	tw.tween_callback(func(): _instr.add_theme_color_override("font_color", CoinTheme.INK))
+
+
+# ---------------------------------------------------------------------------
+# Menu di partita, ruoli, Bot
+# ---------------------------------------------------------------------------
+
+func _on_game_menu(id: int) -> void:
+	match id:
+		TopBar.MenuId.NEW_GAME:
+			_confirm_new.popup_centered()
+		TopBar.MenuId.ALL_BOTS:
+			_on_all_bots()
+		TopBar.MenuId.FULL_GAME:
+			GameController.run_full_game_paced()
+		TopBar.MenuId.SPEED_SLOW:
+			GameController.pace_delay = 1.8
+		TopBar.MenuId.SPEED_MED:
+			GameController.pace_delay = 1.1
+		TopBar.MenuId.SPEED_FAST:
+			GameController.pace_delay = 0.7
+		TopBar.MenuId.COORDINATE:
+			_on_coordinate_germans()
+
+
+func _on_all_bots() -> void:
+	# Risolve la carta corrente con i bot, una mossa alla volta (con pausa/flash).
+	GameController.run_card_paced()
+
+
+## Marker Coordinate (§4.2.4): interruttore manuale (Menu › Potenze) che fa decidere
+## al Senato l'azione dei Germans questo turno. Solo in Fase II.
+func _on_coordinate_germans() -> void:
+	if int(GameController.state.tracks.get("phase", 1)) < 2:
+		return
+	var cur := int(GameController.state.tracks.get("coordinate_marker", 0))
+	GameController.state.tracks["coordinate_marker"] = 0 if cur > 0 else 1
+	GameController.emit_signal("state_changed")
+
+
+func _toggle_role(fid: String) -> void:
+	# Le Potenze (Germania/Russia) sono sempre gestite dal motore.
+	if _is_abb() and fid in ["germans", "russians"]:
+		return
+	GameController.set_role(fid, "bot" if GameController.is_player(fid) else "player")
+
+
+func _toggle_auto_bot() -> void:
+	_auto_bot = not _auto_bot
+	_top.set_auto_bot(_auto_bot)
+
+
+func _auto_bot_tick() -> void:
+	if not _auto_bot or GameController.game_over or _mode != "idle" or _pending_sa != "":
+		return
+	var s: GameState = GameController.state
+	if s == null or s.current_card <= 0:
+		return
+	var st := GameController.seq_status()
+	var pending := String(st.get("pending", ""))
+	if pending != "" and bool(st.get("active", false)) and GameController.is_bot(pending):
+		GameController.bot_act_pending()
+
+
+## Nuova partita: ripulisce il registro e la selezione, poi reinizializza.
+func _on_new_game() -> void:
+	_clear_pending()
+	_log.clear_log()
+	_prev_pc = {}
+	_prev_fp = {}
+	GameController.new_game()
+	_view_island()
+
+
+## "Annulla scelta": scarta soltanto la selezione in preparazione (mai distruttivo).
+func _on_cancel_selection() -> void:
+	var had := _mode != "idle" or _pending_sa != "" or not _selected.is_empty() \
+		or not _pending_moves.is_empty() or _event_side != ""
+	_clear_pending()
+	_instr.text = "Scelta annullata" if had else "Niente da annullare in preparazione"
+	_refresh_turn_banner()
+
+
+## "Annulla" (barra superiore): disfa l'ultima azione già eseguita su questa carta.
+func _on_undo_action() -> void:
+	if GameController.undo_last():
+		_clear_pending()
+		_instr.text = "Azione annullata"
+	else:
+		_err("Nessuna azione da annullare su questa carta")
+	_refresh_turn_banner()
+
+
+## Pulizia interna della selezione/coda in preparazione (senza undo).
+func _clear_pending() -> void:
+	_mode = "idle"
+	_cur_action = ""
+	_event_side = ""
+	_selected.clear()
+	_rally_choice.clear()
+	_train_plan.clear()
+	_build_choice.clear()
+	_garrison_ec = ""
+	_reprisal_from = ""
+	_attack_target.clear()
+	_sa_move_to = ""
+	_sa_move_count = 0
+	_sa_spaces = []
+	_pending_moves.clear()
+	_pending_sa = ""
+	_sa_from = ""
+	_sa_valid = []
+	_abb_rally_mode.clear()
+	_abb_march_from = ""
+	_abb_sa_target = ""
+	_resume_mode = "idle"
+	if _op_desc != null:
+		_op_desc.text = ""
+		_sa_desc.text = ""
+	_clear_highlights()
+	_update_moves_overlay()
+	if _instr != null:
+		_instr.text = ""
+
+
+func _clear_highlights() -> void:
+	for sid in _space_views.keys():
+		_space_views[sid].set_highlight(false)
+
+
+## Aggiorna le frecce di anteprima degli spostamenti in coda.
+func _update_moves_overlay() -> void:
+	if _moves_overlay == null:
+		return
+	var segs: Array = []
+	for m in _pending_moves:
+		var fi: String = m["from"]
+		var ti: String = m["to"]
+		if _space_views.has(fi) and _space_views.has(ti):
+			var fv: RegionView = _space_views[fi]
+			var tv: RegionView = _space_views[ti]
+			segs.append({"from": fv.center_point(), "to": tv.center_point()})
+	_moves_overlay.set_segments(segs)
+
+
+func _space_name(sid: String) -> String:
+	var sd: SpaceDef = GameController.game_def.space(sid)
+	return sd.name if sd != null else sid
+
+
+# ---------------------------------------------------------------------------
+# Flusso azione: smistamento fra All Bridges Burning e Cuba Libre
+# ---------------------------------------------------------------------------
+
+## Avvia il Comando scelto (tasto): evidenzia gli spazi validi e imposta il flusso.
+func _start_op(op_id: String) -> void:
+	_event_side = ""
+	if _is_abb():
+		_abb_start_op(op_id)
+	else:
+		_cuba_start_op(op_id)
+	_op_desc.text = OP_DESC.get(op_id, "")
+	_refresh_turn_banner()
+
+
+func _on_space_clicked(sid: String) -> void:
+	if _is_abb():
+		_abb_space_clicked(sid)
+	else:
+		_cuba_space_clicked(sid)
+
+
+## Esegue la scelta preparata. Restituisce true se è andata a buon fine.
+func _on_execute() -> bool:
+	if _event_side != "":
+		var side := _event_side
+		_event_side = ""
+		_on_event(side)
+		return true
+	if _is_abb():
+		return _abb_execute()
+	return _cuba_execute()
+
+
+## Avvia l'Attività speciale (tasto): evidenzia SOLO gli spazi dove ha davvero effetto.
+func _do_special(sa: String) -> void:
+	if _pending_sa == sa:
+		# Secondo clic sullo stesso tasto: rinuncia all'Att.Speciale (il Comando resta).
+		_abb_end_sa()
+		return
+	var why := GameController.special_block_reason()
+	if _limited or GameController.seq_is_limited_only():
+		_err("Comando Limitato: niente Attività speciale")
+		return
+	if why != "":
+		_err(why)
+		return
+	_event_side = ""
+	if _is_abb():
+		_abb_start_special(sa)
+	else:
+		_cuba_start_special(sa)
+	# Le descrizioni ABB iniziano già col nome dell'Attività: niente doppione.
+	var sdesc: String = SA_DESC.get(_sa_base(sa), "")
+	var sname: String = SA_NAMES.get(_sa_base(sa), "")
+	_sa_desc.text = sdesc if sname != "" and sdesc.begins_with(sname) else "%s: %s" % [_sa_label(sa), sdesc]
+	_refresh_turn_banner()
+
+
+## Gioca l'Evento della carta corrente (lato chiaro/ombreggiato).
+func _on_event(side: String) -> void:
+	var params := {}
+	if _selected.size() > 0:
+		params["space"] = _selected[0]
+	var res := GameController.play_event(side, params)
+	_clear_pending()
+	if not res.get("ok", false):
+		_err("! " + String(res.get("error", "Evento non eseguibile")))
+	else:
+		_instr.text = "Evento giocato - turno concluso"
+	_refresh_turn_banner()
+
+
+func _on_piece_dropped(from_id: String, to_id: String, faction: String, type: String) -> void:
+	if _is_abb():
+		# Marcia ABB anche trascinando una propria Cellula: equivale ai due clic.
+		if _cur_action == "march" and faction == _cur_faction and type == "cell":
+			_abb_queue_march(from_id, to_id)
+		else:
+			_err("Per spostare le Cellule scegli prima il Comando Marcia (Fase II)")
+		return
+	_cuba_piece_dropped(from_id, to_id, faction, type)
+
+
+# ---------------------------------------------------------------------------
+# All Bridges Burning: Comandi
+# ---------------------------------------------------------------------------
+
+## Spazi dove il Comando avrebbe effetto ORA (simulazione su copia dello stato).
+func _abb_op_valid(op_id: String, args: Dictionary = {}) -> Array:
+	var out: Array = []
+	var used: Array = GameController.turn_op_spaces()
+	for sid in _space_views.keys():
+		if used.has(sid):
+			continue
+		if bool(GameController.abb_preview("op", op_id, _cur_faction, sid, args).get("ok", false)):
+			out.append(sid)
+	return out
+
+
+## Origini valide per la Marcia: spazi con Cellule clandestine proprie da cui almeno
+## una destinazione adiacente è raggiungibile.
+func _abb_march_origins() -> Array:
+	var out: Array = []
+	for sid in _space_views.keys():
+		if not _abb_march_dests(sid).is_empty():
+			out.append(sid)
+	return out
+
+
+func _abb_march_queued_from(from_id: String) -> int:
+	var n := 0
+	for mv in _pending_moves:
+		if String(mv["from"]) == from_id:
+			n += int(mv["count"])
+	return n
+
+
+func _abb_march_dests(from_id: String) -> Array:
+	var out: Array = []
+	var st: SpaceState = GameController.state.space_state(from_id)
+	if st == null or st.count(_cur_faction, "cell", "underground") <= _abb_march_queued_from(from_id):
+		return out
+	for to in GameController.game_def.space(from_id).adjacent:
+		var args := {"from": from_id, "to": String(to), "count": 1, "type": "cell"}
+		if bool(GameController.abb_preview("op", "march", _cur_faction, String(to), args).get("ok", false)):
+			out.append(String(to))
+	return out
+
+
+func _abb_start_op(op_id: String) -> void:
+	if _cur_action == op_id and _mode != "idle":
+		_err("%s già scelto: clicca gli spazi, poi 'Esegui' (o 'Annulla scelta')" % OP_NAMES.get(op_id, op_id))
+		return
+	var why := GameController.op_block_reason(op_id, {})
+	if why != "":
+		_err(why)
+		return
+	_pending_sa = ""
+	_abb_sa_target = ""
+	_cur_action = op_id
+	_selected.clear()
+	_pending_moves.clear()
+	_abb_rally_mode.clear()
+	_limited = GameController.seq_is_limited_only()
+	var lim := " (Limitato: 1 spazio)" if _limited else ""
+	if op_id == "march":
+		_mode = "abb_march_from"
+		_abb_march_from = ""
+		_abb_highlight(_abb_march_origins())
+		_instr.text = "Marcia%s — clicca uno spazio con tue Cellule clandestine, poi uno adiacente." % lim
+		if _abb_march_origins().is_empty():
+			_err("Marcia: nessuna Cellula clandestina può muovere ora")
+	else:
+		_mode = "abb_space_pick"
+		var valid := _abb_op_valid(op_id)
+		_abb_highlight(valid)
+		_instr.text = "%s%s — clicca gli spazi evidenziati, poi 'Esegui'." % [OP_NAMES.get(op_id, op_id), lim]
+		if valid.is_empty():
+			_err("%s: nessuno spazio dove sia possibile al momento" % OP_NAMES.get(op_id, op_id))
+
+
+func _abb_highlight(spaces: Array) -> void:
+	_clear_highlights()
+	for sid in spaces:
+		if _space_views.has(sid):
+			_space_views[sid].set_highlight(true)
+	for sid in _selected:
+		if _space_views.has(sid):
+			_space_views[sid].set_highlight(true)
+
+
+## Modalità di Rally possibili in uno spazio (la 1ª è il default).
+func _abb_rally_modes(sid: String) -> Array:
+	var out: Array = []
+	for mode in ["cell", "admin", "network"]:
+		var pt: String = "admin" if mode == "admin" else ("network" if mode == "network" else "cell")
+		if GameController.state.available(_cur_faction, pt) <= 0 and mode != "cell":
+			continue
+		if bool(GameController.abb_preview("op", "rally", _cur_faction, sid, {"mode": mode}).get("ok", false)):
+			out.append(mode)
+	return out
+
+
+const _RALLY_LABEL := {"cell": "Cellule", "admin": "Amministrazione", "network": "Network"}
+
+
+func _abb_space_clicked(sid: String) -> void:
+	# Attività speciale in corso: il clic sceglie il bersaglio.
+	if _pending_sa != "":
+		if not _sa_needs_space(_pending_sa):
+			return
+		if not _abb_sa_valid(_pending_sa).has(sid):
+			_err("%s: spazio non valido, scegline uno evidenziato" % _sa_label(_pending_sa))
+			return
+		_abb_sa_target = "" if _abb_sa_target == sid else sid
+		_clear_highlights()
+		if _abb_sa_target != "":
+			_space_views[sid].set_highlight(true)
+			_space_views[sid].flash(CoinTheme.FROST)
+			_instr.text = "%s su %s — premi 'Esegui'." % [_sa_label(_pending_sa), _space_name(sid)]
+		else:
+			_abb_highlight(_abb_sa_valid(_pending_sa))
+		_refresh_turn_banner()
+		return
+	match _mode:
+		"abb_space_pick":
+			if _selected.has(sid):
+				# Rally: riclicca per cambiare cosa piazzare, poi deseleziona.
+				if _cur_action == "rally":
+					var modes := _abb_rally_modes(sid)
+					var i := modes.find(String(_abb_rally_mode.get(sid, "cell")))
+					if i + 1 < modes.size():
+						_abb_rally_mode[sid] = modes[i + 1]
+					else:
+						_selected.erase(sid)
+						_abb_rally_mode.erase(sid)
+				else:
+					_selected.erase(sid)
+			else:
+				if not _abb_op_valid(_cur_action).has(sid):
+					_err("%s: qui non è possibile, scegli uno spazio evidenziato" % OP_NAMES.get(_cur_action, _cur_action))
+					return
+				if _limited and _selected.size() >= 1:
+					_selected.clear()
+					_abb_rally_mode.clear()
+				_selected.append(sid)
+				if _cur_action == "rally":
+					var m0 := _abb_rally_modes(sid)
+					_abb_rally_mode[sid] = m0[0] if not m0.is_empty() else "cell"
+				_space_views[sid].flash(Color(0.4, 1.0, 0.5))
+			_abb_highlight(_abb_op_valid(_cur_action))
+			var parts: Array = []
+			for s in _selected:
+				var extra := ""
+				if _cur_action == "rally":
+					extra = " [%s]" % _RALLY_LABEL.get(_abb_rally_mode.get(s, "cell"), "")
+				parts.append(_space_name(s) + extra)
+			_instr.text = ("%s: %s — 'Esegui'%s" % [OP_NAMES.get(_cur_action, _cur_action), ", ".join(parts),
+				"; riclicca per cambiare cosa piazzare" if _cur_action == "rally" else ""]) \
+				if not parts.is_empty() else "%s: clicca gli spazi evidenziati" % OP_NAMES.get(_cur_action, _cur_action)
+		"abb_march_from":
+			if not _abb_march_origins().has(sid):
+				_err("Marcia: scegli uno spazio evidenziato con tue Cellule clandestine")
+				return
+			_abb_march_from = sid
+			_mode = "abb_march_to"
+			_clear_highlights()
+			_space_views[sid].set_highlight(true)
+			for d in _abb_march_dests(sid):
+				_space_views[d].set_highlight(true)
+			_instr.text = "Marcia da %s — clicca lo spazio ADIACENTE di destinazione (riclicca %s per cambiare origine)." % [
+				_space_name(sid), _space_name(sid)]
+		"abb_march_to":
+			if sid == _abb_march_from:
+				_mode = "abb_march_from"
+				_abb_march_from = ""
+				_abb_highlight(_abb_march_origins())
+				_instr.text = "Marcia — clicca uno spazio con tue Cellule clandestine."
+			else:
+				_abb_queue_march(_abb_march_from, sid)
+	_refresh_turn_banner()
+
+
+## Mette in coda 1 Cellula da `from_id` a `to_id` (stessa coppia = +1 Cellula).
+func _abb_queue_march(from_id: String, to_id: String) -> void:
+	if not _abb_march_dests(from_id).has(to_id):
+		_err("Marcia: destinazione non valida (adiacente, bordo non sabotato, Cellule clandestine disponibili)")
+		return
+	if _limited:
+		for mv in _pending_moves:
+			if String(mv["to"]) != to_id:
+				_err("Comando Limitato: una sola destinazione")
+				return
+	var found := false
+	for mv in _pending_moves:
+		if String(mv["from"]) == from_id and String(mv["to"]) == to_id:
+			mv["count"] = int(mv["count"]) + 1
+			found = true
+	if not found:
+		_pending_moves.append({"from": from_id, "to": to_id, "count": 1, "type": "cell"})
+	_space_views[from_id].flash(Color(0.35, 0.6, 1.0))
+	_space_views[to_id].flash(Color(0.4, 1.0, 0.5))
+	_update_moves_overlay()
+	_mode = "abb_march_from"
+	_abb_march_from = ""
+	_abb_highlight(_abb_march_origins())
+	var parts: Array = []
+	for mv in _pending_moves:
+		parts.append("%d da %s a %s" % [int(mv["count"]), _space_name(mv["from"]), _space_name(mv["to"])])
+	_instr.text = "Marcia: %s — altri spostamenti o 'Esegui'." % "; ".join(parts)
+
+
+## Esegue la scelta ABB preparata: prima l'Attività speciale, se c'è, poi il Comando.
+func _abb_execute() -> bool:
+	var fid := _cur_faction
+	if _pending_sa != "":
+		if _sa_needs_space(_pending_sa) and _abb_sa_target == "":
+			_err("%s: scegli prima lo spazio bersaglio" % _sa_label(_pending_sa))
+			return false
+		var sa := _pending_sa
+		var res: Dictionary = GameController.abb_special(_sa_base(sa), fid, _abb_sa_target, _sa_variant_p(sa))
+		_abb_log(_sa_label(sa), _space_name(_abb_sa_target) if _abb_sa_target != "" else "", res)
+		if not res.get("ok", false):
+			return false
+		_abb_end_sa()
+		return true
+	if _cur_action == "" or _mode == "idle":
+		return false
+	var op := _cur_action
+	if op == "march":
+		if _pending_moves.is_empty():
+			_err("Marcia: metti in coda almeno uno spostamento")
+			return false
+		while not _pending_moves.is_empty():
+			var mv: Dictionary = _pending_moves[0]
+			var r: Dictionary = GameController.abb_operation("march", fid, String(mv["to"]), mv)
+			_abb_log(OP_NAMES["march"], "%s → %s (%d)" % [_space_name(mv["from"]), _space_name(mv["to"]), int(mv["count"])], r)
+			if not r.get("ok", false):
+				_update_moves_overlay()
+				return false
+			_pending_moves.remove_at(0)
+	else:
+		if _selected.is_empty():
+			_err("%s: scegli almeno uno spazio" % OP_NAMES.get(op, op))
+			return false
+		while not _selected.is_empty():
+			var sid: String = _selected[0]
+			var r2: Dictionary = GameController.abb_operation(op, fid, sid, {"mode": _abb_rally_mode.get(sid, "cell")})
+			_abb_log(OP_NAMES.get(op, op), _space_name(sid), r2)
+			if not r2.get("ok", false):
+				return false
+			_selected.remove_at(0)
+	_clear_pending()
+	_instr.text = "%s eseguito: puoi proseguirlo in altri spazi, aggiungere un'Attività speciale o 'Concludi turno'." % OP_NAMES.get(op, op)
+	_refresh_turn_banner()
+	return true
+
+
+## Riga di registro dell'esito di un Comando/Att.Speciale ABB del giocatore.
+func _abb_log(label: String, target: String, res: Dictionary) -> void:
+	var ok: bool = bool(res.get("ok", false))
+	var msg: String = "%s %s%s" % ["✓" if ok else "✗", label, (" @ " + target) if target != "" else ""]
+	if not ok:
+		msg += " — " + String(res.get("error", ""))
+		_err(msg)
+	elif res.has("roll"):
+		msg += " (1d6=%d/%d)" % [int(res["roll"]), int(res.get("strength", 0))]
+	GameController.emit_signal("action_logged", msg, _cur_faction if ok else "")
+	if ok:
+		_instr.text = msg
+	GameController.emit_signal("state_changed")
+
+
+# ---------------------------------------------------------------------------
+# All Bridges Burning: Attività speciali
+# ---------------------------------------------------------------------------
+
+## Att.Speciali senza spazio bersaglio (si confermano subito con "Esegui").
+func _sa_needs_space(sa: String) -> bool:
+	return not (_sa_base(sa) in ["coordinate", "foreign_relations"])
+
+
+## Spazi dove l'Att.Speciale ABB avrebbe effetto (simulazione su copia).
+func _abb_sa_valid(sa: String) -> Array:
+	var out: Array = []
+	for sid in _space_views.keys():
+		if bool(GameController.abb_preview("sa", _sa_base(sa), _cur_faction, sid, _sa_variant_p(sa)).get("ok", false)):
+			out.append(sid)
+	return out
+
+
+func _abb_start_special(sa: String) -> void:
+	_pending_sa = sa
+	_abb_sa_target = ""
+	_clear_highlights()
+	if not _sa_needs_space(sa):
+		var pv: Dictionary = GameController.abb_preview("sa", _sa_base(sa), _cur_faction, "", _sa_variant_p(sa))
+		if not pv.get("ok", false):
+			_pending_sa = ""
+			_err("%s: %s" % [_sa_label(sa), String(pv.get("error", "non possibile"))])
+			_abb_restore_op_highlight()
+			return
+		_instr.text = "%s — premi 'Esegui'." % _sa_label(sa)
+		return
+	var valid := _abb_sa_valid(sa)
+	if valid.is_empty():
+		_pending_sa = ""
+		_err("%s: nessuno spazio valido al momento" % _sa_label(sa))
+		_abb_restore_op_highlight()
+		return
+	for sid in valid:
+		_space_views[sid].set_highlight(true)
+	_instr.text = "%s — clicca lo spazio bersaglio evidenziato, poi 'Esegui'." % _sa_label(sa)
+
+
+## Fine (o rinuncia) dell'Att.Speciale: il Comando in preparazione riprende da dov'era.
+func _abb_end_sa() -> void:
+	if not _is_abb():
+		_end_sa()
+		return
+	_pending_sa = ""
+	_abb_sa_target = ""
+	_sa_desc.text = ""
+	_abb_restore_op_highlight()
+	_refresh_turn_banner()
+
+
+func _abb_restore_op_highlight() -> void:
+	_clear_highlights()
+	if _cur_action == "" or _mode == "idle":
+		return
+	if _mode == "abb_march_from" or _mode == "abb_march_to":
+		_mode = "abb_march_from"
+		_abb_march_from = ""
+		_abb_highlight(_abb_march_origins())
+	else:
+		_abb_highlight(_abb_op_valid(_cur_action))
+	_instr.text = "Continua %s, poi 'Esegui' o 'Concludi turno'" % OP_NAMES.get(_cur_action, _cur_action)
+
+
+## Att.Speciale di base dietro a un id-variante ("bribe:cubes" -> "bribe").
+func _sa_base(sa: String) -> String:
+	var i := sa.find(":")
+	return sa.substr(0, i) if i >= 0 else sa
+
+
+## Parametri extra di una variante, o {} se non è una variante.
+func _sa_variant_p(sa: String) -> Dictionary:
+	var base := _sa_base(sa)
+	for v in SA_VARIANTS.get(base, []):
+		if v["id"] == sa:
+			return v["p"]
+	return {}
+
+
+## Etichetta da mostrare (variante o nome base).
+func _sa_label(sa: String) -> String:
+	var base := _sa_base(sa)
+	for v in SA_VARIANTS.get(base, []):
+		if v["id"] == sa:
+			return v["label"]
+	return SA_NAMES.get(sa, sa)
+
+
+# ---------------------------------------------------------------------------
+# Animazioni dei pezzi e lampeggi (comuni)
+# ---------------------------------------------------------------------------
 
 ## Centri normalizzati dei box "Forze Disponibili" (per animare piazzamenti/rimozioni).
 func _load_avail_boxes() -> Dictionary:
@@ -851,314 +1977,15 @@ func _space_fp(s: GameState, sid: String) -> String:
 	return out
 
 
-## Banner di turno: mostra chi è di turno e le azioni legali; abilita i pulsanti pertinenti.
-func _refresh_turn_banner() -> void:
-	var st := GameController.seq_status()
-	var card: int = GameController.state.current_card
-	var turn_active: bool = st.get("active", false) and String(st.get("pending", "")) != ""
-	# Stato pulsanti contestuale
-	_set_btn(_btn_end, turn_active)
-	_set_btn(_btn_pass, turn_active)
-	_set_btn(_btn_bot, turn_active)
-	var legal: Array = st.get("legal", [])
-	var event_ok := turn_active and (legal.has(4))  # EVENT
-	_set_btn(_btn_ev_u, event_ok)
-	_set_btn(_btn_ev_s, event_ok)
-	var lim := GameController.seq_is_limited_only()
-	for b in _op_btns.get_children():
-		b.disabled = not turn_active
-	for b in _sa_btns.get_children():
-		b.disabled = not turn_active or lim
-
-	if not turn_active:
-		_turn_banner.add_theme_color_override("font_color", Color("ffffff"))
-		if GameController.game_over:
-			if GameController.winner != "":
-				_turn_banner.text = "» Partita conclusa - vince %s" % GameController.faction_name(GameController.winner)
-				_turn_banner.add_theme_color_override("font_color", GameController.faction_color(GameController.winner))
-			else:
-				_turn_banner.text = "=== Partita conclusa"
-		elif card == -1:
-			_turn_banner.text = "Mazzo esaurito"
-		else:
-			_turn_banner.text = ""
-		return
-	var pending: String = st["pending"]
-	if pending != _cur_faction:
-		_select_faction(pending)
-	_turn_banner.add_theme_color_override("font_color", GameController.faction_color(pending))
-	var slot := "1ª" if st.get("first_slot", true) else "2ª"
-	# Guida passo-passo in base allo stato del flusso.
-	var step := ""
-	if _mode == "sa_point" or _mode == "sa_move":
-		step = "Att.Speciale %s: clicca lo spazio bersaglio" % _sa_label(_pending_sa)
-	elif _mode == "idle":
-		var acts: Array = []
-		for a in legal:
-			acts.append(ACTION_NAMES.get(int(a), str(a)))
-		step = "scegli un'Operazione (tasti), oppure: %s" % ", ".join(acts)
-	elif _mode == "moves":
-		step = "trascina i pezzi (%d spostamenti) -> 'Concludi turno'" % _pending_moves.size()
-	else:
-		step = "clicca gli spazi evidenziati (%d selezionati) -> 'Concludi turno'" % _selected.size()
-	_turn_banner.text = "> Tocca a %s (%s Fazione) - %s" % \
-		[GameController.faction_name(pending), slot, step]
-
-
-func _set_btn(b: Button, on: bool) -> void:
-	if b != null:
-		b.disabled = not on
-
-
-func _select_faction(fid: String) -> void:
-	_cur_faction = fid
-	_rebuild_action_buttons(fid)
-	_clear_pending()
-
-
-## Ricrea i tasti delle Operazioni e Attività Speciali per la Fazione data.
-func _rebuild_action_buttons(fid: String) -> void:
-	for c in _op_btns.get_children():
-		c.queue_free()
-	var abb_ph1 := _is_abb() and int(GameController.state.tracks.get("phase", 1)) < 2
-	for op in GameController.game_def.faction(fid).operations:
-		var ob: Button = _mk_btn(OP_NAMES.get(op, op), _start_op.bind(op))
-		ob.tooltip_text = OP_DESC.get(op, "")
-		# ABB: March/Attack sono Phase II per le fazioni giocatore (§3.2.4/§3.2.5).
-		if abb_ph1 and op in ["march", "attack"]:
-			ob.disabled = true
-			ob.tooltip_text = "Disponibile solo in Phase II (dopo Red Revolt!)"
-		_op_btns.add_child(ob)
-	for c in _sa_btns.get_children():
-		c.queue_free()
-	for sa in GameController.game_def.faction(fid).special_activities:
-		if SA_VARIANTS.has(sa):
-			# Un solo tasto a tendina che "esplode" le varianti (niente barra che va a capo).
-			var mb := _mk_menu_btn("%s..." % SA_NAMES.get(sa, sa))
-			mb.tooltip_text = SA_DESC.get(sa, "")
-			var pop := mb.get_popup()
-			var ids: Array = []
-			for v in SA_VARIANTS[sa]:
-				pop.add_item(_variant_short(String(v["label"])))
-				ids.append(String(v["id"]))
-			pop.id_pressed.connect(func(i): _do_special(String(ids[i])))
-			_sa_btns.add_child(mb)
-		else:
-			var sb: Button = _mk_btn(SA_NAMES.get(sa, sa), _do_special.bind(sa))
-			sb.tooltip_text = SA_DESC.get(sa, "")
-			if abb_ph1 and sa == "coordinate":
-				sb.disabled = true
-				sb.tooltip_text = "Disponibile solo in Phase II (§4.2.4)"
-			_sa_btns.add_child(sb)
-
-
-## Etichetta breve di una variante: il testo tra parentesi ("Corruzione (cubi)" -> "cubi").
-func _variant_short(label: String) -> String:
-	var a := label.find("(")
-	var b := label.rfind(")")
-	return label.substr(a + 1, b - a - 1) if a >= 0 and b > a else label
-
-
-## Tasto a tendina (MenuButton) con la stessa veste degli altri tasti.
-func _mk_menu_btn(text: String) -> MenuButton:
-	var b := TipMenuButton.new()
-	b.text = text
-	b.flat = false
-	b.add_theme_stylebox_override("normal", _btn_style(Color("2b3442"), Color("4a5666")))
-	b.add_theme_stylebox_override("hover", _btn_style(Color("3a4759"), Color("6f8197")))
-	b.add_theme_stylebox_override("pressed", _btn_style(Color("1d242e"), Color("4a5666")))
-	b.add_theme_stylebox_override("disabled", _btn_style(Color("222831"), Color("333b46")))
-	b.add_theme_color_override("font_color", Color("e6edf3"))
-	b.add_theme_color_override("font_hover_color", Color("ffffff"))
-	b.add_theme_color_override("font_disabled_color", Color("5b6571"))
-	b.add_theme_font_size_override("font_size", 12)
-	return b
-
-
-## I 4 numeri delle carte Propaganda (cards.json), in ordine di Round.
-var _PROP_CARDS: Array = [22, 23, 46, 47]
-
-
-## Numero carta da usare per l'IMMAGINE. Il mazzo usa il sentinel 0 per le
-## Propaganda: lo mappo alla Propaganda specifica (22/23/46/47) in base a quante
-## ne sono già state risolte, così si vede l'arte giusta invece della generica.
-func _card_image_number(card_num: int) -> int:
-	if card_num == 0:
-		return int(_PROP_CARDS[clampi(GameController.propaganda_played, 0, 3)])
-	return card_num
-
-
-## Testo del pannello Vittoria (§7.2/§7.3): valore/soglia e margine per fazione,
-## più Vassalaggi+Polarization con l'avviso di azzeramento (Vass+Pol > 5).
-func _victory_text() -> String:
-	var st: GameState = GameController.state
-	var vs: Dictionary = GameController.module.victory_status(st)
-	var pol := int(st.tracks.get("polarization", 0))
-	var vg := int(st.tracks.get("vassalage_german", 0))
-	var vr := int(st.tracks.get("vassalage_russian", 0))
-	var cols := {"reds": "#e74c3c", "senate": "#ecf0f1", "moderates": "#5dade2"}
-	var names := {"reds": "Reds", "senate": "Senato", "moderates": "Moderati"}
-	var parts: Array = []
-	for fid in ["reds", "senate", "moderates"]:
-		var v: Dictionary = vs[fid]
-		var m := int(v["margin"])
-		var mtxt := "%+d" % m
-		if m > 0:
-			mtxt = "[color=#2ecc71]%s[/color]" % mtxt
-		parts.append("[color=%s][b]%s[/b][/color] %d/%d (%s)" % [cols[fid], names[fid], int(v["value"]), int(v["threshold"]), mtxt])
-	var line2 := "Vass. Ted. %d · Russo %d · Polarization %d" % [vg, vr, pol]
-	if vr + pol > 5:
-		line2 += "  [color=#e67e22]⚠ Russo+Pol>5: Reds azzerati[/color]"
-	if vg + pol > 5:
-		line2 += "  [color=#e67e22]⚠ Ted.+Pol>5: Senato azzerato[/color]"
-	return "🏆 " + " · ".join(PackedStringArray(parts)) + "\n[font_size=10][color=#9fb3c8]%s[/color][/font_size]" % line2
-
-
-var _card_zoom_popup: PopupPanel = null
-
-## Click su una miniatura carta → popup con l'immagine grande (chiudi con click/Esc).
-func _card_zoom_input(e: InputEvent, img: TextureRect) -> void:
-	if not (e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT):
-		return
-	if img.texture == null:
-		return
-	if _card_zoom_popup == null:
-		_card_zoom_popup = PopupPanel.new()
-		add_child(_card_zoom_popup)
-		var tr := TextureRect.new()
-		tr.name = "zoomtex"
-		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		_card_zoom_popup.add_child(tr)
-		_card_zoom_popup.popup_hide.connect(func(): pass)
-	var tex: TextureRect = _card_zoom_popup.get_node("zoomtex")
-	tex.texture = img.texture
-	var vp := get_viewport_rect().size
-	var h := vp.y * 0.9
-	var w := h * float(img.texture.get_width()) / float(img.texture.get_height())
-	tex.custom_minimum_size = Vector2(w, h)
-	_card_zoom_popup.popup_centered(Vector2(w + 16, h + 16))
-
-
-func _refresh_side() -> void:
-	var s: GameState = GameController.state
-	if _victory_label != null and GameRegistry.game_id == "all_bridges_burning":
-		_victory_label.text = _victory_text()
-	var cc: int = s.current_card
-	_card_img.texture = CLAssets.card(_card_image_number(cc)) if cc >= 0 else null
-	var nc: int = GameController.next_card()
-	_next_card_img.texture = CLAssets.card(_card_image_number(nc)) if nc >= 0 else null
-	_card_label.text = GameController.current_card_text()
-
-
-var _log_entries: Array = []
-
-
-func _on_log(text: String, faction: String = "") -> void:
-	_log_entries.append({"t": text, "f": faction, "tr": []})
-	_render_log()
-
-
-func _on_bot_decision(text: String, faction: String, trace: Array) -> void:
-	_log_entries.append({"t": text, "f": faction, "tr": trace})
-	_render_log()
-
-
-## Font corsiva sintetica (la font di default non ne ha una): inclina i glifi.
-func _fmt_log_line(text: String, faction: String) -> String:
-	if faction == "":
-		return text
-	# Niente sfondo: solo TESTO colorato (più leggibile su sfondo scuro). Colori
-	# scelti per contrasto: Reds rosso, Senato bianco, Moderati blu, Germani grigio.
-	var hex := "ffffff"
-	match faction:
-		"reds": hex = "ff6b6b"
-		"senate": hex = "ffffff"
-		"moderates": hex = "5aa0e8"
-		"germans": hex = "c7c7c7"
-		"russians": hex = "c19a6b"
-		_: hex = GameController.faction_color(faction).to_html(false)
-	return "[color=#%s]%s[/color]" % [hex, text]
-
-
-func _render_log() -> void:
-	if _log_entries.size() > 300:
-		_log_entries = _log_entries.slice(_log_entries.size() - 300)
-	var s := ""
-	var turn := 0
-	for i in range(_log_entries.size()):
-		var e: Dictionary = _log_entries[i]
-		var txt := String(e["t"])
-		# Fine carta = fine di un turno: divisore prominente con il numero del turno.
-		if String(e["f"]) == "" and txt.find("Carta conclusa") != -1:
-			turn += 1
-			s += "[center][b][color=#f1c40f]=====  Fine turno %d  =====[/color][/b][/center]\n" % turn
-			continue
-		# Banner di fine partita.
-		if String(e["f"]) == "" and txt.find("FINE PARTITA") != -1:
-			s += "\n[center][b][font_size=16][color=#f1c40f]===  FINE PARTITA  ===[/color][/font_size][/b][/center]\n"
-			continue
-		s += _fmt_log_line(txt, String(e["f"]))
-		if e["tr"].size() > 0:
-			var exp: bool = e.get("exp", false)
-			s += " [url=%d][font_size=10][color=#7fb0ff]%s[/color][/font_size][/url]\n" % [i, ("[-] logica" if exp else "[+] logica")]
-			# La riga "logica" (riga sopra) termina già con \n: nessun newline extra,
-			# altrimenti si crea una riga vuota fra le voci.
-			if exp:
-				var depth := 1   # livello base delle sotto-righe sotto una carta
-				for tl in e["tr"]:
-					var raw := String(tl)
-					# Indentazione "originale" (le sotto-priorità hanno spazi iniziali).
-					var lead := 0
-					while lead < raw.length() and raw[lead] == " ":
-						lead += 1
-					var line := raw.strip_edges()
-					if line == "":
-						continue
-					var extra := lead / 2
-					var lvl := depth
-					if line.begins_with("Carta Calixto"):
-						depth = 1
-						lvl = 0
-					elif line.begins_with("-> giro") or line.find("(retro)") != -1:
-						lvl = depth
-						depth += 1            # le condizioni del retro rientrano di più
-					elif line.begins_with("Operazione scelta") or line.begins_with("Attività Speciale") or line.begins_with("Nessuna Operazione"):
-						lvl = 0
-					var pad := "  ".repeat(lvl + extra)
-					s += "  [font_size=9][color=#9fb3c8]%s%s[/color][/font_size]\n" % [pad, line]
-		else:
-			# Voci SENZA "logica" (es. PASSA): vanno comunque a capo.
-			s += "\n"
-	_log.text = s
-	_log.scroll_to_line(maxi(0, _log.get_line_count() - 1))
-
-
-func _on_log_meta(meta: Variant) -> void:
-	var i := int(meta)
-	if i >= 0 and i < _log_entries.size():
-		_log_entries[i]["exp"] = not bool(_log_entries[i].get("exp", false))
-		_render_log()
-
-
 # ---------------------------------------------------------------------------
-# Flusso azione guidato
+# Cuba Libre (export alternativo dello stesso motore): flusso guidato originale
 # ---------------------------------------------------------------------------
 
-## Avvia l'Operazione scelta (tasto): evidenzia gli spazi e imposta il flusso.
-func _start_op(op_id: String) -> void:
-	# All Bridges Burning: dispatcher dedicato per le Operazioni ABB.
-	# La pipeline Cuba (_valid_spaces, mode space_list/moves) è cuba-shaped;
-	# per ABB usiamo un flusso semplificato che evidenzia tutti gli spazi
-	# e chiama ABBOperations al primo click.
-	if _is_abb() and op_id in _ABB_OPS:
-		_abb_start_op(op_id)
-		return
+func _cuba_start_op(op_id: String) -> void:
 	var kind: String = OP_KIND.get(op_id, "space_list")
 	var valid := _valid_spaces(_cur_faction, op_id)
-	# Operazioni "a spazi": se nessuno spazio è efficace, non avviarla.
 	if kind == "space_list" and valid.is_empty():
-		_instr.text = "%s: nessuno spazio dove sia efficace al momento" % OP_NAMES.get(op_id, op_id)
+		_err("%s: nessuno spazio dove sia efficace al momento" % OP_NAMES.get(op_id, op_id))
 		return
 	_cur_action = op_id
 	_selected.clear()
@@ -1169,32 +1996,44 @@ func _start_op(op_id: String) -> void:
 	for sid in valid:
 		_space_views[sid].set_highlight(true)
 	var lim := " (Op Limitata: 1 spazio, niente Att.Speciale)" if _limited else ""
-	var desc: String = OP_DESC.get(op_id, "")
 	var hint := "trascina i pezzi nei loro spazi" if _mode == "moves" else "clicca gli spazi evidenziati"
-	_instr.text = "%s%s - %s\n> %s, poi 'Esegui' o 'Concludi turno'" % [OP_NAMES.get(op_id, op_id), lim, desc, hint]
+	_instr.text = "%s%s — %s, poi 'Esegui' o 'Concludi turno'" % [OP_NAMES.get(op_id, op_id), lim, hint]
+
+
+func _cuba_execute() -> bool:
+	if _mode == "sa_move_confirm":
+		if _sa_move_count <= 0:
+			_err("Nessun cubo da spostare")
+			return false
+		_run_sa_move(_pending_sa, _sa_from, _sa_move_to, _sa_move_count)
+		_sa_move_to = ""
+		_end_sa()
+		return true
+	if _mode == "sa_profit":
+		if _sa_spaces.is_empty():
+			_err("Profitto: scegli almeno 1 Casinò")
+			return false
+		var pp := {"mode": _profit_mode}
+		if _profit_mode == "cash":
+			pp["spaces"] = _sa_spaces.duplicate()
+		else:
+			pp["close"] = _sa_spaces.duplicate()
+		GameController.run_special("profit", pp)
+		_sa_spaces = []
+		_end_sa()
+		return true
+	if _cur_action == "":
+		return false
+	var res: Dictionary = GameController.run_operation(_cur_action, _build_params())
+	if not res.get("ok", false):
+		_err("✗ %s" % String(res.get("error", "Operazione non eseguibile")))
+		return false
+	_clear_pending()
 	_refresh_turn_banner()
+	return true
 
 
-func _on_space_clicked(sid: String) -> void:
-	# Pipeline ABB: 1° click sceglie lo spazio target dell'Operazione e la esegue.
-	if _is_abb() and _mode == "abb_space_pick":
-		_abb_execute_op_on_space(sid)
-		return
-	if _is_abb() and _mode == "abb_march_from":
-		_abb_march_set_from(sid)
-		return
-	if _is_abb() and _mode == "abb_march_to":
-		_abb_execute_march_to(sid)
-		return
-	if _is_abb() and _mode == "abb_sa_pick":
-		_abb_execute_sa_on_space(sid)
-		return
-	if _is_abb() and _mode == "abb_sa_coord_from":
-		_abb_set_sa_coord_from(sid)
-		return
-	if _is_abb() and _mode == "abb_sa_coord_to":
-		_abb_execute_sa_coord_to(sid)
-		return
+func _cuba_space_clicked(sid: String) -> void:
 	# Bersaglio Attività Speciale
 	if _mode == "sa_point":
 		if not _sa_valid.has(sid):
@@ -1527,9 +2366,9 @@ func _profit_instr() -> void:
 	_refresh_turn_banner()
 
 
-func _on_piece_dropped(from_id: String, to_id: String, faction: String, type: String) -> void:
+func _cuba_piece_dropped(from_id: String, to_id: String, faction: String, type: String) -> void:
 	if _mode != "moves":
-		_instr.text = "! Per spostare i pezzi scegli prima un'operazione di movimento (Marcia / Perlustrazione / Guarnigione / Trasporto)"
+		_err("Per spostare i pezzi scegli prima un'operazione di movimento (Marcia / Perlustrazione / Guarnigione / Trasporto)")
 		return
 	if from_id == to_id:
 		return
@@ -1547,61 +2386,7 @@ func _on_piece_dropped(from_id: String, to_id: String, faction: String, type: St
 	_refresh_turn_banner()
 
 
-## Aggiorna le frecce di anteprima degli spostamenti in coda.
-func _update_moves_overlay() -> void:
-	if _moves_overlay == null:
-		return
-	var segs: Array = []
-	for m in _pending_moves:
-		var fi: String = m["from"]
-		var ti: String = m["to"]
-		if _space_views.has(fi) and _space_views.has(ti):
-			var fv: RegionView = _space_views[fi]
-			var tv: RegionView = _space_views[ti]
-			segs.append({"from": fv.center_point(), "to": tv.center_point()})
-	_moves_overlay.set_segments(segs)
-
-
-func _on_execute() -> void:
-	# Conferma del numero di cubi (Trasporto/Muscle).
-	if _mode == "sa_move_confirm":
-		if _sa_move_count <= 0:
-			_instr.text = "Nessun cubo da spostare"
-			return
-		_run_sa_move(_pending_sa, _sa_from, _sa_move_to, _sa_move_count)
-		_sa_move_to = ""
-		_end_sa()
-		return
-	# Conferma del Profitto (1-2 Casinò).
-	if _mode == "sa_profit":
-		if _sa_spaces.is_empty():
-			_instr.text = "Profitto: scegli almeno 1 Casinò"
-			return
-		var pp := {"mode": _profit_mode}
-		if _profit_mode == "cash":
-			pp["spaces"] = _sa_spaces.duplicate()
-		else:
-			pp["close"] = _sa_spaces.duplicate()
-		GameController.run_special("profit", pp)
-		_sa_spaces = []
-		_end_sa()
-		return
-	if _cur_action == "":
-		return
-	var params := _build_params()
-	GameController.run_operation(_cur_action, params)
-	_clear_pending()
-
-
-## Esegue l'Attività Speciale (tasto): evidenzia SOLO gli spazi dove ha davvero effetto.
-func _do_special(sa: String) -> void:
-	if _limited:
-		_instr.text = "Operazione Limitata: niente Attività Speciale"
-		return
-	# Dispatcher ABB: le Att. Speciali ABB chiamano GameController.specials.
-	if _is_abb() and sa in _ABB_SAS:
-		_abb_start_special(sa)
-		return
+func _cuba_start_special(sa: String) -> void:
 	var sa_name: String = _sa_label(sa)
 	var sa_desc: String = SA_DESC.get(_sa_base(sa), "")
 	# Avvia la selezione del BERSAGLIO dell'Attività Speciale (prima/durante/dopo l'Operazione).
@@ -1665,30 +2450,6 @@ func _reprisal_movable(sid: String) -> String:
 ## Spazi adiacenti dove spostare la Guerriglia nella Rappresaglia.
 func _reprisal_dests(sid: String) -> Array:
 	return Array(GameController.game_def.space(sid).adjacent)
-
-
-## Att.Speciale di base dietro a un id-variante ("bribe:cubes" -> "bribe").
-func _sa_base(sa: String) -> String:
-	var i := sa.find(":")
-	return sa.substr(0, i) if i >= 0 else sa
-
-
-## Parametri extra di una variante (azione/modo/bersaglio), o {} se non è una variante.
-func _sa_variant_p(sa: String) -> Dictionary:
-	var base := _sa_base(sa)
-	for v in SA_VARIANTS.get(base, []):
-		if v["id"] == sa:
-			return v["p"]
-	return {}
-
-
-## Etichetta da mostrare (variante o nome base).
-func _sa_label(sa: String) -> String:
-	var base := _sa_base(sa)
-	for v in SA_VARIANTS.get(base, []):
-		if v["id"] == sa:
-			return v["label"]
-	return SA_NAMES.get(sa, sa)
 
 
 ## sa_id effettivo (Imboscata dipende dalla Fazione attiva).
@@ -1803,130 +2564,6 @@ func _end_sa() -> void:
 	_refresh_turn_banner()
 
 
-## Gioca l'Evento della carta corrente (lato chiaro/ombreggiato) per la Fazione selezionata.
-func _on_event(side: String) -> void:
-	var params := {}
-	if _selected.size() > 0:
-		params["space"] = _selected[0]
-	var res := GameController.play_event(side, params)
-	_clear_pending()
-	if not res.get("ok", false):
-		_instr.text = "! " + String(res.get("error", "Evento non eseguibile"))
-	else:
-		_instr.text = "Evento giocato - turno concluso"
-	_refresh_turn_banner()
-
-
-func _on_all_bots() -> void:
-	# Risolve la carta corrente con i bot, una mossa alla volta (con pausa/flash).
-	GameController.run_card_paced()
-
-
-const _ROLE_SHORT := {"government": "Gov", "m26": "26J", "directorio": "DR", "syndicate": "SYN"}
-
-
-## Senato Coordinate Special Activity (§4.2.4): toggle del marker che fa decidere
-## al Senato l'azione del Bot Germans questo turno. Solo in Phase II.
-func _on_coordinate_germans() -> void:
-	if int(GameController.state.tracks.get("phase", 1)) < 2:
-		return
-	var cur := int(GameController.state.tracks.get("coordinate_marker", 0))
-	GameController.state.tracks["coordinate_marker"] = 0 if cur > 0 else 1
-	GameController.emit_signal("state_changed")
-
-
-func _toggle_role(fid: String) -> void:
-	# I Powers ABB (Germans/Russians) sono sempre bot: ignora il toggle.
-	if GameRegistry.game_id == "all_bridges_burning" and fid in ["germans", "russians"]:
-		return
-	GameController.set_role(fid, "bot" if GameController.is_player(fid) else "player")
-	_update_role_btns()
-
-
-func _update_role_btns() -> void:
-	for fid in _role_btns:
-		var player := GameController.is_player(fid)
-		var b: Button = _role_btns[fid]
-		b.text = "%s: %s" % [_ROLE_SHORT.get(fid, fid), "Giocatore" if player else "Bot"]
-		b.add_theme_color_override("font_color", GameController.faction_color(fid) if player else Color("8aa0b3"))
-
-
-## Tick automatico: se tocca a una Fazione Bot (e non sto scegliendo nulla), gioca da sola.
-func _toggle_auto_bot() -> void:
-	_auto_bot = not _auto_bot
-	_btn_auto.text = "Auto-Bot: ON" if _auto_bot else "Auto-Bot: OFF"
-	_accent_btn(_btn_auto, Color("2e7d46"), Color("57c97e")) if _auto_bot else _mk_btn_restyle(_btn_auto)
-
-
-## Riporta un tasto allo stile neutro standard.
-func _mk_btn_restyle(b: Button) -> void:
-	b.add_theme_stylebox_override("normal", _btn_style(Color("2b3442"), Color("4a5666")))
-	b.add_theme_stylebox_override("hover", _btn_style(Color("3a4759"), Color("6f8197")))
-	b.add_theme_stylebox_override("pressed", _btn_style(Color("1d242e"), Color("4a5666")))
-	b.add_theme_color_override("font_color", Color("e6edf3"))
-
-
-func _auto_bot_tick() -> void:
-	if not _auto_bot or GameController.game_over or _mode != "idle":
-		return
-	var s: GameState = GameController.state
-	if s == null or s.current_card <= 0:
-		return
-	var st := GameController.seq_status()
-	var pending := String(st.get("pending", ""))
-	if pending != "" and bool(st.get("active", false)) and GameController.is_bot(pending):
-		GameController.bot_act_pending()
-
-
-## Nuova partita: ripulisce il log e la selezione, poi reinizializza.
-func _on_new_game() -> void:
-	_clear_pending()
-	_log_entries.clear()
-	_render_log()
-	_zoom = 1.0          # mappa adattata al riquadro
-	_layout_board()
-	GameController.new_game()
-
-
-## Pulizia interna della selezione/coda in preparazione (senza undo).
-func _clear_pending() -> void:
-	_mode = "idle"
-	_selected.clear()
-	_rally_choice.clear()
-	_train_plan.clear()
-	_build_choice.clear()
-	_garrison_ec = ""
-	_reprisal_from = ""
-	_attack_target.clear()
-	_sa_move_to = ""
-	_sa_move_count = 0
-	_sa_spaces = []
-	_pending_moves.clear()
-	_pending_sa = ""
-	_sa_from = ""
-	_sa_valid = []
-	_clear_highlights()
-	_update_moves_overlay()
-	_instr.text = ""
-
-
-## Tasto "Annulla": scarta l'azione in preparazione oppure annulla (undo) l'ultima eseguita.
-func _on_cancel() -> void:
-	var had_pending := _mode != "idle" or not _selected.is_empty() or not _pending_moves.is_empty() or _pending_sa != ""
-	_clear_pending()
-	if had_pending:
-		_instr.text = "Azione in preparazione annullata"
-		return
-	if GameController.undo_last():
-		_instr.text = " Ultima azione annullata"
-	else:
-		_instr.text = "Niente da annullare"
-
-
-func _clear_highlights() -> void:
-	for sid in _space_views.keys():
-		_space_views[sid].set_highlight(false)
-
 
 func _build_params() -> Dictionary:
 	match _cur_action:
@@ -2013,271 +2650,3 @@ func _enemy_present(faction: String, st: SpaceState) -> bool:
 			return true
 	return false
 
-
-# ---------------------------------------------------------------------------
-# All Bridges Burning: dispatcher Operazioni
-# ---------------------------------------------------------------------------
-
-## Operazioni che usano la pipeline ABB semplificata (Cuba-shaped per le altre).
-## Non si può usare `const` con array letterali nel parser web di Godot 4.3.
-var _ABB_OPS: Array = ["rally", "march", "attack", "terror", "message", "activism", "negotiate"]
-
-
-func _is_abb() -> bool:
-	return GameRegistry.game_id == "all_bridges_burning"
-
-
-## Inizia un'Operazione ABB: evidenzia gli spazi candidati e attende il click.
-func _abb_start_op(op_id: String) -> void:
-	_cur_action = op_id
-	_selected.clear()
-	if op_id == "march":
-		_mode = "abb_march_from"
-		_clear_highlights()
-		for sid in _abb_march_origins(_cur_faction):
-			_space_views[sid].set_highlight(true)
-		_instr.text = "%s — clicca uno spazio TUO da cui far partire i pezzi." % OP_NAMES.get("march", "March")
-	else:
-		_mode = "abb_space_pick"
-		_clear_highlights()
-		for sid in _abb_op_targets(_cur_faction, op_id):
-			_space_views[sid].set_highlight(true)
-		_instr.text = "%s — clicca lo spazio bersaglio (evidenziato)." % OP_NAMES.get(op_id, op_id)
-	_refresh_turn_banner()
-
-
-func _abb_op_targets(fid: String, op_id: String) -> Array:
-	# Per Rally / Attack / Terror / Activism: spazi candidati dal punto di vista
-	# minimo (Rally ovunque, Attack/Terror dove abbiamo pezzi, ecc.). Il vero
-	# check di legalità avviene dentro ABBOperations.
-	var out: Array = []
-	for sid in GameController.state.spaces.keys():
-		match op_id:
-			"rally":
-				out.append(sid)
-			"attack":
-				var st: SpaceState = GameController.state.space_state(sid)
-				if st.count(fid, "cell") + st.count(fid, "troops") > 0:
-					out.append(sid)
-			"terror", "activism":
-				if GameController.state.space_state(sid).count(fid, "cell") > 0:
-					out.append(sid)
-			"negotiate":
-				var stn: SpaceState = GameController.state.space_state(sid)
-				if stn.count("moderates", "cell", "underground") > 0 \
-						and (stn.count("reds", "cell", "active") > 0 or stn.count("senate", "cell", "active") > 0):
-					out.append(sid)
-			_:
-				out.append(sid)
-	return out
-
-
-func _abb_march_origins(fid: String) -> Array:
-	var out: Array = []
-	for sid in GameController.state.spaces.keys():
-		if GameController.state.space_state(sid).count(fid, "cell") > 0:
-			out.append(sid)
-	return out
-
-
-var _abb_march_from := ""
-
-func _abb_march_set_from(sid: String) -> void:
-	_abb_march_from = sid
-	_mode = "abb_march_to"
-	_clear_highlights()
-	var sd: SpaceDef = GameController.game_def.space(sid)
-	_space_views[sid].set_highlight(true)
-	for adj_sid in sd.adjacent:
-		_space_views[String(adj_sid)].set_highlight(true)
-	_instr.text = "%s — clicca lo spazio ADIACENTE di destinazione." % OP_NAMES.get("march", "March")
-
-
-func _abb_execute_op_on_space(sid: String) -> void:
-	var op_id: String = _cur_action
-	var fid: String = _cur_faction
-	var res: Dictionary = {}
-	match op_id:
-		"rally":
-			res = GameController.ops.rally(fid, sid, "cell")
-		"attack":
-			res = GameController.ops.attack(fid, sid)
-		"terror":
-			res = GameController.ops.terror(fid, sid)
-		"activism":
-			res = GameController.ops.activism(fid, sid)
-		"negotiate":
-			res = GameController.ops.negotiate(fid, sid)
-		_:
-			res = {"ok": false, "error": "op ABB non supportata: " + op_id}
-	_abb_log_op(op_id, sid, res)
-	_abb_end_op()
-
-
-func _abb_execute_march_to(to_sid: String) -> void:
-	var fid: String = _cur_faction
-	var sd: SpaceDef = GameController.game_def.space(_abb_march_from)
-	if not (to_sid in sd.adjacent):
-		_instr.text = "Destinazione non adiacente — scegline una evidenziata."
-		return
-	var res: Dictionary = GameController.ops.march(fid, _abb_march_from, to_sid, "cell", 1)
-	_abb_log_op("march", "%s→%s" % [_abb_march_from, to_sid], res)
-	_abb_march_from = ""
-	_abb_end_op()
-
-
-func _abb_log_op(op_id: String, target: String, res: Dictionary) -> void:
-	var ok: bool = bool(res.get("ok", false))
-	if ok:
-		GameController.mark_human_action("op")  # così end_turn() riconosce l'azione
-	var prefix: String = "✓" if ok else "✗"
-	var msg: String = "%s %s @ %s" % [prefix, OP_NAMES.get(op_id, op_id), target]
-	if not ok:
-		msg += " — " + String(res.get("error", ""))
-	elif res.has("roll"):
-		msg += " (1d6=%d/%d)" % [int(res["roll"]), int(res.get("strength", 0))]
-	GameController.emit_signal("action_logged", msg, _cur_faction)
-	_instr.text = msg
-	GameController.emit_signal("state_changed")
-
-
-func _abb_end_op() -> void:
-	_mode = "idle"
-	_cur_action = ""
-	_clear_highlights()
-	_refresh_turn_banner()
-
-
-# ---------------------------------------------------------------------------
-# All Bridges Burning: dispatcher Attività Speciali
-# ---------------------------------------------------------------------------
-
-var _ABB_SAS: Array = [
-	"agitate", "ambush", "subvert", "crackdown", "dialogue", "tax",
-	"coordinate", "foreign_relations",
-]
-
-## SA che chiedono di cliccare uno spazio bersaglio. Le altre si eseguono
-## immediatamente (negotiate, foreign_relations) o richiedono 2 click
-## (coordinate: from→to).
-var _ABB_SAS_SINGLE_SPACE: Array = [
-	"agitate", "ambush", "subvert", "crackdown", "dialogue", "tax",
-]
-
-
-func _abb_start_special(sa: String) -> void:
-	# SA senza target: esegui subito.
-	if sa == "coordinate":
-		var res: Dictionary = GameController.specials.coordinate(_cur_faction)
-		_abb_log_sa(sa, "marker sul cilindro Tedesco", res)
-		return
-	if sa == "foreign_relations":
-		# Placeholder: +1 Vassalage Tedesca. Future PR: UI per scelta power+delta.
-		var fr_res: Dictionary = GameController.specials.foreign_relations("germans", 1)
-		_abb_log_sa(sa, "germans +1", fr_res)
-		return
-	# SA su 1 spazio: highlight e attendi click.
-	if sa in _ABB_SAS_SINGLE_SPACE:
-		_pending_sa = sa
-		_mode = "abb_sa_pick"
-		_clear_highlights()
-		for sid in _abb_sa_targets(sa, _cur_faction):
-			_space_views[sid].set_highlight(true)
-		_instr.text = "%s — clicca lo spazio bersaglio (evidenziato)." % SA_NAMES.get(sa, sa)
-		return
-	_instr.text = "SA ABB non gestita: " + sa
-
-
-func _abb_sa_targets(sa: String, fid: String) -> Array:
-	var out: Array = []
-	for sid in GameController.state.spaces.keys():
-		var st: SpaceState = GameController.state.space_state(sid)
-		match sa:
-			"agitate", "tax", "dialogue":
-				if st.count(fid, "cell") > 0:
-					out.append(sid)
-			"ambush", "subvert":
-				if st.count("reds", "cell", "underground") > 0:
-					out.append(sid)
-			"crackdown":
-				if st.count("senate", "cell") > 0:
-					out.append(sid)
-	return out
-
-
-func _abb_sa_coord_origins() -> Array:
-	var out: Array = []
-	for sid in GameController.state.spaces.keys():
-		var st: SpaceState = GameController.state.space_state(sid)
-		if st.count("russians", "troops") > 0 or st.count("germans", "troops") > 0:
-			out.append(sid)
-	return out
-
-
-var _abb_sa_coord_from := ""
-
-
-func _abb_execute_sa_on_space(sid: String) -> void:
-	var sa: String = _pending_sa
-	var fid: String = _cur_faction
-	var res: Dictionary = {}
-	match sa:
-		"agitate":
-			res = GameController.specials.agitate(sid)
-		"tax":
-			res = GameController.specials.tax(fid, sid)
-		"dialogue":
-			res = GameController.specials.dialogue(sid)
-		"ambush":
-			res = GameController.specials.ambush(sid)
-		"subvert":
-			res = GameController.specials.subvert(sid)
-		"crackdown":
-			res = GameController.specials.crackdown(sid)
-		_:
-			res = {"ok": false, "error": "SA ABB sconosciuta: " + sa}
-	_abb_log_sa(sa, sid, res)
-	_abb_end_sa()
-
-
-func _abb_set_sa_coord_from(sid: String) -> void:
-	_abb_sa_coord_from = sid
-	_mode = "abb_sa_coord_to"
-	_clear_highlights()
-	_space_views[sid].set_highlight(true)
-	var sd: SpaceDef = GameController.game_def.space(sid)
-	for to_sid in sd.adjacent:
-		_space_views[String(to_sid)].set_highlight(true)
-	_instr.text = "Coordinamento — clicca lo spazio adiacente di destinazione."
-
-
-func _abb_execute_sa_coord_to(to_sid: String) -> void:
-	var sd: SpaceDef = GameController.game_def.space(_abb_sa_coord_from)
-	if not (to_sid in sd.adjacent):
-		_instr.text = "Destinazione non adiacente — scegline una evidenziata."
-		return
-	var res: Dictionary = GameController.specials.coordinate(_abb_sa_coord_from, to_sid)
-	_abb_log_sa("coordinate", "%s→%s" % [_abb_sa_coord_from, to_sid], res)
-	_abb_sa_coord_from = ""
-	_abb_end_sa()
-
-
-func _abb_log_sa(sa: String, target: String, res: Dictionary) -> void:
-	var ok: bool = bool(res.get("ok", false))
-	if ok:
-		GameController.mark_human_action("special")  # così end_turn() riconosce l'Att.Speciale
-	var prefix: String = "✓" if ok else "✗"
-	var label: String = SA_NAMES.get(sa, sa)
-	var msg: String = "%s %s @ %s" % [prefix, label, target]
-	if not ok:
-		msg += " — " + String(res.get("error", ""))
-	GameController.emit_signal("action_logged", msg, _cur_faction)
-	_instr.text = msg
-	GameController.emit_signal("state_changed")
-
-
-func _abb_end_sa() -> void:
-	_mode = "idle"
-	_pending_sa = ""
-	_clear_highlights()
-	_refresh_turn_banner()
